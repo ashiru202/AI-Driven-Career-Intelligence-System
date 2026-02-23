@@ -1,0 +1,127 @@
+const { z } = require('zod');
+const AppError = require('../utils/AppError');
+
+// Strip HTML tags from a string to prevent stored XSS
+const stripHtml = (str) => str.replace(/<[^>]*>/g, '').trim();
+
+// Validation middleware factory
+const validate = (schema) => {
+  return (req, res, next) => {
+    try {
+      const result = schema.parse({
+        body: req.body,
+        query: req.query,
+        params: req.params
+      });
+      // Write sanitized body back (Express 5: req.query/params are read-only getters)
+      if (result && result.body) req.body = result.body;
+      next();
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // zod v4 uses .issues (v3 used .errors); support both
+        const issues = error.issues || error.errors || [];
+        const details = issues.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        }));
+        return next(AppError.validationError('Validation failed', details));
+      }
+      next(error);
+    }
+  };
+};
+
+// Validation schemas
+const schemas = {
+  register: z.object({
+    body: z.object({
+      name: z.string()
+        .min(2, 'Name must be at least 2 characters')
+        .max(100, 'Name must be at most 100 characters')
+        .transform(stripHtml),
+      email: z.string()
+        .email('Invalid email address')
+        .max(254, 'Email too long')
+        .toLowerCase(),
+      password: z.string()
+        .min(6, 'Password must be at least 6 characters')
+        .max(128, 'Password must be at most 128 characters')
+    })
+  }),
+
+  login: z.object({
+    body: z.object({
+      email: z.string()
+        .email('Invalid email address')
+        .max(254, 'Email too long')
+        .toLowerCase(),
+      password: z.string().min(1, 'Password is required').max(128)
+    })
+  }),
+
+  createStaff: z.object({
+    body: z.object({
+      name: z.string()
+        .min(2, 'Name must be at least 2 characters')
+        .max(100, 'Name must be at most 100 characters')
+        .transform(stripHtml),
+      email: z.string()
+        .email('Invalid email address')
+        .max(254, 'Email too long')
+        .toLowerCase(),
+      password: z.string()
+        .min(6, 'Password must be at least 6 characters')
+        .max(128, 'Password must be at most 128 characters')
+    })
+  }),
+
+  compareJob: z.object({
+    body: z.object({
+      jobTitle: z.string()
+        .min(1, 'Job title is required')
+        .max(200, 'Job title must be at most 200 characters')
+        .transform(stripHtml),
+      // Cap job description at 20 000 characters; strip HTML
+      jobDescription: z.string()
+        .min(10, 'Job description must be at least 10 characters')
+        .max(20000, 'Job description must be at most 20 000 characters')
+        .transform(stripHtml),
+      jobSkills: z.array(
+        z.string().max(100, 'Skill name too long').transform(stripHtml)
+      ).max(100, 'Too many skills').optional()
+    })
+  }),
+
+  updateRoadmapSkillStatus: z.object({
+    body: z.object({
+      skill: z.string()
+        .min(1, 'Skill is required')
+        .max(100, 'Skill name too long')
+        .transform(stripHtml),
+      status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED'], {
+        errorMap: () => ({ message: 'Status must be PENDING, IN_PROGRESS, or COMPLETED' })
+      })
+    }),
+    params: z.object({
+      id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid roadmap ID')
+    })
+  }),
+
+  createRoadmap: z.object({
+    body: z.object({
+      targetRole: z.string()
+        .min(1, 'Target role is required')
+        .max(200, 'Target role too long')
+        .transform(stripHtml),
+      jobTitle: z.string().max(200).transform(stripHtml).optional(),
+      jobSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional(),
+      missingSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional(),
+      resumeSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional()
+    })
+  })
+};
+
+module.exports = {
+  validate,
+  schemas
+};

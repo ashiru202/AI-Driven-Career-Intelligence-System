@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #07071a;
+  color: #fff;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* ── Global dark theme overrides for shadcn/ui components ─────────── */
+
+/* Cards */
+[class*="card"], .card {
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(255,255,255,0.09) !important;
+  color: #fff !important;
+}
+
+/* Card titles & descriptions */
+[class*="CardTitle"], [class*="card-title"] {
+  color: #fff !important;
+}
+[class*="CardDescription"], [class*="card-description"] {
+  color: rgba(255,255,255,0.48) !important;
+}
+
+/* Text overrides inside Layout pages */
+.text-gray-900, .text-gray-800, .text-gray-700 { color: #e2e8f0 !important; }
+.text-gray-600, .text-gray-500, .text-gray-400 { color: rgba(255,255,255,0.48) !important; }
+
+/* Inputs */
+input:not([type='file']), textarea, select {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  color: #fff !important;
+}
+input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.3) !important; }
+input:focus, textarea:focus, select:focus {
+  outline: none !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.2) !important;
+}
+
+/* Buttons (shadcn default variant) */
+button[class*="bg-blue"], a[class*="bg-blue"] {
+  background: linear-gradient(135deg,#6366f1,#8b5cf6) !important;
+  border: none !important;
+}
+
+/* Tables */
+table thead tr { border-color: rgba(255,255,255,0.08) !important; }
+table thead th { color: rgba(255,255,255,0.45) !important; }
+table tbody tr { border-color: rgba(255,255,255,0.06) !important; }
+table tbody td { color: rgba(255,255,255,0.72) !important; }
+
+/* Borders */
+.border, .border-b, .border-t {
+  border-color: rgba(255,255,255,0.08) !important;
+}
+
+/* Background overrides for light bg classes */
+.bg-white { background: rgba(255,255,255,0.05) !important; }
+.bg-gray-50 { background: rgba(255,255,255,0.03) !important; }
+.bg-gray-100 { background: rgba(255,255,255,0.07) !important; }
+.bg-gray-200 { background: rgba(255,255,255,0.11) !important; }
+.bg-gray-300 { background: rgba(255,255,255,0.15) !important; }
+
+/* Text on light-bg elements that survive the overrides */
+.text-gray-700, .text-gray-800, .text-gray-900 { color: #e2e8f0 !important; }
+.text-purple-600, .text-purple-700 { color: #c084fc !important; }
+.text-orange-600, .text-orange-700 { color: #fb923c !important; }
+
+/* Badges */
+.bg-blue-100  { background: rgba(99,102,241,0.18) !important; }
+.text-blue-700, .text-blue-600 { color: #a5b4fc !important; }
+.bg-green-100 { background: rgba(16,185,129,0.15) !important; }
+.text-green-700, .text-green-600 { color: #6ee7b7 !important; }
+.bg-red-100   { background: rgba(239,68,68,0.15) !important; }
+.text-red-700,.text-red-600,.text-red-800 { color: #fca5a5 !important; }
+.bg-gray-100  { background: rgba(255,255,255,0.08) !important; }
+.text-gray-600 { color: rgba(255,255,255,0.5) !important; }
+.bg-yellow-50, .bg-green-50, .bg-red-50 { background: rgba(255,255,255,0.04) !important; }
+.text-yellow-600 { color: #fbbf24 !important; }
+
+/* Hover rows */
+tr:hover td { background: rgba(255,255,255,0.03) !important; }
+
+/* Dividers */
+.divide-y > * + * { border-color: rgba(255,255,255,0.06) !important; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28); }

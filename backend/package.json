@@ -1,0 +1,58 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --runInBand --forceExit",
+    "test:watch": "jest --watch --runInBand",
+    "test:coverage": "jest --coverage --runInBand --forceExit",
+    "test:auth": "jest --testPathPattern=auth --runInBand --forceExit",
+    "test:compare": "jest --testPathPattern=compare --runInBand --forceExit",
+    "test:roadmap": "jest --testPathPattern=roadmap --runInBand --forceExit",
+    "test:analytics": "jest --testPathPattern=analytics --runInBand --forceExit",
+    "test:resume": "jest --testPathPattern=resume --runInBand --forceExit"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testPathPatterns": [
+      "tests/.*\\.test\\.js$"
+    ],
+    "setupFiles": [
+      "./tests/setup.js"
+    ],
+    "testTimeout": 15000,
+    "verbose": true
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "groq-sdk": "^0.37.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mammoth": "^1.11.0",
+    "mongodb": "^7.0.0",
+    "mongoose": "^9.1.2",
+    "multer": "^2.0.2",
+    "pdf-parse": "^1.1.1",
+    "pdfkit": "^0.17.2",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.2.2"
+  }
+}
