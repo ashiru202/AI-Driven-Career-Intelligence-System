@@ -52,14 +52,6 @@ const USER_CARDS = [
     icon: "🗺️",
     color: "purple",
   },
-  {
-    title: "Skills in Demand",
-    description: "Explore top skills sought across all job comparisons on the platform",
-    link: "/skills-in-demand",
-    cta: "View Skills ",
-    icon: "🔥",
-    color: "rose",
-  },
 ];
 
 const COLOR_MAP = {
