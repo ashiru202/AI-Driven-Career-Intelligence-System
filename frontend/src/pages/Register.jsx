@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Input, Label } from "../components/ui/input";
-import { Button } from "../components/ui/button";
 
 export default function Register() {
   const navigate = useNavigate();
