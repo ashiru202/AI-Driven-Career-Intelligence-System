@@ -59,8 +59,9 @@ const healthRoutes      = require("./routes/healthRoutes");
 const resumeRoutes      = require("./routes/resumeRoutes");
 const comparisonRoutes  = require("./routes/comparisonRoutes");
 const newRoadmapRoutes  = require("./routes/newRoadmapRoutes");
-const analyticsRoutes   = require("./routes/analyticsRoutes");
-const reportRoutes      = require("./routes/reportRoutes");
+const analyticsRoutes       = require("./routes/analyticsRoutes");
+const reportRoutes          = require("./routes/reportRoutes");
+const notificationsRoutes   = require("./routes/notificationsRoutes");
 
 app.use("/api",            healthRoutes);
 
@@ -75,8 +76,9 @@ app.use("/api/resumes",    resumeRoutes);
 app.use("/api/comparisons", comparisonRoutes);
 app.use("/api/roadmaps-new", newRoadmapRoutes);
 app.use("/api/analytics",  analyticsRoutes);
-app.use("/api/reports",    reportRoutes);
-app.use("/api/roadmap",    roadmapRoutes);
+app.use("/api/reports",        reportRoutes);
+app.use("/api/notifications",  notificationsRoutes);
+app.use("/api/roadmap",        roadmapRoutes);
 app.use("/api/roadmaps",   roadmapRoutes);
 app.use("/api/admin",      adminRoutes);
 app.use("/api/users",      userRoutes);

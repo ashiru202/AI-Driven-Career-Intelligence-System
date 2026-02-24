@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import api from '../api/api';
 
 const ROLE_NAV = {
   ADMIN: [
@@ -27,35 +28,50 @@ const ROLE_NAV = {
 };
 
 // ── Notification system ─────────────────────────────────────────────────────
-const ROLE_NOTIFICATIONS = {
-  USER: [
-    { id: 'u1', icon: '👋', title: 'Welcome to CareerIQ!', body: 'Start by uploading your resume to get AI-powered insights.', link: '/resume-analyze', time: 'Just now' },
-    { id: 'u2', icon: '🔥', title: 'Trending Skills This Month', body: 'Python, AI/ML & Cloud are surging in job demand. See Skills in Demand.', link: '/skills-in-demand', time: '2h ago' },
-    { id: 'u3', icon: '🎯', title: 'Compare Jobs to Your Resume', body: 'Paste any job description and see your match score instantly.', link: '/compare-job', time: '5h ago' },
-    { id: 'u4', icon: '🗺️', title: 'Your AI Roadmap is Ready', body: 'Generate a personalised learning path based on your skill gaps.', link: '/my-roadmap', time: '1d ago' },
-    { id: 'u5', icon: '📈', title: 'Check Your Analytics', body: 'View your career progress, skill growth and activity over time.', link: '/analytics', time: '2d ago' },
-  ],
-  ADMIN: [
-    { id: 'a1', icon: '⚡', title: 'Platform Summary Ready', body: 'A new platform report has been generated. Review it now.', link: '/admin-report', time: '30m ago' },
-    { id: 'a2', icon: '👥', title: 'New User Registrations', body: 'Check the latest job seekers who joined this week.', link: '/users', time: '3h ago' },
-    { id: 'a3', icon: '🗺️', title: 'Roadmaps Activity', body: 'Users have generated new roadmaps. Review in All Roadmaps.', link: '/all-roadmaps', time: '1d ago' },
-  ],
-  STAFF: [
-    { id: 's1', icon: '📋', title: 'User Reports Pending', body: 'Several user reports are waiting for your review.', link: '/staff', time: '1h ago' },
-    { id: 's2', icon: '🗺️', title: 'New Roadmaps Created', body: 'Users have created new roadmaps. Check them out.', link: '/all-roadmaps', time: '4h ago' },
-  ],
-};
+const POLL_INTERVAL_MS = 30_000; // refresh every 30 seconds
 
 function NotificationDropdown({ userRole }) {
-  const notifications = ROLE_NOTIFICATIONS[userRole] || ROLE_NOTIFICATIONS.USER;
   const STORAGE_KEY = `notif_read_${userRole}`;
 
-  const [open, setOpen] = useState(false);
-  const [readIds, setReadIds] = useState(() => {
+  const [open,          setOpen]          = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState(null);
+  const [readIds,       setReadIds]       = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')); }
     catch { return new Set(); }
   });
   const ref = useRef(null);
+
+  // Fetch from backend
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const { data } = await api.get('/api/notifications');
+      setNotifications(data.notifications || []);
+      setError(null);
+    } catch (err) {
+      setError('Could not load notifications');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial fetch + poll every 30 s
+  useEffect(() => {
+    fetchNotifications();
+    const timer = setInterval(fetchNotifications, POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [fetchNotifications]);
+
+  // Re-sync readIds whenever STORAGE_KEY changes (userRole arrives after null on mount)
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      setReadIds(new Set(stored));
+    } catch {
+      setReadIds(new Set());
+    }
+  }, [STORAGE_KEY]);
 
   // Close on outside click
   useEffect(() => {
@@ -128,26 +144,66 @@ function NotificationDropdown({ userRole }) {
             padding: '14px 16px 10px',
             borderBottom: '1px solid rgba(255,255,255,0.07)',
           }}>
-            <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Notifications</span>
-              {unread > 0 && (
+              {loading && (
+                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>refreshing…</span>
+              )}
+              {!loading && unread > 0 && (
                 <span style={{
-                  marginLeft: 8, background: 'rgba(99,102,241,0.2)',
+                  background: 'rgba(99,102,241,0.2)',
                   color: '#a5b4fc', fontSize: 11, fontWeight: 700,
                   borderRadius: 10, padding: '2px 7px',
                 }}>{unread} new</span>
               )}
             </div>
-            {unread > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {unread > 0 && (
+                <button
+                  onClick={markAllRead}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#818cf8', fontSize: 12, fontWeight: 600 }}
+                >Mark all read</button>
+              )}
               <button
-                onClick={markAllRead}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#818cf8', fontSize: 12, fontWeight: 600 }}
-              >Mark all read</button>
-            )}
+                onClick={fetchNotifications}
+                title="Refresh"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: 14, lineHeight: 1, padding: 0 }}
+              >↻</button>
+            </div>
           </div>
 
+          {/* Loading skeleton */}
+          {loading && notifications.length === 0 && (
+            <div style={{ padding: '20px 16px' }}>
+              {[1,2,3].map(i => (
+                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 16, opacity: 0.4 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ height: 12, borderRadius: 4, background: 'rgba(255,255,255,0.08)', marginBottom: 6, width: '70%' }} />
+                    <div style={{ height: 10, borderRadius: 4, background: 'rgba(255,255,255,0.05)', width: '90%' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Error state */}
+          {error && (
+            <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+              <div style={{ color: '#f87171', fontSize: 13, marginBottom: 10 }}>{error}</div>
+              <button
+                onClick={fetchNotifications}
+                style={{
+                  background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
+                  borderRadius: 8, color: '#a5b4fc', fontSize: 12, fontWeight: 600,
+                  padding: '6px 14px', cursor: 'pointer',
+                }}
+              >Retry</button>
+            </div>
+          )}
+
           {/* List */}
-          {notifications.map(n => {
+          {!error && notifications.map(n => {
             const isRead = readIds.has(n.id);
             return (
               <Link
@@ -182,10 +238,17 @@ function NotificationDropdown({ userRole }) {
             );
           })}
 
-          {/* Footer */}
-          {unread === 0 && (
+          {/* All-read footer */}
+          {!loading && !error && notifications.length > 0 && unread === 0 && (
             <div style={{ padding: '18px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.28)', fontSize: 13 }}>
               ✓ All caught up
+            </div>
+          )}
+
+          {/* Refresh timestamp */}
+          {!loading && !error && notifications.length > 0 && (
+            <div style={{ padding: '8px 16px', textAlign: 'right', color: 'rgba(255,255,255,0.18)', fontSize: 10, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+              Auto-refreshes every 30s
             </div>
           )}
         </div>
@@ -369,8 +432,8 @@ export default function Layout({ children }) {
         {/* Right: actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
 
-          {/* Notification bell */}
-          <NotificationDropdown userRole={userRole} />
+          {/* Notification bell — only mount once role is known so storage key is correct */}
+          {userRole && <NotificationDropdown userRole={userRole} />}
 
           {/* Desktop user avatar pill */}
           {userName && (

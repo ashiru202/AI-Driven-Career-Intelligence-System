@@ -1,0 +1,253 @@
+/**
+ * Notifications Controller
+ * Generates real-time, data-driven notifications per role by querying the DB.
+ */
+const Resume     = require('../models/Resume');
+const Roadmap    = require('../models/Roadmap');
+const Comparison = require('../models/Comparison');
+const User       = require('../models/User');
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+function timeAgo(date) {
+  if (!date) return '';
+  const diff = Date.now() - new Date(date).getTime();
+  const mins =  Math.floor(diff / 60000);
+  const hrs  =  Math.floor(diff / 3600000);
+  const days =  Math.floor(diff / 86400000);
+  if (mins < 1)  return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  if (hrs  < 24) return `${hrs}h ago`;
+  return `${days}d ago`;
+}
+
+function makeId(prefix, doc) {
+  return `${prefix}_${doc._id}`;
+}
+
+// ── USER notifications ────────────────────────────────────────────────────────
+async function getUserNotifications(userId) {
+  const notifications = [];
+
+  // 1. Latest resume
+  const resumes = await Resume.find({ user: userId }).sort({ createdAt: -1 }).limit(3);
+  if (resumes.length === 0) {
+    notifications.push({
+      id: 'no_resume',
+      icon: '📄',
+      title: 'No resume uploaded yet',
+      body: 'Upload your resume to unlock AI-powered career insights and skill analysis.',
+      link: '/resume-analyze',
+      time: 'Now',
+      createdAt: new Date(),
+    });
+  } else {
+    resumes.forEach((r) => {
+      const skillCount = r.extractedSkills?.length || 0;
+      notifications.push({
+        id: makeId('resume', r),
+        icon: '📄',
+        title: `Resume analysed: ${r.fileName}`,
+        body: skillCount > 0
+          ? `${skillCount} skill${skillCount > 1 ? 's' : ''} detected. View your full analysis.`
+          : 'Analysis complete. View your resume details.',
+        link: '/my-resumes',
+        time: timeAgo(r.createdAt),
+        createdAt: r.createdAt,
+      });
+    });
+  }
+
+  // 2. Latest roadmaps
+  const roadmaps = await Roadmap.find({ user: userId }).sort({ createdAt: -1 }).limit(3);
+  if (roadmaps.length === 0) {
+    notifications.push({
+      id: 'no_roadmap',
+      icon: '🗺️',
+      title: 'Generate your AI Roadmap',
+      body: 'Create a personalised learning path to close your skill gaps for any job role.',
+      link: '/my-roadmap',
+      time: 'Now',
+      createdAt: new Date(),
+    });
+  } else {
+    roadmaps.forEach((rm) => {
+      const completed = rm.skillsToLearn?.filter(s => s.status === 'COMPLETED').length || 0;
+      const total     = rm.skillsToLearn?.length || 0;
+      notifications.push({
+        id: makeId('roadmap', rm),
+        icon: '🗺️',
+        title: `Roadmap: ${rm.targetRole}`,
+        body: total > 0
+          ? `${completed}/${total} skills completed · ${rm.matchScore || 0}% match score.`
+          : `Match score: ${rm.matchScore || 0}%. Start learning to progress.`,
+        link: '/my-roadmap',
+        time: timeAgo(rm.createdAt),
+        createdAt: rm.createdAt,
+      });
+    });
+  }
+
+  // 3. Latest comparisons
+  const comparisons = await Comparison.find({ user: userId }).sort({ createdAt: -1 }).limit(3);
+  if (comparisons.length === 0) {
+    notifications.push({
+      id: 'no_comparison',
+      icon: '🎯',
+      title: 'Compare a Job Description',
+      body: 'Paste any job posting and instantly see how well your skills match.',
+      link: '/compare-job',
+      time: 'Now',
+      createdAt: new Date(),
+    });
+  } else {
+    comparisons.forEach((c) => {
+      const score = c.matchScore || 0;
+      const emoji = score >= 75 ? '🟢' : score >= 50 ? '🟡' : '🔴';
+      notifications.push({
+        id: makeId('comparison', c),
+        icon: '🎯',
+        title: `Job match: ${c.jobTitle}`,
+        body: `${emoji} ${score}% match · ${c.missingSkills?.length || 0} skill gap${c.missingSkills?.length !== 1 ? 's' : ''} found.`,
+        link: '/compare-job',
+        time: timeAgo(c.createdAt),
+        createdAt: c.createdAt,
+      });
+    });
+  }
+
+  // Sort newest first
+  notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return notifications;
+}
+
+// ── ADMIN notifications ───────────────────────────────────────────────────────
+async function getAdminNotifications() {
+  const notifications = [];
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
+  const oneDayAgo    = new Date(Date.now() -     86400000);
+
+  const [
+    newUsers,
+    totalUsers,
+    newResumes,
+    newRoadmaps,
+    newComparisons,
+    lowMatchComps,
+  ] = await Promise.all([
+    User.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+    User.countDocuments({ role: 'USER' }),
+    Resume.countDocuments({ createdAt: { $gte: oneDayAgo } }),
+    Roadmap.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+    Comparison.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+    Comparison.countDocuments({ matchScore: { $lt: 40 }, createdAt: { $gte: sevenDaysAgo } }),
+  ]);
+
+  notifications.push({
+    id: 'admin_users',
+    icon: '👥',
+    title: `${newUsers} new user${newUsers !== 1 ? 's' : ''} this week`,
+    body: `Platform has ${totalUsers} total job seekers. ${newUsers} joined in the last 7 days.`,
+    link: '/users',
+    time: 'Live',
+    createdAt: new Date(),
+  });
+
+  notifications.push({
+    id: 'admin_resumes',
+    icon: '📄',
+    title: `${newResumes} resume${newResumes !== 1 ? 's' : ''} uploaded today`,
+    body: newResumes > 0
+      ? 'Users are actively uploading resumes. Review platform activity.'
+      : 'No new resumes uploaded today. Platform activity is low.',
+    link: '/admin-report',
+    time: 'Live',
+    createdAt: new Date(),
+  });
+
+  notifications.push({
+    id: 'admin_roadmaps',
+    icon: '🗺️',
+    title: `${newRoadmaps} roadmap${newRoadmaps !== 1 ? 's' : ''} created this week`,
+    body: 'Users are generating AI career roadmaps. Review in All Roadmaps.',
+    link: '/all-roadmaps',
+    time: 'Live',
+    createdAt: new Date(),
+  });
+
+  notifications.push({
+    id: 'admin_comparisons',
+    icon: '🎯',
+    title: `${newComparisons} job comparisons this week`,
+    body: `${lowMatchComps} had a match score below 40% — skill gaps may need addressing.`,
+    link: '/admin-report',
+    time: 'Live',
+    createdAt: new Date(),
+  });
+
+  return notifications;
+}
+
+// ── STAFF notifications ───────────────────────────────────────────────────────
+async function getStaffNotifications() {
+  const notifications = [];
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
+
+  const [totalUsers, newRoadmaps, totalComparisons, lowMatchComps] = await Promise.all([
+    User.countDocuments({ role: 'USER' }),
+    Roadmap.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+    Comparison.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+    Comparison.countDocuments({ matchScore: { $lt: 40 }, createdAt: { $gte: sevenDaysAgo } }),
+  ]);
+
+  notifications.push({
+    id: 'staff_users',
+    icon: '📋',
+    title: `${totalUsers} user report${totalUsers !== 1 ? 's' : ''} available`,
+    body: 'Review job seeker profiles, resumes and career progress.',
+    link: '/staff',
+    time: 'Live',
+    createdAt: new Date(),
+  });
+
+  notifications.push({
+    id: 'staff_roadmaps',
+    icon: '🗺️',
+    title: `${newRoadmaps} new roadmap${newRoadmaps !== 1 ? 's' : ''} this week`,
+    body: 'Users have generated AI career roadmaps. Review them now.',
+    link: '/all-roadmaps',
+    time: 'Live',
+    createdAt: new Date(),
+  });
+
+  notifications.push({
+    id: 'staff_comparisons',
+    icon: '🎯',
+    title: `${lowMatchComps} low-match job comparison${lowMatchComps !== 1 ? 's' : ''} this week`,
+    body: `${totalComparisons} total comparisons · ${lowMatchComps} users may need career coaching.`,
+    link: '/all-roadmaps',
+    time: 'Live',
+    createdAt: new Date(),
+  });
+
+  return notifications;
+}
+
+// ── Route handler ─────────────────────────────────────────────────────────────
+exports.getNotifications = async (req, res, next) => {
+  try {
+    const { role, id: userId } = req.user;
+    let notifications = [];
+
+    if (role === 'ADMIN') {
+      notifications = await getAdminNotifications();
+    } else if (role === 'STAFF') {
+      notifications = await getStaffNotifications();
+    } else {
+      notifications = await getUserNotifications(userId);
+    }
+
+    res.json({ success: true, notifications });
+  } catch (err) {
+    next(err);
+  }
+};
