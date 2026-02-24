@@ -245,19 +245,32 @@ export default function CompareJob() {
                   onClick={() => viewHistoryItem(item._id)}
                 >
                   <CardContent className="pt-4 space-y-2">
-                    <p className="font-semibold text-gray-900 truncate">{item.jobTitle}</p>
+                    <p className="font-semibold truncate" style={{color:'#fff'}}>{item.jobTitle}</p>
                     <div className={`text-2xl font-bold ${getMatchColor(item.matchScore)}`}>
                       {item.matchScore}%
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs" style={{color:'rgba(255,255,255,0.5)'}}>
                       {item.commonSkills?.length || 0} matched · {item.missingSkills?.length || 0} missing
                     </p>
-                    {item.resumeFileName && (
-                      <p className="text-xs text-blue-600 truncate" title={item.resumeFileName}>
-                        Resume: {item.resumeFileName}
-                      </p>
+                    {item.resumeFileName ? (
+                      <div
+                        className="flex items-center gap-1 text-xs rounded px-2 py-1 truncate"
+                        style={{background:'rgba(99,102,241,0.15)', color:'#a5b4fc', border:'1px solid rgba(99,102,241,0.3)'}}
+                        title={item.resumeFileName}
+                      >
+                        <span>📄</span>
+                        <span className="truncate">{item.resumeFileName}</span>
+                      </div>
+                    ) : (
+                      <div
+                        className="flex items-center gap-1 text-xs rounded px-2 py-1"
+                        style={{background:'rgba(255,255,255,0.08)', color:'rgba(255,255,255,0.55)', border:'1px solid rgba(255,255,255,0.15)'}}
+                      >
+                        <span>📄</span>
+                        <span>Resume not recorded (old entry)</span>
+                      </div>
                     )}
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs" style={{color:'rgba(255,255,255,0.35)'}}>
                       {new Date(item.createdAt).toLocaleDateString()}
                     </p>
                   </CardContent>
@@ -275,8 +288,11 @@ export default function CompareJob() {
                 {selectedHistory ? `Result: ${activeResult.jobTitle}` : 'Latest Comparison Result'}
               </h3>
               {activeResult.resumeFileName && (
-                <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-3 py-1 font-medium">
-                  Resume: {activeResult.resumeFileName}
+                <span
+                  className="text-xs rounded-full px-3 py-1 font-medium flex items-center gap-1"
+                  style={{background:'rgba(99,102,241,0.15)', color:'#a5b4fc', border:'1px solid rgba(99,102,241,0.3)'}}
+                >
+                  <span>📄</span> {activeResult.resumeFileName}
                 </span>
               )}
               {selectedHistory && (
