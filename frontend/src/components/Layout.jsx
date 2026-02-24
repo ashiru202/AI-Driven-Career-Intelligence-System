@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const ROLE_NAV = {
   ADMIN: [
@@ -25,6 +25,174 @@ const ROLE_NAV = {
     { path: '/skills-in-demand',   label: 'Skills in Demand',   icon: '🔥' },
   ],
 };
+
+// ── Notification system ─────────────────────────────────────────────────────
+const ROLE_NOTIFICATIONS = {
+  USER: [
+    { id: 'u1', icon: '👋', title: 'Welcome to CareerIQ!', body: 'Start by uploading your resume to get AI-powered insights.', link: '/resume-analyze', time: 'Just now' },
+    { id: 'u2', icon: '🔥', title: 'Trending Skills This Month', body: 'Python, AI/ML & Cloud are surging in job demand. See Skills in Demand.', link: '/skills-in-demand', time: '2h ago' },
+    { id: 'u3', icon: '🎯', title: 'Compare Jobs to Your Resume', body: 'Paste any job description and see your match score instantly.', link: '/compare-job', time: '5h ago' },
+    { id: 'u4', icon: '🗺️', title: 'Your AI Roadmap is Ready', body: 'Generate a personalised learning path based on your skill gaps.', link: '/my-roadmap', time: '1d ago' },
+    { id: 'u5', icon: '📈', title: 'Check Your Analytics', body: 'View your career progress, skill growth and activity over time.', link: '/analytics', time: '2d ago' },
+  ],
+  ADMIN: [
+    { id: 'a1', icon: '⚡', title: 'Platform Summary Ready', body: 'A new platform report has been generated. Review it now.', link: '/admin-report', time: '30m ago' },
+    { id: 'a2', icon: '👥', title: 'New User Registrations', body: 'Check the latest job seekers who joined this week.', link: '/users', time: '3h ago' },
+    { id: 'a3', icon: '🗺️', title: 'Roadmaps Activity', body: 'Users have generated new roadmaps. Review in All Roadmaps.', link: '/all-roadmaps', time: '1d ago' },
+  ],
+  STAFF: [
+    { id: 's1', icon: '📋', title: 'User Reports Pending', body: 'Several user reports are waiting for your review.', link: '/staff', time: '1h ago' },
+    { id: 's2', icon: '🗺️', title: 'New Roadmaps Created', body: 'Users have created new roadmaps. Check them out.', link: '/all-roadmaps', time: '4h ago' },
+  ],
+};
+
+function NotificationDropdown({ userRole }) {
+  const notifications = ROLE_NOTIFICATIONS[userRole] || ROLE_NOTIFICATIONS.USER;
+  const STORAGE_KEY = `notif_read_${userRole}`;
+
+  const [open, setOpen] = useState(false);
+  const [readIds, setReadIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')); }
+    catch { return new Set(); }
+  });
+  const ref = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const markAllRead = () => {
+    const all = new Set(notifications.map(n => n.id));
+    setReadIds(all);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...all]));
+  };
+
+  const markRead = (id) => {
+    const next = new Set(readIds);
+    next.add(id);
+    setReadIds(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
+  };
+
+  const unread = notifications.filter(n => !readIds.has(n.id)).length;
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      {/* Bell button */}
+      <button
+        title="Notifications"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background: open ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.05)',
+          border: `1px solid ${open ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.09)'}`,
+          borderRadius: 8, width: 34, height: 34,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', position: 'relative', flexShrink: 0,
+          transition: 'all 0.18s',
+        }}
+        onMouseEnter={e => { if (!open) e.currentTarget.style.background = 'rgba(99,102,241,0.14)'; }}
+        onMouseLeave={e => { if (!open) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M6 10a6 6 0 1 1 12 0v4l2 2H4l2-2v-4z" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinejoin="round"/>
+          <path d="M10 20a2 2 0 0 0 4 0" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round"/>
+        </svg>
+        {unread > 0 && (
+          <span style={{
+            position: 'absolute', top: -4, right: -4,
+            minWidth: 16, height: 16, borderRadius: 8,
+            background: '#6366f1', border: '2px solid #07071a',
+            fontSize: 9, fontWeight: 800, color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '0 3px',
+          }}>{unread}</span>
+        )}
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div style={{
+          position: 'absolute', top: 44, right: 0, zIndex: 200,
+          width: 340, maxHeight: 440, overflowY: 'auto',
+          background: '#13132b',
+          border: '1px solid rgba(99,102,241,0.25)',
+          borderRadius: 14,
+          boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+        }}>
+          {/* Header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '14px 16px 10px',
+            borderBottom: '1px solid rgba(255,255,255,0.07)',
+          }}>
+            <div>
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Notifications</span>
+              {unread > 0 && (
+                <span style={{
+                  marginLeft: 8, background: 'rgba(99,102,241,0.2)',
+                  color: '#a5b4fc', fontSize: 11, fontWeight: 700,
+                  borderRadius: 10, padding: '2px 7px',
+                }}>{unread} new</span>
+              )}
+            </div>
+            {unread > 0 && (
+              <button
+                onClick={markAllRead}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#818cf8', fontSize: 12, fontWeight: 600 }}
+              >Mark all read</button>
+            )}
+          </div>
+
+          {/* List */}
+          {notifications.map(n => {
+            const isRead = readIds.has(n.id);
+            return (
+              <Link
+                key={n.id}
+                to={n.link}
+                onClick={() => { markRead(n.id); setOpen(false); }}
+                style={{
+                  display: 'flex', gap: 12, padding: '12px 16px',
+                  textDecoration: 'none',
+                  background: isRead ? 'transparent' : 'rgba(99,102,241,0.06)',
+                  borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.12)'}
+                onMouseLeave={e => e.currentTarget.style.background = isRead ? 'transparent' : 'rgba(99,102,241,0.06)'}
+              >
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                  background: 'rgba(99,102,241,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 17,
+                }}>{n.icon}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: isRead ? 'rgba(255,255,255,0.65)' : '#fff', fontWeight: isRead ? 500 : 700, fontSize: 13 }}>{n.title}</span>
+                    {!isRead && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#6366f1', flexShrink: 0 }} />}
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 12, marginTop: 2, lineHeight: 1.4 }}>{n.body}</div>
+                  <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, marginTop: 4 }}>{n.time}</div>
+                </div>
+              </Link>
+            );
+          })}
+
+          {/* Footer */}
+          {unread === 0 && (
+            <div style={{ padding: '18px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.28)', fontSize: 13 }}>
+              ✓ All caught up
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const ROLE_COLOR = {
   ADMIN: { bg: 'rgba(239,68,68,0.15)',   text: '#f87171', border: 'rgba(239,68,68,0.3)' },
@@ -162,35 +330,72 @@ export default function Layout({ children }) {
       {/* ── Full-width top bar (spans sidebar + content) ── */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 100, flexShrink: 0,
-        width: '100%', height: 54,
-        background: '#0c0c20',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        width: '100%', height: 58,
+        background: 'linear-gradient(90deg, #0c0c20 0%, #0e0e25 100%)',
+        borderBottom: '1px solid rgba(99,102,241,0.18)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 20px',
-        boxShadow: '0 2px 16px rgba(0,0,0,0.35)',
+        boxShadow: '0 2px 24px rgba(0,0,0,0.45)',
       }}>
-        {/* Left: logo */}
-        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <span style={{ color: '#fff', fontSize: 12, fontWeight: 800, letterSpacing: -0.5 }}>AI</span>
+        {/* Left: logo + brand */}
+        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          {/* SVG Logo mark */}
+          <div style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            boxShadow: '0 0 14px rgba(99,102,241,0.45)',
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C8.5 2 6 4.5 6 7.5c0 1.5.5 2.8 1.4 3.8C6.5 12 6 12.9 6 14c0 2.2 1.8 4 4 4h.2c.5 1.2 1.6 2 2.8 2s2.3-.8 2.8-2H16c2.2 0 4-1.8 4-4 0-1.1-.5-2-1.4-2.7.9-1 1.4-2.3 1.4-3.8C20 4.5 17.5 2 14 2h-2z" fill="rgba(255,255,255,0.15)"/>
+              <circle cx="10" cy="9" r="1.5" fill="#fff"/>
+              <circle cx="14" cy="9" r="1.5" fill="#fff"/>
+              <path d="M9 13c0 0 1 2 3 2s3-2 3-2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M12 2v2M8 3.5l1 1.7M16 3.5l-1 1.7" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
           </div>
-          <span style={{ color: '#fff', fontWeight: 800, fontSize: 17, letterSpacing: -0.3 }}>
-            Career<span style={{ color: '#818cf8' }}>IQ</span>
-          </span>
+          {/* Brand text + tagline */}
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+            <span style={{ color: '#fff', fontWeight: 800, fontSize: 16, letterSpacing: -0.3 }}>
+              Career<span style={{ color: '#818cf8' }}>IQ</span>
+            </span>
+            <span style={{ color: 'rgba(255,255,255,0.32)', fontSize: 10, fontWeight: 500, letterSpacing: 0.3, marginTop: 2 }}>
+              AI-Driven Career Intelligence System
+            </span>
+          </div>
         </Link>
 
-        {/* Right: mobile hamburger */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Mobile hamburger */}
-          <button
-            className="md:hidden"
-            onClick={() => setSidebarOpen(o => !o)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex', flexDirection: 'column', gap: 4 }}
-          >
-            <div style={{ width: 20, height: 2, background: '#fff', borderRadius: 2 }} />
-            <div style={{ width: 20, height: 2, background: '#fff', borderRadius: 2 }} />
-            <div style={{ width: 14, height: 2, background: '#fff', borderRadius: 2 }} />
-          </button>
+        {/* Right: actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+
+          {/* Notification bell */}
+          <NotificationDropdown userRole={userRole} />
+
+          {/* Desktop user avatar pill */}
+          {userName && (
+            <div className="hidden md:flex" style={{
+              alignItems: 'center', gap: 8,
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.09)',
+              borderRadius: 20, padding: '4px 12px 4px 4px',
+              cursor: 'default',
+            }}>
+              <div style={{
+                width: 26, height: 26, borderRadius: '50%',
+                background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0,
+              }}>
+                {userName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+              </div>
+              <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 600 }}>
+                {userName.split(' ')[0]}
+              </span>
+            </div>
+          )}
+
+
         </div>
       </div>
 
@@ -198,7 +403,7 @@ export default function Layout({ children }) {
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
 
         {/* Desktop sidebar */}
-        <div className="hidden md:block" style={{ flexShrink: 0, position: 'sticky', top: 54, height: 'calc(100vh - 54px)', overflowY: 'auto' }}>
+        <div className="hidden md:block" style={{ flexShrink: 0, position: 'sticky', top: 58, height: 'calc(100vh - 58px)', overflowY: 'auto' }}>
           <SidebarContent location={location} navigate={navigate} userRole={userRole} userName={userName} />
         </div>
 
