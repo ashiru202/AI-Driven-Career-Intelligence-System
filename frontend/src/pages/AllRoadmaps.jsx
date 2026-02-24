@@ -115,13 +115,14 @@ const exportCSV = () => {
       <div
         style={{
           marginTop: 16,
-          border: "1px solid #ddd",
+          border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: 10,
           padding: 14,
           display: "grid",
           gridTemplateColumns: "1fr 180px 160px 220px",
           gap: 12,
           alignItems: "end",
+          background: "rgba(255,255,255,0.03)",
         }}
       >
         <div>
@@ -175,10 +176,10 @@ const exportCSV = () => {
       </div>
 
       {/* Table */}
-      <div style={{ marginTop: 12, border: "1px solid #ddd", borderRadius: 10, overflow: "hidden" }}>
+      <div style={{ marginTop: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, overflow: "hidden", background: "rgba(255,255,255,0.02)" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#f7f7f7" }}>
+            <tr style={{ background: "rgba(255,255,255,0.05)" }}>
               <th style={th}>Actions</th>
               <th style={th}>User</th>
               <th style={th}>Email</th>
@@ -206,12 +207,12 @@ const exportCSV = () => {
                   <td style={td}>{skills}</td>
                   <td style={td}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 120, height: 8, background: "#eee", borderRadius: 999 }}>
+                      <div style={{ width: 120, height: 8, background: "rgba(255,255,255,0.12)", borderRadius: 999 }}>
                         <div
                           style={{
                             width: `${completion}%`,
                             height: 8,
-                            background: "#222",
+                            background: "linear-gradient(90deg,#6366f1,#8b5cf6)",
                             borderRadius: 999,
                           }}
                         />
@@ -248,7 +249,7 @@ const exportCSV = () => {
         <div><b>Created:</b> {selected.createdAt ? new Date(selected.createdAt).toLocaleString() : "-"}</div>
       </div>
 
-      <div style={{ marginTop: 14, borderTop: "1px solid #eee", paddingTop: 12 }}>
+      <div style={{ marginTop: 14, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 12 }}>
         <h4 style={{ margin: "0 0 10px" }}>Skills</h4>
 
         {(selected.skillsToLearn || []).length ? (
@@ -259,9 +260,10 @@ const exportCSV = () => {
                 display: "flex",
                 justifyContent: "space-between",
                 padding: "10px 12px",
-                border: "1px solid #eee",
+                border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: 8,
-                marginBottom: 8
+                marginBottom: 8,
+                background: "rgba(255,255,255,0.04)"
               }}
             >
               <span><b>{s.skill}</b></span>
@@ -291,18 +293,19 @@ const modalOverlay = {
 
 const modalBox = {
   width: "min(800px, 96vw)",
-  background: "white",
+  background: "#12122a",
   borderRadius: 12,
   padding: 16,
-  border: "1px solid #ddd",
+  border: "1px solid rgba(255,255,255,0.1)",
   maxHeight: "85vh",
-  overflow: "auto"
+  overflow: "auto",
+  color: "#fff"
 };
 
-const label = { display: "block", fontSize: 12, opacity: 0.7, marginBottom: 6 };
-const input = { width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd" };
-const btn = { padding: "10px 14px", borderRadius: 8, border: "1px solid #ddd", background: "white" };
-const btnSmall = { padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", background: "white" };
+const label = { display: "block", fontSize: 12, opacity: 0.7, marginBottom: 6, color: "rgba(255,255,255,0.7)" };
+const input = { width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "#fff" };
+const btn = { padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", color: "#fff", cursor: "pointer" };
+const btnSmall = { padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", color: "#fff", cursor: "pointer" };
 
-const th = { textAlign: "left", padding: "12px 10px", borderBottom: "1px solid #eee", fontSize: 13 };
-const td = { padding: "12px 10px", borderBottom: "1px solid #f2f2f2", fontSize: 14 };
+const th = { textAlign: "left", padding: "12px 10px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: 13, color: "rgba(255,255,255,0.6)" };
+const td = { padding: "12px 10px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 14, color: "#e2e8f0" };
