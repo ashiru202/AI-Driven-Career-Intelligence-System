@@ -42,12 +42,19 @@ input:not([type='file']), textarea, select {
   background: rgba(255,255,255,0.06) !important;
   border-color: rgba(255,255,255,0.12) !important;
   color: #fff !important;
+  color-scheme: dark;
 }
 input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.3) !important; }
 input:focus, textarea:focus, select:focus {
   outline: none !important;
   border-color: #6366f1 !important;
   box-shadow: 0 0 0 3px rgba(99,102,241,0.2) !important;
+}
+
+/* Select dropdown options – dark background */
+select option {
+  background: #1a1a2e;
+  color: #fff;
 }
 
 /* Buttons (shadcn default variant) */
