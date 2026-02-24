@@ -9,6 +9,7 @@ import AllRoadmaps from "./pages/AllRoadmaps";
 import Logout from "./pages/Logout";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import StaffDashboard from "./pages/StaffDashboard";
+import StaffHome from "./pages/StaffHome";
 import RoleRoute from "./auth/RoleRoute";
 import Health from "./pages/Health";
 
@@ -127,6 +128,17 @@ export default function App() {
             <ProtectedRoute>
               <RoleRoute roles={["STAFF", "ADMIN"]}>
                 <AllRoadmaps />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/staff-home"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["STAFF"]}>
+                <StaffHome />
               </RoleRoute>
             </ProtectedRoute>
           }
