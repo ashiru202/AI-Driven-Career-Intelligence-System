@@ -98,12 +98,20 @@ const exportCSV = () => {
     return list;
   }, [roadmaps, search, minCompletion, sortBy]);
 
+  const statusColor = (status) => {
+    if (status === "COMPLETED") return { bg: "rgba(16,185,129,0.15)", color: "#6ee7b7", border: "rgba(16,185,129,0.3)" };
+    if (status === "IN_PROGRESS") return { bg: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "rgba(99,102,241,0.3)" };
+    return { bg: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", border: "rgba(255,255,255,0.1)" };
+  };
+
   return (
     <Layout>
-      <h2>All Roadmaps (Management)</h2>
-      <a href="/dashboard">← Back</a>
+      <div className="space-y-1" style={{ marginBottom: 20 }}>
+        <h2 className="text-3xl font-bold text-gray-900">All Roadmaps</h2>
+        <p className="text-gray-500">Management — view and filter all user roadmaps</p>
+      </div>
 
-      {err && <p style={{ marginTop: 12, color: "red" }}>{err}</p>}
+      {err && <p style={{ marginTop: 12, color: "#fca5a5" }}>{err}</p>}
 
       {/* Controls */}
       <div
@@ -221,42 +229,86 @@ const exportCSV = () => {
       {selected && (
   <div style={modalOverlay} onClick={() => setSelected(null)}>
     <div style={modalBox} onClick={(e) => e.stopPropagation()}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-        <h3 style={{ margin: 0 }}>Roadmap Details</h3>
-        <button style={btnSmall} onClick={() => setSelected(null)}>Close</button>
+
+      {/* Modal Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#fff" }}>Roadmap Details</h3>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.45)" }}>Full breakdown of this user's roadmap</p>
+        </div>
+        <button
+          onClick={() => setSelected(null)}
+          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13 }}
+        >✕ Close</button>
       </div>
 
-      <div style={{ marginTop: 12, lineHeight: 1.8 }}>
-        <div><b>User:</b> {selected.user?.name || "N/A"}</div>
-        <div><b>Email:</b> {selected.user?.email || "N/A"}</div>
-        <div><b>Role:</b> {selected.user?.role || "N/A"}</div>
-        <div><b>Target Role:</b> {selected.targetRole || "N/A"}</div>
-        <div><b>Created:</b> {selected.createdAt ? new Date(selected.createdAt).toLocaleString() : "-"}</div>
+      {/* Info Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+        {[
+          { label: "User", value: selected.user?.name || "N/A" },
+          { label: "Email", value: selected.user?.email || "N/A" },
+          { label: "Account Role", value: selected.user?.role || "N/A" },
+          { label: "Target Role", value: selected.targetRole || "N/A" },
+          { label: "Created", value: selected.createdAt ? new Date(selected.createdAt).toLocaleString() : "-" },
+          { label: "Completion", value: `${completionOf(selected)}%` },
+        ].map(({ label: l, value: v }) => (
+          <div key={l} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px 14px" }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>{l}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>{v}</div>
+          </div>
+        ))}
       </div>
 
-      <div style={{ marginTop: 14, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 12 }}>
-        <h4 style={{ margin: "0 0 10px" }}>Skills</h4>
+      {/* Progress bar */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
+          <span>Overall Progress</span>
+          <span style={{ color: "#a5b4fc", fontWeight: 600 }}>{completionOf(selected)}%</span>
+        </div>
+        <div style={{ height: 8, background: "rgba(255,255,255,0.1)", borderRadius: 999 }}>
+          <div style={{ width: `${completionOf(selected)}%`, height: 8, background: "linear-gradient(90deg,#6366f1,#8b5cf6)", borderRadius: 999, transition: "width 0.4s" }} />
+        </div>
+      </div>
 
+      {/* Skills */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 16 }}>
+        <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: 1 }}>
+          Skills ({(selected.skillsToLearn || []).length})
+        </h4>
         {(selected.skillsToLearn || []).length ? (
-          selected.skillsToLearn.map((s) => (
-            <div
-              key={s._id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "10px 12px",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 8,
-                marginBottom: 8,
-                background: "rgba(255,255,255,0.04)"
-              }}
-            >
-              <span><b>{s.skill}</b></span>
-              <span>{s.status}</span>
-            </div>
-          ))
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {selected.skillsToLearn.map((s) => {
+              const sc = statusColor(s.status);
+              return (
+                <div
+                  key={s._id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "10px 14px",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 10,
+                    background: "rgba(255,255,255,0.03)",
+                  }}
+                >
+                  <span style={{ fontWeight: 500, color: "#e2e8f0", fontSize: 14 }}>{s.skill}</span>
+                  <span style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: "3px 10px",
+                    borderRadius: 999,
+                    background: sc.bg,
+                    color: sc.color,
+                    border: `1px solid ${sc.border}`,
+                    letterSpacing: 0.5,
+                  }}>{s.status}</span>
+                </div>
+              );
+            })}
+          </div>
         ) : (
-          <p>No skills.</p>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 14 }}>No skills added yet.</p>
         )}
       </div>
     </div>
