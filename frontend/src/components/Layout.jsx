@@ -11,7 +11,7 @@ const ROLE_NAV = {
     { path: '/all-roadmaps',     label: 'All Roadmaps',     icon: '🗺️' },
   ],
   STAFF: [
-    { path: '/staff',            label: 'Staff Dashboard',  icon: '🖥️' },
+    { path: '/staff',            label: 'User Reports',     icon: '📋' },
     { path: '/all-roadmaps',     label: 'All Roadmaps',     icon: '🗺️' },
   ],
   USER: [

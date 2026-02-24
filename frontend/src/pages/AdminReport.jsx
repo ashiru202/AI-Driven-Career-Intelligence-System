@@ -5,6 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 
+// Mini progress bar used throughout the page
+function Bar({ pct, colorClass }) {
+  return (
+    <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+      <div
+        className={`h-1.5 rounded-full ${colorClass}`}
+        style={{ width: `${Math.min(pct, 100)}%` }}
+      />
+    </div>
+  );
+}
+
 export default function AdminReport() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,8 +67,12 @@ export default function AdminReport() {
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          Generating platform report...
+        <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
+          <svg className="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
+          </svg>
+          <p className="text-sm font-medium">Loading user reports…</p>
         </div>
       </Layout>
     );
@@ -65,159 +81,206 @@ export default function AdminReport() {
   if (error) {
     return (
       <Layout>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">{error}</div>
+        <div className="flex flex-col items-center justify-center h-64 gap-3">
+          <span className="text-5xl">⚠️</span>
+          <p className="text-red-600 font-semibold">{error}</p>
+          <Button onClick={() => fetchReport()}>Try Again</Button>
+        </div>
       </Layout>
     );
   }
 
   const p = report.platform;
+  const topMax = report.skillDemand?.top?.[0]?.count || 1;
+  const leastMax = report.skillDemand?.least?.[0]?.count || 1;
+  const gapMax = report.commonGaps?.[0]?.count || 1;
+
+  const kpiStats = [
+    { label: "Total Job Seekers", value: p.totalUsers,        icon: "👥", color: "text-blue-600",   ring: "ring-blue-100",   bg: "bg-blue-50"   },
+    { label: "Staff Members",     value: p.totalStaff,        icon: "🛡️", color: "text-purple-600", ring: "ring-purple-100", bg: "bg-purple-50" },
+    { label: "Resumes Uploaded",  value: p.totalResumes,      icon: "📄", color: "text-indigo-600", ring: "ring-indigo-100", bg: "bg-indigo-50" },
+    { label: "Roadmaps Created",  value: p.totalRoadmaps,     icon: "🗺️", color: "text-teal-600",   ring: "ring-teal-100",   bg: "bg-teal-50"   },
+    { label: "Job Comparisons",   value: p.totalComparisons,  icon: "🔍", color: "text-orange-600", ring: "ring-orange-100", bg: "bg-orange-50" },
+    { label: "Admins",            value: p.totalAdmins,       icon: "⚙️", color: "text-gray-600",   ring: "ring-gray-100",   bg: "bg-gray-50"   },
+  ];
 
   return (
     <Layout>
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="flex items-start justify-between flex-wrap gap-3">
+      <div className="space-y-8 pb-10">
+
+        {/* ── Page Header ── */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Platform Summary Report</h2>
-            <p className="text-gray-500 mt-1">
-              Generated: {new Date(report.generatedAt).toLocaleString()}
+            <h2 className="text-3xl font-bold text-gray-900">User Reports</h2>
+            <p className="text-gray-500 mt-1">Platform-wide insights across all users &amp; activity</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Last updated: {new Date(report.generatedAt).toLocaleString()}
             </p>
           </div>
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant="outline"
               onClick={() => fetchReport(true)}
               disabled={refreshing}
+              className="border-gray-200 text-gray-600 hover:bg-gray-50"
             >
-              {refreshing ? "Refreshing..." : "Refresh"}
+              {refreshing ? "Refreshing…" : "↺ Refresh"}
             </Button>
-            <Button
-              onClick={downloadPDF}
-            >
+            <Button onClick={downloadPDF} className="bg-blue-600 hover:bg-blue-700 text-white">
               Download PDF
             </Button>
           </div>
         </div>
 
-        {/* Platform Overview */}
-        <div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Platform Overview</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: "Total Job Seekers", value: p.totalUsers, color: "text-blue-600" },
-              { label: "Total Staff", value: p.totalStaff, color: "text-purple-600" },
-              { label: "Total Resumes", value: p.totalResumes, color: "text-indigo-600" },
-              { label: "Total Roadmaps", value: p.totalRoadmaps, color: "text-teal-600" },
-              { label: "Total Comparisons", value: p.totalComparisons, color: "text-orange-600" },
-              { label: "Avg Match Score", value: `${p.avgMatchScore}%`, color: "text-green-600" },
-              { label: "Avg CV Completeness", value: `${p.avgCvCompleteness}%`, color: "text-yellow-600" },
-              { label: "Total Admins", value: p.totalAdmins, color: "text-gray-600" },
-            ].map((s) => (
-              <Card key={s.label}>
-                <CardContent className="pt-4">
-                  <p className="text-xs text-gray-500">{s.label}</p>
-                  <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        {/* ── KPI Grid ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {kpiStats.map((s) => (
+            <Card key={s.label} className={`ring-1 ${s.ring} border-0 ${s.bg}`}>
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xl">{s.icon}</span>
+                </div>
+                <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-xs text-gray-500 mt-0.5 leading-tight">{s.label}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
-        {/* Skill Demand */}
+        {/* ── Score Health ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card className="border border-green-100 bg-green-50">
+            <CardContent className="pt-5 pb-5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Avg Match Score</p>
+                  <p className="text-4xl font-extrabold text-green-700 mt-1">{p.avgMatchScore}%</p>
+                </div>
+                <span className="text-4xl">🎯</span>
+              </div>
+              <Bar pct={p.avgMatchScore} colorClass="bg-green-500" />
+              <p className="text-xs text-green-600 mt-2">How well users match job requirements on average</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-yellow-100 bg-yellow-50">
+            <CardContent className="pt-5 pb-5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-xs font-semibold text-yellow-700 uppercase tracking-wide">Avg CV Completeness</p>
+                  <p className="text-4xl font-extrabold text-yellow-700 mt-1">{p.avgCvCompleteness}%</p>
+                </div>
+                <span className="text-4xl">📝</span>
+              </div>
+              <Bar pct={p.avgCvCompleteness} colorClass="bg-yellow-500" />
+              <p className="text-xs text-yellow-600 mt-2">Average completeness of user resumes across the platform</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Skill Demand ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Top Skills */}
           <Card>
-            <CardHeader>
-              <CardTitle>🔥 Top Demanding Skills</CardTitle>
+            <CardHeader className="pb-3 border-b border-gray-100">
+              <CardTitle className="text-base">🔥 Top In-Demand Skills</CardTitle>
+              <p className="text-xs text-gray-400">Skills most sought after by job postings</p>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4 space-y-3">
               {report.skillDemand?.top?.length > 0 ? (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-gray-500 border-b">
-                      <th className="pb-2">#</th>
-                      <th className="pb-2">Skill</th>
-                      <th className="pb-2">Occurrences</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.skillDemand.top.map((item, i) => (
-                      <tr key={item.skill} className="border-b last:border-0">
-                        <td className="py-2 text-gray-400">{i + 1}</td>
-                        <td className="py-2 font-medium capitalize">{item.skill}</td>
-                        <td className="py-2">
-                          <Badge className="bg-blue-100 text-blue-700">{item.count}</Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                report.skillDemand.top.map((item, i) => (
+                  <div key={item.skill} className="flex items-center gap-3">
+                    <span className="text-xs text-gray-400 font-bold w-4 shrink-0">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium capitalize text-gray-700 truncate">{item.skill}</span>
+                        <Badge className="ml-2 shrink-0 bg-blue-100 text-blue-700 border-0 text-xs">{item.count}</Badge>
+                      </div>
+                      <Bar pct={(item.count / topMax) * 100} colorClass="bg-blue-500" />
+                    </div>
+                  </div>
+                ))
               ) : (
-                <p className="text-sm text-gray-400">No skill demand data yet.</p>
+                <div className="py-8 text-center text-gray-400">
+                  <p className="text-3xl mb-1">📭</p>
+                  <p className="text-sm">No skill demand data yet</p>
+                </div>
               )}
             </CardContent>
           </Card>
 
+          {/* Least Demanded */}
           <Card>
-            <CardHeader>
-              <CardTitle>📉 Least Demanding Skills</CardTitle>
+            <CardHeader className="pb-3 border-b border-gray-100">
+              <CardTitle className="text-base">📉 Least Demanded Skills</CardTitle>
+              <p className="text-xs text-gray-400">Skills with lower market demand</p>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4 space-y-3">
               {report.skillDemand?.least?.length > 0 ? (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-gray-500 border-b">
-                      <th className="pb-2">#</th>
-                      <th className="pb-2">Skill</th>
-                      <th className="pb-2">Occurrences</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.skillDemand.least.map((item, i) => (
-                      <tr key={item.skill} className="border-b last:border-0">
-                        <td className="py-2 text-gray-400">{i + 1}</td>
-                        <td className="py-2 font-medium capitalize">{item.skill}</td>
-                        <td className="py-2">
-                          <Badge className="bg-gray-100 text-gray-600">{item.count}</Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                report.skillDemand.least.map((item, i) => (
+                  <div key={item.skill} className="flex items-center gap-3">
+                    <span className="text-xs text-gray-400 font-bold w-4 shrink-0">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium capitalize text-gray-700 truncate">{item.skill}</span>
+                        <Badge className="ml-2 shrink-0 bg-gray-100 text-gray-600 border-0 text-xs">{item.count}</Badge>
+                      </div>
+                      <Bar pct={(item.count / leastMax) * 100} colorClass="bg-gray-400" />
+                    </div>
+                  </div>
+                ))
               ) : (
-                <p className="text-sm text-gray-400">No data yet.</p>
+                <div className="py-8 text-center text-gray-400">
+                  <p className="text-3xl mb-1">📭</p>
+                  <p className="text-sm">No data available yet</p>
+                </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Common Gaps */}
+        {/* ── Skill Gaps ── */}
         <Card>
-          <CardHeader>
-            <CardTitle>⚠️ Most Common Skill Gaps</CardTitle>
+          <CardHeader className="pb-3 border-b border-gray-100">
+            <CardTitle className="text-base">⚠️ Most Common Skill Gaps</CardTitle>
+            <p className="text-xs text-gray-400">Skills that users are most frequently missing</p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-5">
             {report.commonGaps?.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {report.commonGaps.map((item, i) => (
-                  <div
-                    key={item.skill}
-                    className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-400 text-sm">{i + 1}.</span>
-                      <span className="font-medium capitalize text-sm">{item.skill}</span>
+              <div className="space-y-3">
+                {report.commonGaps.map((item, i) => {
+                  const pct = Math.round((item.count / gapMax) * 100);
+                  const barColor = pct > 66 ? "bg-red-500" : pct > 33 ? "bg-orange-400" : "bg-yellow-400";
+                  const badgeClass = pct > 66
+                    ? "bg-red-100 text-red-700"
+                    : pct > 33
+                    ? "bg-orange-100 text-orange-700"
+                    : "bg-yellow-100 text-yellow-700";
+                  return (
+                    <div key={item.skill} className="flex items-center gap-3">
+                      <span className="text-xs text-gray-400 font-bold w-4 shrink-0">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium capitalize text-gray-700 truncate">{item.skill}</span>
+                          <Badge className={`ml-2 shrink-0 border-0 text-xs ${badgeClass}`}>
+                            {item.count} users missing
+                          </Badge>
+                        </div>
+                        <Bar pct={pct} colorClass={barColor} />
+                      </div>
                     </div>
-                    <Badge className="bg-red-100 text-red-600">
-                      {item.count} users missing
-                    </Badge>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
-              <p className="text-sm text-gray-400">No gap data available yet.</p>
+              <div className="py-10 text-center text-gray-400">
+                <p className="text-4xl mb-2">✅</p>
+                <p className="text-sm font-medium">No significant skill gaps detected</p>
+              </div>
             )}
           </CardContent>
         </Card>
+
       </div>
     </Layout>
   );
