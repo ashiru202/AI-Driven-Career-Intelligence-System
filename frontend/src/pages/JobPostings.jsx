@@ -122,21 +122,40 @@ function JobCard({ job }) {
     .toUpperCase();
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow flex flex-col gap-3 bg-white">
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+    <div
+      style={{
+        borderRadius: 14,
+        border: '1px solid rgba(255,255,255,0.08)',
+        padding: 16,
+        background: 'rgba(255,255,255,0.04)',
+        display: 'flex', flexDirection: 'column', gap: 12,
+        transition: 'all 0.2s',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'linear-gradient(135deg,rgba(99,102,241,0.14),rgba(139,92,246,0.08))';
+        e.currentTarget.style.border = '1px solid rgba(99,102,241,0.4)';
+        e.currentTarget.style.boxShadow = '0 4px 24px rgba(99,102,241,0.12)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+        e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)';
+        e.currentTarget.style.boxShadow = 'none';
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
           {initials || "?"}
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 text-sm leading-tight">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontWeight: 600, fontSize: 13, color: 'rgba(255,255,255,0.9)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {job.title}
           </p>
-          <p className="text-xs text-gray-500 mt-0.5">{job.company}</p>
-          <p className="text-xs text-gray-400">📍 {job.location}</p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{job.company}</p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginTop: 1 }}>📍 {job.location}</p>
         </div>
       </div>
       {(job.salaryMin || job.salaryMax) && (
-        <p className="text-xs text-green-700 bg-green-50 rounded px-2 py-1 font-medium">
+        <p style={{ fontSize: 11, fontWeight: 600, color: '#4ade80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 8, padding: '4px 10px' }}>
           💰{" "}
           {job.salaryMin && job.salaryMax
             ? `$${job.salaryMin.toLocaleString()} – $${job.salaryMax.toLocaleString()}`
@@ -146,17 +165,28 @@ function JobCard({ job }) {
         </p>
       )}
       {job.description && (
-        <p className="text-xs text-gray-600 line-clamp-2">{job.description}</p>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {job.description}
+        </p>
       )}
       <a
         href={job.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-auto"
+        style={{ marginTop: 'auto', textDecoration: 'none' }}
       >
-        <Button size="sm" className="w-full text-xs">
-          View Job →
-        </Button>
+        <button
+          style={{
+            width: '100%', padding: '7px 0', borderRadius: 9,
+            background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+            border: 'none', color: '#fff', fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', transition: 'opacity 0.15s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.82'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+        >
+          View Job 
+        </button>
       </a>
     </div>
   );
@@ -352,9 +382,16 @@ export default function JobPostings() {
                   </CardDescription>
                 </div>
                 {jobPostings?.available && totalJobs > 0 && (
-                  <Badge className="text-xs bg-indigo-100 text-indigo-700 border-indigo-200">
+                  <span style={{
+                    fontSize: 12, fontWeight: 700,
+                    background: 'rgba(99,102,241,0.18)',
+                    color: '#a5b4fc',
+                    border: '1px solid rgba(99,102,241,0.35)',
+                    borderRadius: 100,
+                    padding: '4px 14px',
+                  }}>
                     {totalJobs} jobs found
-                  </Badge>
+                  </span>
                 )}
               </div>
             </CardHeader>
