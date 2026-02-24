@@ -33,6 +33,8 @@ export default function UserManagement() {
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState({});
+  const [deleting, setDeleting] = useState({});
+  const [confirmDelete, setConfirmDelete] = useState(null); // user object to delete
   const [toast, setToast] = useState(null);
 
   const showToast = (message, type = "success") => setToast({ message, type });
@@ -84,11 +86,57 @@ export default function UserManagement() {
     }
   };
 
+  const deleteUser = async (user) => {
+    setDeleting((prev) => ({ ...prev, [user._id]: true }));
+    try {
+      await api.delete(`/api/admin/users/${user._id}`);
+      showToast(`${user.name}'s account has been permanently deleted`, "success");
+      setConfirmDelete(null);
+      loadUsers();
+    } catch (err) {
+      showToast(err.response?.data?.error?.message || "Failed to delete user", "error");
+    } finally {
+      setDeleting((prev) => ({ ...prev, [user._id]: false }));
+    }
+  };
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <Layout>
       {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+
+      {/* Confirm Delete Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-[#13132b] border border-white/10 rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <h3 className="text-lg font-bold text-white mb-2">Delete Account?</h3>
+            <p className="text-white/60 text-sm mb-1">
+              You are about to permanently delete:
+            </p>
+            <p className="text-white font-semibold mb-1">{confirmDelete.name}</p>
+            <p className="text-white/50 text-xs mb-5">{confirmDelete.email}</p>
+            <p className="text-red-400 text-xs mb-5">
+              ⚠️ This action cannot be undone. All data associated with this account will be lost.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                className="flex-1 bg-red-600 text-white hover:bg-red-700"
+                disabled={deleting[confirmDelete._id]}
+                onClick={() => deleteUser(confirmDelete)}
+              >
+                {deleting[confirmDelete._id] ? "Deleting..." : "Yes, Delete"}
+              </Button>
+              <Button
+                className="flex-1 bg-white/10 text-white hover:bg-white/20"
+                onClick={() => setConfirmDelete(null)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-6">
         {/* Header */}
@@ -140,12 +188,12 @@ export default function UserManagement() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-gray-500 border-b">
+                    <tr className="text-left text-white/40 border-b border-white/10">
                       <th className="pb-3">Name</th>
                       <th className="pb-3">Email</th>
                       <th className="pb-3">Status</th>
                       <th className="pb-3">Joined</th>
-                      <th className="pb-3">Action</th>
+                      <th className="pb-3" colSpan={2}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -183,6 +231,16 @@ export default function UserManagement() {
                               : u.active
                               ? "Disable"
                               : "Enable"}
+                          </Button>
+                        </td>
+                        <td className="py-3">
+                          <Button
+                            size="sm"
+                            disabled={deleting[u._id]}
+                            onClick={() => setConfirmDelete(u)}
+                            className="bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60"
+                          >
+                            🗑 Delete
                           </Button>
                         </td>
                       </tr>

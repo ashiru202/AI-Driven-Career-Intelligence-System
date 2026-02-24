@@ -146,9 +146,34 @@ const getAdminStats = asyncHandler(async (req, res) => {
   }));
 });
 
+// Admin can permanently delete a job seeker account
+const deleteUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw AppError.notFound('User not found');
+  }
+
+  // Only allow deleting USER role accounts from this endpoint
+  if (user.role !== 'USER') {
+    throw AppError.badRequest('BAD_REQUEST', 'Only job seeker accounts can be deleted from this endpoint');
+  }
+
+  // Prevent deleting own account
+  if (user._id.toString() === req.user.id) {
+    throw AppError.badRequest('BAD_REQUEST', 'You cannot delete your own account');
+  }
+
+  await User.findByIdAndDelete(userId);
+
+  res.json(successResponse(null, `Account for ${user.name} has been permanently deleted`));
+});
+
 module.exports = { 
   createStaff, 
   listUsers, 
   toggleUserStatus, 
-  getAdminStats 
+  getAdminStats,
+  deleteUser
 };
