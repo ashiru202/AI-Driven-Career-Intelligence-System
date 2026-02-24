@@ -119,12 +119,11 @@ export default function AdminReport() {
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button
-              variant="outline"
               onClick={() => fetchReport(true)}
               disabled={refreshing}
-              className="border-gray-200 text-gray-600 hover:bg-gray-50"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {refreshing ? "Refreshing…" : "↺ Refresh"}
+              {refreshing ? "Refreshing…" : "Refresh"}
             </Button>
             <Button onClick={downloadPDF} className="bg-blue-600 hover:bg-blue-700 text-white">
               Download PDF

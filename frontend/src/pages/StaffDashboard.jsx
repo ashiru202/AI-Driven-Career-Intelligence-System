@@ -238,7 +238,7 @@ export default function StaffDashboard() {
             {/* Empty state */}
             {!selectedUser && (
               <div style={{ ...card, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 320, gap: 12 }}>
-                <span style={{ fontSize: 48 }}>👈</span>
+                
                 <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 15 }}>Select a user from the list to view their analysis</p>
               </div>
             )}
