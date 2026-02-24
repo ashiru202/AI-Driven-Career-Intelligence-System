@@ -111,7 +111,7 @@ export default function AdminReport() {
         {/* ── Page Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">User Reports</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Platform Reports</h2>
             <p className="text-gray-500 mt-1">Platform-wide insights across all users &amp; activity</p>
             <p className="text-xs text-gray-400 mt-0.5">
               Last updated: {new Date(report.generatedAt).toLocaleString()}
