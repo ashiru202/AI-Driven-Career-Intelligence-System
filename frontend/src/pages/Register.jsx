@@ -99,11 +99,9 @@ export default function Register() {
       </button>
 
       <div style={{ width: '100%', maxWidth: 440, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 22, padding: '40px 36px', backdropFilter: 'blur(20px)', position: 'relative' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: '#fff', fontSize: 15, fontWeight: 800 }}>AI</span>
-          </div>
-          <span style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>AptitudeX</span>
+        <div style={{ marginBottom: 28 }}>
+          <span className="brand-text" style={{ fontSize: 20 }}>AptitudeX</span>
+          <div style={{ color: 'rgba(255,255,255,0.38)', fontSize: 11, fontWeight: 500, letterSpacing: 0.4, marginTop: 3, textTransform: 'uppercase' }}>AI-Driven Career Intelligence System</div>
         </div>
 
         <h1 style={{ color: '#fff', fontSize: 24, fontWeight: 800, marginBottom: 6 }}>Create your account</h1>

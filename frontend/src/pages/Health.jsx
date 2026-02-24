@@ -52,11 +52,9 @@ export default function Health() {
 
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 22, padding: '36px 32px', backdropFilter: 'blur(20px)' }}>
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 9, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: '#fff', fontSize: 14, fontWeight: 800 }}>AI</span>
-            </div>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: 17 }}>AptitudeX</span>
+          <div style={{ marginBottom: 8 }}>
+            <span className="brand-text" style={{ fontSize: 18 }}>AptitudeX</span>
+            <div style={{ color: 'rgba(255,255,255,0.38)', fontSize: 10.5, fontWeight: 500, letterSpacing: 0.4, marginTop: 3, textTransform: 'uppercase' }}>AI-Driven Career Intelligence System</div>
           </div>
           <h1 style={{ color: '#fff', fontSize: 24, fontWeight: 800, marginBottom: 6, marginTop: 16 }}>System Health</h1>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, marginBottom: 28 }}>Live status of all platform services</p>

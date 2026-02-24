@@ -831,21 +831,11 @@ export default function Layout({ children }) {
         </div>
 
         {/* Center: brand */}
-        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 9,
-            background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-            boxShadow: '0 0 12px rgba(99,102,241,0.4)',
-            fontSize: 13, fontWeight: 800, color: '#fff',
-          }}>AI</div>
-          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-            <span style={{ color: '#fff', fontWeight: 800, fontSize: 16, letterSpacing: -0.3 }}>
-              Aptitude<span style={{ color: '#818cf8' }}>X</span>
-            </span>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 500, letterSpacing: 0.3, marginTop: 2 }}>
-              AI-Driven Career Intelligence
+        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, alignItems: 'center' }}>
+            <span className="brand-text" style={{ fontSize: 17 }}>AptitudeX</span>
+            <span style={{ color: 'rgba(255,255,255,0.38)', fontSize: 9.5, fontWeight: 500, letterSpacing: 0.5, marginTop: 3, textTransform: 'uppercase' }}>
+              AI-Driven Career Intelligence System
             </span>
           </div>
         </Link>

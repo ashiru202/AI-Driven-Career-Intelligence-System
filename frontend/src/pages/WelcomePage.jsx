@@ -113,11 +113,9 @@ function Navbar() {
     >
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 68 }}>
         {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ color: "#fff", fontSize: 18, fontWeight: 800 }}>AI</span>
-          </div>
-          <span style={{ color: "#fff", fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>AptitudeX</span>
+        <div style={{ cursor: "pointer" }} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+          <span className="brand-text" style={{ fontSize: 20 }}>AptitudeX</span>
+          <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 10.5, fontWeight: 500, letterSpacing: 0.5, marginTop: 2, textTransform: "uppercase" }}>AI-Driven Career Intelligence System</div>
         </div>
 
         {/* Desktop nav links */}
@@ -224,11 +222,6 @@ function Hero() {
       {/* Grid lines overlay */}
       <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px)", backgroundSize: "50px 50px", pointerEvents: "none" }} />
 
-      {/* Badge */}
-      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 100, padding: "6px 16px", marginBottom: 28, animation: "fadeInDown 0.8s ease" }}>
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6366f1", display: "inline-block", animation: "pulse 2s infinite" }} />
-        <span style={{ color: "#a5b4fc", fontSize: 13, fontWeight: 600, letterSpacing: "0.5px" }}>AI-Powered Career Intelligence</span>
-      </div>
 
       {/* Headline */}
       <h1 style={{ fontSize: "clamp(2.4rem, 6vw, 5.2rem)", fontWeight: 800, color: "#fff", lineHeight: 1.12, marginBottom: 20, letterSpacing: "-1px", animation: "fadeInUp 0.9s ease 0.1s both" }}>
@@ -259,7 +252,7 @@ function Hero() {
           onMouseEnter={(e) => { e.target.style.transform = "translateY(-3px)"; e.target.style.boxShadow = "0 14px 40px rgba(99,102,241,0.6)"; }}
           onMouseLeave={(e) => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 8px 30px rgba(99,102,241,0.5)"; }}
         >
-          Get Started Free →
+          Get Started Free 
         </button>
         <button
           onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}
@@ -303,38 +296,6 @@ function Hero() {
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div style={{ position: "absolute", bottom: 30, left: "50%", transform: "translateX(-50%)", animation: "bounce 2s infinite" }}>
-        <div style={{ width: 24, height: 38, border: "2px solid rgba(255,255,255,0.2)", borderRadius: 12, display: "flex", justifyContent: "center", paddingTop: 6 }}>
-          <div style={{ width: 4, height: 8, borderRadius: 2, background: "rgba(255,255,255,0.4)", animation: "scrollDot 2s infinite" }} />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ════════════════════════════════════════════
-   STATS
-════════════════════════════════════════════ */
-function Stats() {
-  const stats = [
-    { value: 1200, suffix: "+", label: "Active Users" },
-    { value: 98, suffix: "%", label: "Satisfaction Rate" },
-    { value: 15000, suffix: "+", label: "Skills Analysed" },
-    { value: 3400, suffix: "+", label: "Roadmaps Generated" },
-  ];
-  return (
-    <section style={{ background: "linear-gradient(90deg,#0a0a1e,#0d0d2b)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "48px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 32, textAlign: "center" }}>
-        {stats.map(({ value, suffix, label }) => (
-          <FadeUp key={label}>
-            <div style={{ fontSize: "2.6rem", fontWeight: 800, background: "linear-gradient(135deg,#6366f1,#a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-              <Counter target={value} suffix={suffix} />
-            </div>
-            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, fontWeight: 500, marginTop: 6 }}>{label}</div>
-          </FadeUp>
-        ))}
-      </div>
     </section>
   );
 }
@@ -537,69 +498,6 @@ function AboutUs() {
 }
 
 /* ════════════════════════════════════════════
-   TESTIMONIALS
-════════════════════════════════════════════ */
-const testimonials = [
-  { name: "Kavya S.", role: "Software Engineer Graduate", text: "I uploaded my resume and immediately saw I was missing Docker and Kubernetes for DevOps roles. The roadmap was spot-on. Got hired 6 weeks later.", avatar: "KS", color: "#6366f1" },
-  { name: "Thilina R.", role: "Final Year Undergraduate", text: "Staff can now see every student's skill gaps in one place. This is exactly what our careers office needed. Incredibly well built.", avatar: "TR", color: "#8b5cf6" },
-  { name: "Amara N.", role: "Career Counsellor", text: "The analytics dashboard shows which skills are most in demand. We used it to redesign our entire course curriculum recommendation process.", avatar: "AN", color: "#34d399" },
-];
-
-function Testimonials() {
-  return (
-    <section style={{ background: "#07071a", padding: "100px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <FadeUp>
-          <div style={{ textAlign: "center", marginBottom: 60 }}>
-            <span style={{ color: "#f59e0b", fontWeight: 700, fontSize: 13, letterSpacing: "2px", textTransform: "uppercase" }}>Testimonials</span>
-            <h2 style={{ fontSize: "clamp(2rem,4vw,3rem)", fontWeight: 800, color: "#fff", marginTop: 12 }}>
-              Loved by Career Seekers
-            </h2>
-          </div>
-        </FadeUp>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 24 }}>
-          {testimonials.map(({ name, role, text, avatar, color }, i) => (
-            <FadeUp key={name} delay={i * 0.1}>
-              <TestimonialCard name={name} role={role} text={text} avatar={avatar} color={color} />
-            </FadeUp>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function TestimonialCard({ name, role, text, avatar, color }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: hovered ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.025)",
-        border: `1px solid ${hovered ? color + "40" : "rgba(255,255,255,0.07)"}`,
-        borderRadius: 18, padding: "28px 26px",
-        transition: "all 0.3s", transform: hovered ? "translateY(-4px)" : "translateY(0)",
-      }}
-    >
-      <div style={{ color: "#f59e0b", fontSize: 20, marginBottom: 14 }}>★★★★★</div>
-      <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 15, lineHeight: 1.7, marginBottom: 22, fontStyle: "italic" }}>
-        "{text}"
-      </p>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 42, height: 42, borderRadius: "50%", background: `linear-gradient(135deg,${color},${color}99)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#fff" }}>
-          {avatar}
-        </div>
-        <div>
-          <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>{name}</div>
-          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>{role}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════
    CTA
 ════════════════════════════════════════════ */
 function CTA() {
@@ -660,11 +558,9 @@ function Footer() {
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 40, marginBottom: 40 }}>
           {/* Brand */}
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>AI</span>
-              </div>
-              <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>AptitudeX</span>
+            <div style={{ marginBottom: 16 }}>
+              <span className="brand-text" style={{ fontSize: 17 }}>AptitudeX</span>
+              <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 10, fontWeight: 500, letterSpacing: 0.4, marginTop: 3, textTransform: "uppercase" }}>AI-Driven Career Intelligence System</div>
             </div>
             <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14, lineHeight: 1.7, maxWidth: 260 }}>
               AI-powered career intelligence for the modern job seeker. Analyse, compare, and grow.
@@ -701,7 +597,7 @@ function Footer() {
           </div>
         </div>
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 13 }}>© 2026 AptitudeX · AI-Driven Career Intelligence System</span>
+          <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 13 }}>© 2026 AptitudeX &middot; AI-Driven Career Intelligence System</span>
           <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 13 }}>Built with ♥ using MERN + FastAPI</span>
         </div>
       </div>
@@ -774,11 +670,9 @@ export default function WelcomePage() {
     <div style={{ fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif", background: "#0a0a1e" }}>
       <Navbar />
       <Hero />
-      <Stats />
       <Features />
       <HowItWorks />
       <AboutUs />
-      <Testimonials />
       <CTA />
       <Footer />
     </div>
