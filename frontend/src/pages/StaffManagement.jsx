@@ -188,9 +188,9 @@ export default function StaffManagement() {
                     </thead>
                     <tbody>
                       {staff.map((s) => (
-                        <tr key={s._id} className="border-b last:border-0 hover:bg-gray-50">
-                          <td className="py-3 font-medium">{s.name}</td>
-                          <td className="py-3 text-gray-600">{s.email}</td>
+                        <tr key={s._id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.06] transition-colors">
+                          <td className="py-3 font-medium text-white/90">{s.name}</td>
+                          <td className="py-3 text-white/55">{s.email}</td>
                           <td className="py-3">
                             <Badge
                               className={
@@ -202,7 +202,7 @@ export default function StaffManagement() {
                               {s.active ? "Active" : "Disabled"}
                             </Badge>
                           </td>
-                          <td className="py-3 text-gray-500">
+                          <td className="py-3 text-white/45">
                             {new Date(s.createdAt).toLocaleDateString()}
                           </td>
                         </tr>

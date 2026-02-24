@@ -150,9 +150,9 @@ export default function UserManagement() {
                   </thead>
                   <tbody>
                     {users.map((u) => (
-                      <tr key={u._id} className="border-b last:border-0 hover:bg-gray-50">
-                        <td className="py-3 font-medium">{u.name}</td>
-                        <td className="py-3 text-gray-600">{u.email}</td>
+                      <tr key={u._id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.06] transition-colors">
+                        <td className="py-3 font-medium text-white/90">{u.name}</td>
+                        <td className="py-3 text-white/55">{u.email}</td>
                         <td className="py-3">
                           <Badge
                             className={
@@ -164,7 +164,7 @@ export default function UserManagement() {
                             {u.active ? "Active" : "Disabled"}
                           </Badge>
                         </td>
-                        <td className="py-3 text-gray-500">
+                        <td className="py-3 text-white/45">
                           {new Date(u.createdAt).toLocaleDateString()}
                         </td>
                         <td className="py-3">

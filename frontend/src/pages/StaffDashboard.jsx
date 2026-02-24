@@ -108,19 +108,19 @@ export default function StaffDashboard() {
                 ) : filteredUsers.length === 0 ? (
                   <p className="text-sm text-gray-500 p-4">No users found.</p>
                 ) : (
-                  <ul className="divide-y divide-gray-100">
+                  <ul className="divide-y divide-white/[0.06]">
                     {filteredUsers.map((u) => (
                       <li
                         key={u._id}
                         onClick={() => selectUser(u)}
-                        className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${
+                        className={`px-4 py-3 cursor-pointer hover:bg-white/[0.07] transition-colors ${
                           selectedUser?._id === u._id
-                            ? "bg-blue-50 border-l-4 border-blue-500"
+                            ? "bg-blue-500/20 border-l-4 border-blue-500"
                             : ""
                         }`}
                       >
-                        <p className="font-medium text-sm text-gray-900">{u.name}</p>
-                        <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                        <p className="font-medium text-sm text-white/90">{u.name}</p>
+                        <p className="text-xs text-white/50 truncate">{u.email}</p>
                         <div className="mt-1">
                           <Badge variant={u.active ? "success" : "destructive"}>
                             {u.active ? "Active" : "Disabled"}

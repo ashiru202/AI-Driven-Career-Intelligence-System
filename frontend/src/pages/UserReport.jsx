@@ -136,11 +136,11 @@ export default function UserReport() {
                         className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                           selectedUser?._id === u._id
                             ? "bg-blue-600 text-white"
-                            : "hover:bg-gray-100 text-gray-700"
+                            : "hover:bg-white/[0.08] text-white/80"
                         }`}
                       >
                         <div className="font-medium">{u.name}</div>
-                        <div className="text-xs opacity-75">{u.email}</div>
+                        <div className="text-xs opacity-60">{u.email}</div>
                       </button>
                     </li>
                   ))}
