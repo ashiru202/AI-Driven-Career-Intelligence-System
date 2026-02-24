@@ -329,8 +329,8 @@ export default function JobPostings() {
 
         {/* ── Header ── */}
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">💼 Job Postings</h2>
-          <p className="text-gray-500 mt-1 text-sm">
+          <h2 className="text-3xl font-bold text-white">💼 Job Postings</h2>
+          <p className="text-slate-400 mt-1 text-sm">
             Select a resume to see live job postings that match your skills.
           </p>
         </div>

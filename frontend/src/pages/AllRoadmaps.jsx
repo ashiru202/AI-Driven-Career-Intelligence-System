@@ -107,8 +107,8 @@ const exportCSV = () => {
   return (
     <Layout>
       <div className="space-y-1" style={{ marginBottom: 20 }}>
-        <h2 className="text-3xl font-bold text-gray-900">All Roadmaps</h2>
-        <p className="text-gray-500">Management - view and filter all user roadmaps</p>
+        <h2 className="text-3xl font-bold text-white">All Roadmaps</h2>
+        <p className="text-slate-400 text-sm">Management - view and filter all user roadmaps</p>
       </div>
 
       {err && <p style={{ marginTop: 12, color: "#fca5a5" }}>{err}</p>}

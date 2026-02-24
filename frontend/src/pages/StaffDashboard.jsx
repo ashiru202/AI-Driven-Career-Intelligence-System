@@ -160,7 +160,7 @@ export default function StaffDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h2 className="text-3xl font-bold text-white">User Reports</h2>
-            <p style={{ color: "rgba(255,255,255,0.45)", marginTop: 4, fontSize: 14 }}>
+            <p className="text-slate-400 mt-1 text-sm">
               Select a user to view their skill gap analysis, CV completeness, and personalized insights.
             </p>
           </div>

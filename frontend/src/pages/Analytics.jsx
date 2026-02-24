@@ -274,8 +274,8 @@ export default function Analytics() {
 
         {/* ── Header ── */}
         <div>
-          <h2 style={{ fontSize: 28, fontWeight: 800, color: '#fff', margin: 0 }}>Career Analytics</h2>
-          <p style={{ color: 'rgba(255,255,255,0.45)', marginTop: 4, fontSize: 14 }}>
+          <h2 className="text-3xl font-bold text-white">Career Analytics</h2>
+          <p className="text-slate-400 mt-1 text-sm">
             Select a resume to see your personalised completeness score and career insights.
           </p>
         </div>

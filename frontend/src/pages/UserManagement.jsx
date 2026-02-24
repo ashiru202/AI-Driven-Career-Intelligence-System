@@ -141,8 +141,8 @@ export default function UserManagement() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Registered Job Seekers</h2>
-          <p className="text-gray-500 mt-1">
+          <h2 className="text-3xl font-bold text-white">Registered Job Seekers</h2>
+          <p className="text-slate-400 mt-1 text-sm">
             {total} user{total !== 1 ? "s" : ""} registered
           </p>
         </div>

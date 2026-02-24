@@ -51,8 +51,8 @@ export default function AdminDashboard() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Admin Dashboard</h2>
-            <p className="text-gray-500 mt-1">Platform overview and analytics</p>
+            <h2 className="text-3xl font-bold text-white">Admin Dashboard</h2>
+            <p className="text-slate-400 mt-1 text-sm">Platform overview and analytics</p>
           </div>
           <Link to="/admin-report">
             <Button className="bg-blue-600 text-white hover:bg-blue-700">

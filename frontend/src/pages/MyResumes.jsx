@@ -79,8 +79,8 @@ export default function MyResumes() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">My Resumes</h2>
-            <p className="text-gray-600 mt-2">View and manage your uploaded resumes</p>
+            <h2 className="text-3xl font-bold text-white">My Resumes</h2>
+            <p className="text-slate-400 mt-1 text-sm">View and manage your uploaded resumes</p>
           </div>
           <button
             onClick={() => navigate("/resume-analyze")}

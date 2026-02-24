@@ -137,8 +137,8 @@ export default function StaffManagement() {
       <div className="space-y-8">
         {/* Header */}
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Staff Management</h2>
-          <p className="text-gray-500 mt-1">Create and manage staff accounts</p>
+          <h2 className="text-3xl font-bold text-white">Staff Management</h2>
+          <p className="text-slate-400 mt-1 text-sm">Create and manage staff accounts</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

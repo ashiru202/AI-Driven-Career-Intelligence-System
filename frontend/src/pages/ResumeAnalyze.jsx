@@ -92,8 +92,8 @@ export default function ResumeAnalyze() {
         {/* ── Header ── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
           <div>
-            <h2 style={{ color: textFull, fontSize: 26, fontWeight: 800, margin: 0 }}>Resume Analyzer</h2>
-            <p style={{ color: textMid, fontSize: 14, marginTop: 6 }}>Upload your resume to extract and analyze your skills</p>
+            <h2 className="text-3xl font-bold text-white">Resume Analyzer</h2>
+            <p className="text-slate-400 mt-1 text-sm">Upload your resume to extract and analyze your skills</p>
           </div>
           <Link
             to="/my-resumes"

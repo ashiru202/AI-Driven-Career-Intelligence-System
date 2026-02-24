@@ -8,7 +8,7 @@ const USER_CARDS = [
     title: "Resume Analyze",
     description: "Upload and analyze your resume with AI",
     link: "/resume-analyze",
-    cta: "Get Started →",
+    cta: "Get Started ",
     icon: "📄",
     color: "blue",
   },
@@ -16,7 +16,7 @@ const USER_CARDS = [
     title: "My Resumes",
     description: "View and manage all your uploaded resumes",
     link: "/my-resumes",
-    cta: "View Resumes →",
+    cta: "View Resumes ",
     icon: "📁",
     color: "violet",
   },
@@ -24,7 +24,7 @@ const USER_CARDS = [
     title: "Compare Job",
     description: "Paste a job description and match it to your skills",
     link: "/compare-job",
-    cta: "Compare Now →",
+    cta: "Compare Now ",
     icon: "🎯",
     color: "orange",
   },
@@ -32,7 +32,7 @@ const USER_CARDS = [
     title: "Job Postings",
     description: "Browse live jobs matched to your resume and explore skills in demand",
     link: "/job-postings",
-    cta: "View Jobs →",
+    cta: "View Jobs ",
     icon: "💼",
     color: "indigo",
   },
@@ -40,7 +40,7 @@ const USER_CARDS = [
     title: "Career Analytics",
     description: "CV completeness score and personalised career insights",
     link: "/analytics",
-    cta: "View Analytics →",
+    cta: "View Analytics ",
     icon: "📈",
     color: "green",
   },
@@ -48,7 +48,7 @@ const USER_CARDS = [
     title: "My Roadmaps",
     description: "Follow your personalised learning path to your dream role",
     link: "/my-roadmap",
-    cta: "View Roadmaps →",
+    cta: "View Roadmaps ",
     icon: "🗺️",
     color: "purple",
   },
@@ -56,7 +56,7 @@ const USER_CARDS = [
     title: "Skills in Demand",
     description: "Explore top skills sought across all job comparisons on the platform",
     link: "/skills-in-demand",
-    cta: "View Skills →",
+    cta: "View Skills ",
     icon: "🔥",
     color: "rose",
   },
@@ -92,8 +92,8 @@ export default function Dashboard() {
 
         {/* Header */}
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}! 👋</h2>
-          <p className="text-gray-500 mt-1 text-sm">
+          <h2 className="text-3xl font-bold text-white">Welcome back, {user.name}! 👋</h2>
+          <p className="text-slate-400 mt-1 text-sm">
             Here’s everything you need to advance your career.
           </p>
         </div>

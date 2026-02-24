@@ -153,8 +153,8 @@ export default function CompareJob() {
     <Layout>
       <div>
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-900">Compare Job</h2>
-          <p className="text-gray-600 mt-2">Compare your skills with job requirements</p>
+          <h2 className="text-3xl font-bold text-white">Compare Job</h2>
+          <p className="text-slate-400 mt-1 text-sm">Compare your skills with job requirements</p>
         </div>
 
         {/* Input Form — full width horizontal */}

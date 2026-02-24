@@ -158,25 +158,10 @@ export default function SkillsInDemand() {
       <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
         {/* ── Header ── */}
         <div>
-          <h1
-            style={{
-              fontSize: 28,
-              fontWeight: 700,
-              color: "#f1f5f9",
-              margin: 0,
-              letterSpacing: "-0.3px",
-            }}
-          >
+          <h1 className="text-3xl font-bold text-white">
             📊 Skills in Demand
           </h1>
-          <p
-            style={{
-              color: "rgba(255,255,255,0.45)",
-              fontSize: 14,
-              marginTop: 6,
-              marginBottom: 0,
-            }}
-          >
+          <p className="text-slate-400 mt-1 text-sm">
             Platform-wide insights into the most sought-after skills based on
             job comparisons
           </p>
