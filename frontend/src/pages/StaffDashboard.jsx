@@ -184,7 +184,7 @@ export default function StaffDashboard() {
                         <CardDescription>{selectedUser.email}</CardDescription>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" className="bg-gray-800 text-white hover:bg-gray-900" onClick={downloadPDF}>
+                        <Button size="sm" onClick={downloadPDF}>
                           Download PDF
                         </Button>
                       </div>

@@ -93,7 +93,6 @@ export default function AdminReport() {
             </Button>
             <Button
               onClick={downloadPDF}
-              className="bg-gray-800 text-white hover:bg-gray-900"
             >
               Download PDF
             </Button>
