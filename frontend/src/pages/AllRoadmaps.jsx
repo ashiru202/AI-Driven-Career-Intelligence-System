@@ -113,7 +113,7 @@ const exportCSV = () => {
           borderRadius: 10,
           padding: 14,
           display: "grid",
-          gridTemplateColumns: "1fr 160px 220px",
+          gridTemplateColumns: "1fr 160px 180px auto",
           gap: 12,
           alignItems: "end",
           background: "rgba(255,255,255,0.03)",
@@ -140,15 +140,16 @@ const exportCSV = () => {
           </select>
         </div>
 
-        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <div style={{ flex: 1 }}>
-            <label style={label}>Sort</label>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={input}>
-              <option value="LATEST">Latest</option>
-              <option value="COMPLETION_DESC">Completion (High → Low)</option>
-              <option value="COMPLETION_ASC">Completion (Low → High)</option>
-            </select>
-          </div>
+        <div>
+          <label style={label}>Sort</label>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={input}>
+            <option value="LATEST">Latest</option>
+            <option value="COMPLETION_DESC">Completion (High → Low)</option>
+            <option value="COMPLETION_ASC">Completion (Low → High)</option>
+          </select>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
           <button onClick={load} style={btn}>Refresh</button>
           <button onClick={exportCSV} style={btn}>Export CSV</button>
         </div>
