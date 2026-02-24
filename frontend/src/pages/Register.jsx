@@ -55,7 +55,7 @@ export default function Register() {
         localStorage.setItem("role", res.data.data.user.role);
 
         // Redirect to dashboard
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       }
     } catch (err) {
       console.log("REGISTER ERROR:", err.response?.data);

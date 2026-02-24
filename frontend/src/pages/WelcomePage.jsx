@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 
 /* ─────────────────────────────────────────────
    Tiny hook: returns true once the element enters the viewport
@@ -751,8 +751,8 @@ const KEYFRAMES = `
    ROOT COMPONENT
 ════════════════════════════════════════════ */
 export default function WelcomePage() {
+  // Inject keyframes once (hook must be called before any early return)
   useEffect(() => {
-    // Inject keyframes once
     if (!document.getElementById("welcome-keyframes")) {
       const style = document.createElement("style");
       style.id = "welcome-keyframes";
@@ -761,6 +761,15 @@ export default function WelcomePage() {
     }
     return () => {};
   }, []);
+
+  // Redirect already-authenticated users to their dashboard
+  const token = localStorage.getItem("token");
+  const role  = localStorage.getItem("role");
+  if (token && role) {
+    if (role === "ADMIN") return <Navigate to="/admin" replace />;
+    if (role === "STAFF") return <Navigate to="/staff" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div style={{ fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif", background: "#0a0a1e" }}>

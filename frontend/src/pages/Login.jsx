@@ -32,11 +32,11 @@ export default function Login() {
         const role = res.data.data.user.role;
         console.log("User role:", role);
         if (role === 'ADMIN') {
-          navigate('/admin');
+          navigate('/admin', { replace: true });
         } else if (role === 'STAFF') {
-          navigate('/staff');
+          navigate('/staff', { replace: true });
         } else {
-          navigate('/dashboard');
+          navigate('/dashboard', { replace: true });
         }
       } else {
         setError("Login response was not successful");
