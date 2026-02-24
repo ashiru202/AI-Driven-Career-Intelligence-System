@@ -70,7 +70,7 @@ export default function Login() {
           <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ color: '#fff', fontSize: 15, fontWeight: 800 }}>AI</span>
           </div>
-          <span style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>CareerIQ</span>
+          <span style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>AptitudeX</span>
         </div>
 
         <h1 style={{ color: '#fff', fontSize: 24, fontWeight: 800, marginBottom: 6 }}>Welcome back</h1>

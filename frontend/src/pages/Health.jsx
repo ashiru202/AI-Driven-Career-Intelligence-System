@@ -56,7 +56,7 @@ export default function Health() {
             <div style={{ width: 34, height: 34, borderRadius: 9, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ color: '#fff', fontSize: 14, fontWeight: 800 }}>AI</span>
             </div>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: 17 }}>CareerIQ</span>
+            <span style={{ color: '#fff', fontWeight: 700, fontSize: 17 }}>AptitudeX</span>
           </div>
           <h1 style={{ color: '#fff', fontSize: 24, fontWeight: 800, marginBottom: 6, marginTop: 16 }}>System Health</h1>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, marginBottom: 28 }}>Live status of all platform services</p>
