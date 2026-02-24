@@ -284,19 +284,25 @@ const exportCSV = () => {
 const modalOverlay = {
   position: "fixed",
   inset: 0,
-  background: "rgba(0,0,0,0.35)",
+  background: "rgba(0,0,0,0.6)",
+  backdropFilter: "blur(4px)",
+  WebkitBackdropFilter: "blur(4px)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: 16
+  padding: 16,
+  zIndex: 1000
 };
 
 const modalBox = {
   width: "min(800px, 96vw)",
-  background: "#12122a",
-  borderRadius: 12,
-  padding: 16,
-  border: "1px solid rgba(255,255,255,0.1)",
+  background: "rgba(255,255,255,0.07)",
+  backdropFilter: "blur(24px)",
+  WebkitBackdropFilter: "blur(24px)",
+  borderRadius: 16,
+  padding: 24,
+  border: "1px solid rgba(255,255,255,0.15)",
+  boxShadow: "0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)",
   maxHeight: "85vh",
   overflow: "auto",
   color: "#fff"
