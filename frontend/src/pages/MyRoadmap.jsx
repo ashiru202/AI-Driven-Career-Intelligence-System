@@ -293,6 +293,25 @@ export default function MyRoadmap() {
     }
   };
 
+  const [deletingId, setDeletingId] = useState(null);
+
+  const deleteRoadmap = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Delete this roadmap? This cannot be undone.')) return;
+    setDeletingId(id);
+    try {
+      await api.delete(`/api/roadmaps-new/${id}`);
+      // If the deleted one was selected, clear it
+      if (selectedRoadmap?.roadmapId === id) setSelectedRoadmap(null);
+      setRoadmaps((prev) => prev.filter((r) => r.id !== id));
+    } catch (e) {
+      console.error('Failed to delete roadmap:', e);
+      setError('Failed to delete roadmap. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'COMPLETED': return 'success';
@@ -352,30 +371,62 @@ export default function MyRoadmap() {
               <div className="flex flex-wrap gap-3">
                 {roadmaps.map((roadmap) => {
                   const isActive = selectedRoadmap?.roadmapId === roadmap.id;
+                  const isDeleting = deletingId === roadmap.id;
                   return (
-                    <button
-                      key={roadmap.id}
-                      onClick={() => loadRoadmapDetails(roadmap.id)}
-                      style={{
-                        padding: '12px 20px',
-                        borderRadius: 12,
-                        border: isActive ? '2px solid #6366f1' : '2px solid rgba(255,255,255,0.08)',
-                        background: isActive
-                          ? 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.15))'
-                          : 'rgba(255,255,255,0.04)',
-                        color: isActive ? '#a5b4fc' : 'rgba(255,255,255,0.55)',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        transition: 'all 0.2s',
-                        boxShadow: isActive ? '0 0 0 3px rgba(99,102,241,0.2)' : 'none',
-                        minWidth: 160,
-                      }}
-                      onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.border = '2px solid rgba(99,102,241,0.4)'; e.currentTarget.style.color = 'rgba(255,255,255,0.82)'; } }}
-                      onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.border = '2px solid rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; } }}
-                    >
-                      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{roadmap.targetRole}</div>
-                      <div style={{ fontSize: 11, opacity: 0.6 }}>{new Date(roadmap.createdAt).toLocaleDateString()}</div>
-                    </button>
+                    <div key={roadmap.id} style={{ position: 'relative', display: 'inline-block' }}>
+                      <button
+                        onClick={() => loadRoadmapDetails(roadmap.id)}
+                        style={{
+                          padding: '12px 40px 12px 20px',
+                          borderRadius: 12,
+                          border: isActive ? '2px solid #6366f1' : '2px solid rgba(255,255,255,0.08)',
+                          background: isActive
+                            ? 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.15))'
+                            : 'rgba(255,255,255,0.04)',
+                          color: isActive ? '#a5b4fc' : 'rgba(255,255,255,0.55)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.2s',
+                          boxShadow: isActive ? '0 0 0 3px rgba(99,102,241,0.2)' : 'none',
+                          minWidth: 160,
+                          opacity: isDeleting ? 0.5 : 1,
+                        }}
+                        onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.border = '2px solid rgba(99,102,241,0.4)'; e.currentTarget.style.color = 'rgba(255,255,255,0.82)'; } }}
+                        onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.border = '2px solid rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; } }}
+                        disabled={isDeleting}
+                      >
+                        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{roadmap.targetRole}</div>
+                        <div style={{ fontSize: 11, opacity: 0.6 }}>{new Date(roadmap.createdAt).toLocaleDateString()}</div>
+                      </button>
+                      {/* Delete button */}
+                      <button
+                        onClick={(e) => deleteRoadmap(roadmap.id, e)}
+                        disabled={isDeleting}
+                        title="Delete roadmap"
+                        style={{
+                          position: 'absolute',
+                          top: 6,
+                          right: 6,
+                          width: 22,
+                          height: 22,
+                          borderRadius: 6,
+                          border: 'none',
+                          background: 'rgba(239,68,68,0.15)',
+                          color: '#f87171',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 12,
+                          lineHeight: 1,
+                          transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.35)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; }}
+                      >
+                        {isDeleting ? '…' : '🗑'}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
