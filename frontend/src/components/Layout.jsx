@@ -752,7 +752,7 @@ export default function Layout({ children }) {
   }, []);
 
   // Home routes — pressing back here means "leave the app" → show logout modal
-  const HOME_ROUTES = ['/dashboard', '/admin', '/staff-home', '/staff', '/admin/user-reports'];
+  const HOME_ROUTES = ['/dashboard', '/admin', '/staff-home', '/admin/user-reports'];
   const isHomePage  = HOME_ROUTES.includes(location.pathname);
 
   // Handle back button click in the top bar
