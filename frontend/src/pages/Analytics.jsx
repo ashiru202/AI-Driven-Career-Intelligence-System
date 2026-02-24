@@ -153,10 +153,10 @@ function CVScoreRing({ score }) {
 function SectionCheck({ label, detected }) {
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className={detected ? "text-green-500" : "text-gray-300"}>
+      <span style={{ color: detected ? '#4ade80' : 'rgba(255,255,255,0.2)' }}>
         {detected ? "✓" : "○"}
       </span>
-      <span className={detected ? "text-gray-700" : "text-gray-400"}>{label}</span>
+      <span style={{ color: detected ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.35)' }}>{label}</span>
     </div>
   );
 }
@@ -274,15 +274,15 @@ export default function Analytics() {
 
         {/* ── Header ── */}
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Career Analytics</h2>
-          <p className="text-gray-500 mt-1 text-sm">
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: '#fff', margin: 0 }}>Career Analytics</h2>
+          <p style={{ color: 'rgba(255,255,255,0.45)', marginTop: 4, fontSize: 14 }}>
             Select a resume to see your personalised completeness score and career insights.
           </p>
         </div>
 
         {/* ── Resume Grid ── */}
         <section>
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">Your Uploaded Resumes</h3>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginBottom: 12 }}>Your Uploaded Resumes</h3>
           {resumes.length === 0 ? (
             <div className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center">
               <p className="text-4xl mb-3">📂</p>
@@ -349,16 +349,20 @@ export default function Analytics() {
 
                         {/* Progress bar */}
                         <div>
-                          <div className="flex justify-between text-xs text-gray-500 mb-1">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 4 }}>
                             <span>Overall Score</span>
-                            <span className={`font-semibold ${cvColors?.text}`}>
+                            <span style={{ fontWeight: 700, color: cvCompleteness.score >= 71 ? '#4ade80' : cvCompleteness.score >= 41 ? '#fbbf24' : '#f87171' }}>
                               {cvCompleteness.score}/100
                             </span>
                           </div>
-                          <div className="w-full bg-gray-100 rounded-full h-2.5">
+                          <div style={{ width: '100%', background: 'rgba(255,255,255,0.08)', borderRadius: 99, height: 8 }}>
                             <div
-                              className={`h-2.5 rounded-full transition-all duration-700 ${cvColors?.bar}`}
-                              style={{ width: `${cvCompleteness.score}%` }}
+                              style={{
+                                width: `${cvCompleteness.score}%`,
+                                height: 8, borderRadius: 99,
+                                background: cvCompleteness.score >= 71 ? '#4ade80' : cvCompleteness.score >= 41 ? '#fbbf24' : '#f87171',
+                                transition: 'width 0.7s',
+                              }}
                             />
                           </div>
                         </div>
@@ -366,14 +370,14 @@ export default function Analytics() {
                         {/* Missing sections */}
                         {cvCompleteness.missingSections?.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-gray-600 mb-1.5">
+                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>
                               Missing Sections:
                             </p>
-                            <div className="flex flex-wrap gap-1.5">
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                               {cvCompleteness.missingSections.map((section) => (
-                                <Badge key={section} variant="destructive" className="text-xs">
+                                <span key={section} style={{ fontSize: 11, fontWeight: 600, background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 100, padding: '2px 10px' }}>
                                   {section}
-                                </Badge>
+                                </span>
                               ))}
                             </div>
                           </div>
@@ -382,13 +386,13 @@ export default function Analytics() {
                         {/* Suggestions */}
                         {cvCompleteness.suggestions?.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-gray-600 mb-1.5">
+                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>
                               💡 Suggestions:
                             </p>
-                            <ul className="space-y-1.5">
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
                               {cvCompleteness.suggestions.map((s, i) => (
-                                <li key={i} className="text-xs text-gray-600 flex gap-2">
-                                  <span className="text-blue-400 mt-0.5">•</span>
+                                <li key={i} style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', display: 'flex', gap: 8 }}>
+                                  <span style={{ color: '#60a5fa', flexShrink: 0 }}>•</span>
                                   {s}
                                 </li>
                               ))}
@@ -485,12 +489,12 @@ export default function Analytics() {
                       <>
                         {insights.reasons?.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-gray-600 mb-1.5">⚠️ Reasons:</p>
-                            <ul className="space-y-1.5">
+                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>⚠️ Reasons:</p>
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
                               {insights.reasons.map((reason, idx) => (
                                 <li
                                   key={idx}
-                                  className="text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded px-3 py-2"
+                                  style={{ fontSize: 11, color: '#fde68a', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 8, padding: '6px 12px' }}
                                 >
                                   {reason}
                                 </li>
@@ -501,14 +505,14 @@ export default function Analytics() {
 
                         {insights.prioritySkills?.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-gray-600 mb-1.5">
+                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>
                               🚀 Priority Skills to Learn:
                             </p>
-                            <div className="flex flex-wrap gap-1.5">
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                               {insights.prioritySkills.map((skill, idx) => (
-                                <Badge key={idx} className="bg-purple-600 hover:bg-purple-700 text-white text-xs">
+                                <span key={idx} style={{ fontSize: 11, fontWeight: 700, background: 'rgba(139,92,246,0.2)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.35)', borderRadius: 100, padding: '2px 10px' }}>
                                   {idx + 1}. {skill}
-                                </Badge>
+                                </span>
                               ))}
                             </div>
                           </div>
@@ -516,14 +520,14 @@ export default function Analytics() {
 
                         {insights.resumeSkills?.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-gray-600 mb-1.5">
+                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>
                               ✅ Skills on this Resume ({insights.resumeSkills.length}):
                             </p>
-                            <div className="flex flex-wrap gap-1">
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                               {insights.resumeSkills.map((skill, idx) => (
-                                <Badge key={idx} variant="outline" className="text-xs text-gray-600">
+                                <span key={idx} style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 100, padding: '2px 10px' }}>
                                   {skill}
-                                </Badge>
+                                </span>
                               ))}
                             </div>
                           </div>
@@ -531,14 +535,14 @@ export default function Analytics() {
 
                         {insights.actions?.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-gray-600 mb-1.5">
+                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>
                               ✔ Recommended Actions:
                             </p>
-                            <ul className="space-y-1.5">
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
                               {insights.actions.map((action, idx) => (
                                 <li
                                   key={idx}
-                                  className="text-xs text-green-800 bg-green-50 border border-green-200 rounded px-3 py-2"
+                                  style={{ fontSize: 11, color: '#86efac', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 8, padding: '6px 12px' }}
                                 >
                                   {action}
                                 </li>
@@ -548,7 +552,7 @@ export default function Analytics() {
                         )}
                       </>
                     ) : (
-                      <p className="text-gray-400 text-sm">No insights available.</p>
+                      <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 14 }}>No insights available.</p>
                     )}
                   </CardContent>
                 </Card>
