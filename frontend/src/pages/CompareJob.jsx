@@ -18,10 +18,27 @@ export default function CompareJob() {
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [selectedHistory, setSelectedHistory] = useState(null);
+  const [resumes, setResumes] = useState([]);
+  const [selectedResumeId, setSelectedResumeId] = useState("");
 
   useEffect(() => {
     fetchHistory();
+    fetchResumes();
   }, []);
+
+  const fetchResumes = async () => {
+    try {
+      const res = await api.get("/api/resumes");
+      if (res.data.ok && res.data.data) {
+        const list = res.data.data.resumes || [];
+        setResumes(list);
+        // Default to the most recent resume
+        if (list.length > 0) setSelectedResumeId(list[0]._id);
+      }
+    } catch (e) {
+      console.error("Failed to load resumes:", e);
+    }
+  };
 
   const fetchHistory = async () => {
     try {
@@ -58,12 +75,14 @@ export default function CompareJob() {
       const res = await api.post("/api/comparisons/compare", {
         jobTitle: jobTitle.trim(),
         jobDescription: jobDescription.trim(),
+        ...(selectedResumeId ? { resumeId: selectedResumeId } : {}),
       });
 
       if (res.data.ok && res.data.data) {
         setResult(res.data.data);
         setSelectedHistory(null);
-        fetchHistory(); // refresh history list
+        fetchHistory();
+        fetchResumes(); // refresh resume list
       }
     } catch (e) {
       console.error("Compare failed:", e.response?.data || e);
@@ -157,6 +176,30 @@ export default function CompareJob() {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="resume">Resume to Compare</Label>
+                {resumes.length === 0 ? (
+                  <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-md px-3 py-2">
+                    No resumes uploaded yet.{" "}
+                    <a href="/resume" className="underline font-medium">Upload one first.</a>
+                  </p>
+                ) : (
+                  <select
+                    id="resume"
+                    value={selectedResumeId}
+                    onChange={(e) => setSelectedResumeId(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {resumes.map((r) => (
+                      <option key={r._id} value={r._id}>
+                        {r.fileName}{" "}
+                        ({new Date(r.createdAt).toLocaleDateString()})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="jobDescription">Job Description</Label>
                 <Textarea
                   id="jobDescription"
@@ -208,6 +251,11 @@ export default function CompareJob() {
                     <p className="text-xs text-gray-500">
                       {item.commonSkills?.length || 0} matched · {item.missingSkills?.length || 0} missing
                     </p>
+                    {item.resumeFileName && (
+                      <p className="text-xs text-blue-600 truncate" title={item.resumeFileName}>
+                        Resume: {item.resumeFileName}
+                      </p>
+                    )}
                     <p className="text-xs text-gray-400">
                       {new Date(item.createdAt).toLocaleDateString()}
                     </p>
@@ -225,6 +273,11 @@ export default function CompareJob() {
               <h3 className="text-xl font-bold text-gray-900">
                 {selectedHistory ? `Result: ${activeResult.jobTitle}` : 'Latest Comparison Result'}
               </h3>
+              {activeResult.resumeFileName && (
+                <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-3 py-1 font-medium">
+                  Resume: {activeResult.resumeFileName}
+                </span>
+              )}
               {selectedHistory && (
                 <span className="text-xs bg-gray-100 text-gray-600 border border-gray-300 rounded-full px-3 py-1 font-medium">
                   Past comparison

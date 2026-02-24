@@ -8,12 +8,19 @@ const axios = require('axios');
 
 // Compare user's resume with a job description
 const compareJob = asyncHandler(async (req, res) => {
-  const { jobTitle, jobDescription, jobSkills } = req.body;
+  const { jobTitle, jobDescription, jobSkills, resumeId } = req.body;
   const userId = req.user.id;
 
-  // Get user's most recent resume
-  const resume = await Resume.findOne({ user: userId })
-    .sort({ createdAt: -1 });
+  // Use the selected resume if provided, otherwise fall back to most recent
+  let resume;
+  if (resumeId) {
+    resume = await Resume.findOne({ _id: resumeId, user: userId });
+    if (!resume) {
+      throw AppError.badRequest('INVALID_RESUME', 'Selected resume not found');
+    }
+  } else {
+    resume = await Resume.findOne({ user: userId }).sort({ createdAt: -1 });
+  }
 
   if (!resume) {
     throw AppError.badRequest(
@@ -56,6 +63,8 @@ const compareJob = asyncHandler(async (req, res) => {
   // Save comparison to database
   const comparison = await Comparison.create({
     user: userId,
+    resume: resume._id,
+    resumeFileName: resume.fileName,
     jobTitle,
     jobDescription,
     jobSkills: normalizedJobSkills,
@@ -73,7 +82,8 @@ const compareJob = asyncHandler(async (req, res) => {
     matchedSkills: common.length,
     commonSkills: common,
     missingSkills: missing,
-    resumeSkills: normalizedResumeSkills
+    resumeSkills: normalizedResumeSkills,
+    resumeFileName: resume.fileName
   }, 'Job comparison completed successfully'));
 });
 
@@ -86,7 +96,7 @@ const getComparisons = asyncHandler(async (req, res) => {
   const total = await Comparison.countDocuments({ user: userId });
 
   const comparisons = await Comparison.find({ user: userId })
-    .select('jobTitle matchScore commonSkills missingSkills createdAt')
+    .select('jobTitle matchScore commonSkills missingSkills resumeFileName createdAt')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(parseInt(limit));
@@ -122,6 +132,7 @@ const getComparisonDetails = asyncHandler(async (req, res) => {
     missingSkills: comparison.missingSkills,
     jobSkills: comparison.jobSkills,
     resumeSkills: comparison.resumeSkills,
+    resumeFileName: comparison.resumeFileName || '',
     createdAt: comparison.createdAt
   }));
 });

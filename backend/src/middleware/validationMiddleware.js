@@ -88,7 +88,8 @@ const schemas = {
         .transform(stripHtml),
       jobSkills: z.array(
         z.string().max(100, 'Skill name too long').transform(stripHtml)
-      ).max(100, 'Too many skills').optional()
+      ).max(100, 'Too many skills').optional(),
+      resumeId: z.string().optional()
     })
   }),
 

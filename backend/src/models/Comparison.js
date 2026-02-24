@@ -6,6 +6,15 @@ const comparisonSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  resume: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Resume',
+    default: null
+  },
+  resumeFileName: {
+    type: String,
+    default: ''
+  },
   jobTitle: {
     type: String,
     required: true
