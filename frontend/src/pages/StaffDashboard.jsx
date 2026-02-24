@@ -159,7 +159,7 @@ export default function StaffDashboard() {
         {/* ── Page Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h2 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: 0 }}>User Reports</h2>
+            <h2 className="text-3xl font-bold text-white">User Reports</h2>
             <p style={{ color: "rgba(255,255,255,0.45)", marginTop: 4, fontSize: 14 }}>
               Select a user to view their skill gap analysis, CV completeness, and personalized insights.
             </p>
@@ -270,9 +270,9 @@ export default function StaffDashboard() {
                   </div>
                   <Button
                     onClick={downloadPDF}
-                    style={{ background: "rgba(99,102,241,0.2)", border: "1px solid rgba(99,102,241,0.4)", color: "#a5b4fc", borderRadius: 10, fontWeight: 600, fontSize: 13 }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
-                     Download PDF
+                    Download PDF
                   </Button>
                 </div>
 
