@@ -688,7 +688,7 @@ export default function Layout({ children }) {
           {/* Brand text + tagline */}
           <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
             <span style={{ color: '#fff', fontWeight: 800, fontSize: 16, letterSpacing: -0.3 }}>
-              Career<span style={{ color: '#818cf8' }}>IQ</span>
+              Aptitude<span style={{ color: '#818cf8' }}>X</span>
             </span>
             <span style={{ color: 'rgb(248, 248, 248)', fontSize: 10, fontWeight: 500, letterSpacing: 0.3, marginTop: 2 }}>
               AI-Driven Career Intelligence System

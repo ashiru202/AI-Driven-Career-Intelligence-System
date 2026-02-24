@@ -117,7 +117,7 @@ function Navbar() {
           <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ color: "#fff", fontSize: 18, fontWeight: 800 }}>AI</span>
           </div>
-          <span style={{ color: "#fff", fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>CareerIQ</span>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>AptitudeX</span>
         </div>
 
         {/* Desktop nav links */}
@@ -505,7 +505,7 @@ function AboutUs() {
                 </span>
               </h2>
               <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, lineHeight: 1.75, marginBottom: 18 }}>
-                CareerIQ was born from a frustration shared by thousands of graduates and job seekers: existing platforms tell you <em>what</em> jobs are available, but not <em>why</em> you aren't getting them.
+                AptitudeX was born from a frustration shared by thousands of graduates and job seekers: existing platforms tell you <em>what</em> jobs are available, but not <em>why</em> you aren't getting them.
               </p>
               <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, lineHeight: 1.75, marginBottom: 28 }}>
                 We set out to build something different — an intelligent system that analyses your current skills in real-time, maps them against actual job requirements, and gives you a clear, actionable learning path forward. No fluff, no guessing, no wasted time.
@@ -664,7 +664,7 @@ function Footer() {
               <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <span style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>AI</span>
               </div>
-              <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>CareerIQ</span>
+              <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>AptitudeX</span>
             </div>
             <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14, lineHeight: 1.7, maxWidth: 260 }}>
               AI-powered career intelligence for the modern job seeker. Analyse, compare, and grow.
@@ -701,7 +701,7 @@ function Footer() {
           </div>
         </div>
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 13 }}>© 2026 CareerIQ · AI-Driven Career Intelligence System</span>
+          <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 13 }}>© 2026 AptitudeX · AI-Driven Career Intelligence System</span>
           <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 13 }}>Built with ♥ using MERN + FastAPI</span>
         </div>
       </div>
