@@ -268,6 +268,101 @@ const inputStyle = {
   resize: 'vertical',
 };
 
+// ── Logout Confirm Modal (glass style) ──────────────────────────────────────
+function LogoutConfirmModal({ onConfirm, onCancel }) {
+  const overlayRef = useRef(null);
+
+  // Close on overlay click
+  const handleOverlay = (e) => { if (e.target === overlayRef.current) onCancel(); };
+
+  // Close on Escape
+  useEffect(() => {
+    const h = (e) => { if (e.key === 'Escape') onCancel(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [onCancel]);
+
+  return (
+    <div
+      ref={overlayRef}
+      onClick={handleOverlay}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.65)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24,
+        animation: 'fadeIn 0.18s ease',
+      }}
+    >
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}`}</style>
+      <div style={{
+        width: '100%', maxWidth: 380,
+        background: 'rgba(13,13,35,0.85)',
+        border: '1px solid rgba(99,102,241,0.35)',
+        borderRadius: 20,
+        boxShadow: '0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04) inset',
+        padding: '36px 32px 28px',
+        textAlign: 'center',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        animation: 'fadeIn 0.22s ease',
+      }}>
+        {/* Icon */}
+        <div style={{
+          width: 60, height: 60, borderRadius: '50%',
+          background: 'rgba(239,68,68,0.14)',
+          border: '1px solid rgba(239,68,68,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 20px', fontSize: 26,
+        }}>🚪</div>
+
+        <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 800, margin: '0 0 8px', letterSpacing: -0.3 }}>
+          Sign out?
+        </h2>
+        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, lineHeight: 1.6, margin: '0 0 28px' }}>
+          Do you want to log out of your account?
+        </p>
+
+        {/* Buttons */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button
+            onClick={onCancel}
+            style={{
+              flex: 1, padding: '12px 0', borderRadius: 12,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.75)', fontSize: 15, fontWeight: 700,
+              cursor: 'pointer', transition: 'all 0.18s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.11)'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; }}
+          >
+            No, stay
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              flex: 1, padding: '12px 0', borderRadius: 12,
+              background: 'linear-gradient(135deg,#ef4444,#dc2626)',
+              border: '1px solid rgba(239,68,68,0.4)',
+              color: '#fff', fontSize: 15, fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 6px 20px rgba(239,68,68,0.35)',
+              transition: 'all 0.18s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(239,68,68,0.48)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(239,68,68,0.35)'; }}
+          >
+            Yes, log out
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const ROLE_NAV = {
   ADMIN: [
     { path: '/admin',            label: 'Admin Dashboard', icon: '⚡' },
@@ -641,10 +736,11 @@ function SidebarContent({ location, navigate, userRole, userName, setSidebarOpen
 export default function Layout({ children }) {
   const location  = useLocation();
   const navigate  = useNavigate();
-  const [userRole,    setUserRole]    = useState(null);
-  const [userName,    setUserName]    = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [userRole,       setUserRole]       = useState(null);
+  const [userName,       setUserName]       = useState('');
+  const [sidebarOpen,    setSidebarOpen]    = useState(false);
+  const [profileOpen,    setProfileOpen]    = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -653,6 +749,36 @@ export default function Layout({ children }) {
       setUserName(u.name || '');
     } catch {}
   }, []);
+
+  // Home routes — pressing back here means "leave the app" → show logout modal
+  const HOME_ROUTES = ['/dashboard', '/admin', '/staff'];
+  const isHomePage  = HOME_ROUTES.includes(location.pathname);
+
+  // Handle back button click in the top bar
+  const handleBack = () => {
+    if (isHomePage) {
+      setLogoutModalOpen(true);
+    } else {
+      navigate(-1);
+    }
+  };
+
+  // Intercept browser back button ONLY on home pages → show logout modal
+  useEffect(() => {
+    if (!isHomePage) return;
+    window.history.pushState(null, '', window.location.pathname);
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.pathname);
+      setLogoutModalOpen(true);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isHomePage]);
+
+  const handleLogoutConfirm = () => {
+    localStorage.clear();
+    navigate('/login');
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#07071a', fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif" }}>
@@ -663,41 +789,68 @@ export default function Layout({ children }) {
         width: '100%', height: 58,
         background: 'linear-gradient(90deg, #0c0c20 0%, #0e0e25 100%)',
         borderBottom: '1px solid rgba(99,102,241,0.18)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
+        alignItems: 'center',
         padding: '0 20px',
         boxShadow: '0 2px 24px rgba(0,0,0,0.45)',
       }}>
-        {/* Left: logo + brand */}
-        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          {/* SVG Logo mark */}
+        {/* Left: back button — hidden on home/dashboard pages */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {!isHomePage && (
+            <button
+              onClick={handleBack}
+              title="Go back"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 9, padding: '6px 14px',
+                cursor: 'pointer',
+                color: 'rgba(255,255,255,0.55)',
+                fontSize: 13, fontWeight: 600,
+                transition: 'all 0.18s',
+                letterSpacing: 0.2,
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(99,102,241,0.12)';
+                e.currentTarget.style.borderColor = 'rgba(99,102,241,0.35)';
+                e.currentTarget.style.color = '#a5b4fc';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
+              }}
+            >
+              <span style={{ fontSize: 15, lineHeight: 1 }}>←</span>
+              Back
+            </button>
+          )}
+        </div>
+
+        {/* Center: brand */}
+        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
           <div style={{
-            width: 34, height: 34, borderRadius: 10,
+            width: 32, height: 32, borderRadius: 9,
             background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
-            boxShadow: '0 0 14px rgba(99,102,241,0.45)',
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C8.5 2 6 4.5 6 7.5c0 1.5.5 2.8 1.4 3.8C6.5 12 6 12.9 6 14c0 2.2 1.8 4 4 4h.2c.5 1.2 1.6 2 2.8 2s2.3-.8 2.8-2H16c2.2 0 4-1.8 4-4 0-1.1-.5-2-1.4-2.7.9-1 1.4-2.3 1.4-3.8C20 4.5 17.5 2 14 2h-2z" fill="rgba(255,255,255,0.15)"/>
-              <circle cx="10" cy="9" r="1.5" fill="#fff"/>
-              <circle cx="14" cy="9" r="1.5" fill="#fff"/>
-              <path d="M9 13c0 0 1 2 3 2s3-2 3-2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
-              <path d="M12 2v2M8 3.5l1 1.7M16 3.5l-1 1.7" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
-          </div>
-          {/* Brand text + tagline */}
+            boxShadow: '0 0 12px rgba(99,102,241,0.4)',
+            fontSize: 13, fontWeight: 800, color: '#fff',
+          }}>AI</div>
           <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
             <span style={{ color: '#fff', fontWeight: 800, fontSize: 16, letterSpacing: -0.3 }}>
               Aptitude<span style={{ color: '#818cf8' }}>X</span>
             </span>
-            <span style={{ color: 'rgb(248, 248, 248)', fontSize: 10, fontWeight: 500, letterSpacing: 0.3, marginTop: 2 }}>
-              AI-Driven Career Intelligence System
+            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 500, letterSpacing: 0.3, marginTop: 2 }}>
+              AI-Driven Career Intelligence
             </span>
           </div>
         </Link>
 
         {/* Right: actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
 
           {/* Notification bell — only mount once role is known so storage key is correct */}
           {userRole && <NotificationDropdown userRole={userRole} />}
@@ -771,6 +924,14 @@ export default function Layout({ children }) {
           onSave={(updatedUser) => {
             if (updatedUser?.name) setUserName(updatedUser.name);
           }}
+        />
+      )}
+
+      {/* Logout confirmation modal */}
+      {logoutModalOpen && (
+        <LogoutConfirmModal
+          onConfirm={handleLogoutConfirm}
+          onCancel={() => setLogoutModalOpen(false)}
         />
       )}
     </div>
