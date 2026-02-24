@@ -6,7 +6,6 @@ export default function AllRoadmaps() {
   const [roadmaps, setRoadmaps] = useState([]);
   const [err, setErr] = useState("");
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("ALL"); // ALL | USER | STAFF | ADMIN
   const [minCompletion, setMinCompletion] = useState(0); // 0-100
   const [sortBy, setSortBy] = useState("LATEST"); // LATEST | COMPLETION_DESC | COMPLETION_ASC
 
@@ -83,11 +82,6 @@ const exportCSV = () => {
       });
     }
 
-    // role filter (requires populate user role; if not, this will simply not match)
-    if (roleFilter !== "ALL") {
-      list = list.filter((r) => (r.user?.role || "").toUpperCase() === roleFilter);
-    }
-
     // completion filter
     list = list.filter((r) => completionOf(r) >= Number(minCompletion));
 
@@ -102,7 +96,7 @@ const exportCSV = () => {
     }
 
     return list;
-  }, [roadmaps, search, roleFilter, minCompletion, sortBy]);
+  }, [roadmaps, search, minCompletion, sortBy]);
 
   return (
     <Layout>
@@ -119,7 +113,7 @@ const exportCSV = () => {
           borderRadius: 10,
           padding: 14,
           display: "grid",
-          gridTemplateColumns: "1fr 180px 160px 220px",
+          gridTemplateColumns: "1fr 160px 220px",
           gap: 12,
           alignItems: "end",
           background: "rgba(255,255,255,0.03)",
@@ -133,16 +127,6 @@ const exportCSV = () => {
             placeholder="Type to search..."
             style={input}
           />
-        </div>
-
-        <div>
-          <label style={label}>Role</label>
-          <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} style={input}>
-            <option value="ALL">All</option>
-            <option value="USER">USER</option>
-            <option value="STAFF">STAFF</option>
-            <option value="ADMIN">ADMIN</option>
-          </select>
         </div>
 
         <div>
