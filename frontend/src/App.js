@@ -190,7 +190,19 @@ export default function App() {
           }
         />
 
-        {/* User Reports — redirects to Staff View which now includes export */}
+        {/* User Reports — ADMIN only, dedicated route */}
+        <Route
+          path="/admin/user-reports"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["ADMIN"]}>
+                <StaffDashboard />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Legacy redirect */}
         <Route path="/user-report" element={<Navigate to="/staff" replace />} />
 
         <Route path="/logout" element={<Logout />} />

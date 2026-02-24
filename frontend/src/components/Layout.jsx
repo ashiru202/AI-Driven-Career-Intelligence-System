@@ -365,12 +365,12 @@ function LogoutConfirmModal({ onConfirm, onCancel }) {
 
 const ROLE_NAV = {
   ADMIN: [
-    { path: '/admin',            label: 'Admin Dashboard', icon: '⚡' },
-    { path: '/staff-management', label: 'Staff Management', icon: '👥' },
-    { path: '/users',            label: 'Job Seekers',      icon: '🧑‍💼' },
-    { path: '/admin-report',     label: 'Platform Report',  icon: '📊' },
-    { path: '/staff',            label: 'User Reports',     icon: '📋' },
-    { path: '/all-roadmaps',     label: 'All Roadmaps',     icon: '🗺️' },
+    { path: '/admin',               label: 'Admin Dashboard', icon: '⚡' },
+    { path: '/staff-management',    label: 'Staff Management', icon: '👥' },
+    { path: '/users',               label: 'Job Seekers',      icon: '🧑‍💼' },
+    { path: '/admin-report',        label: 'Platform Report',  icon: '📊' },
+    { path: '/admin/user-reports',  label: 'User Reports',     icon: '📋' },
+    { path: '/all-roadmaps',        label: 'All Roadmaps',     icon: '🗺️' },
   ],
   STAFF: [
     { path: '/staff',            label: 'User Reports',     icon: '📋' },
@@ -751,7 +751,7 @@ export default function Layout({ children }) {
   }, []);
 
   // Home routes — pressing back here means "leave the app" → show logout modal
-  const HOME_ROUTES = ['/dashboard', '/admin', '/staff'];
+  const HOME_ROUTES = ['/dashboard', '/admin', '/staff', '/admin/user-reports'];
   const isHomePage  = HOME_ROUTES.includes(location.pathname);
 
   // Handle back button click in the top bar
