@@ -158,10 +158,56 @@ export default function ResumeAnalyze() {
               </div>
             ) : (
               /* ── Empty / dragging state ── */
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 56, height: 56, borderRadius: 14, background: "rgba(99,102,241,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>
-                  {dragging ? "📂" : "⬆️"}
-                </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+
+                {/* Illustrated SVG */}
+                {dragging ? (
+                  /* ── Drop-now illustration ── */
+                  <svg width="90" height="90" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* glow ring */}
+                    <circle cx="45" cy="45" r="42" stroke="rgba(99,102,241,0.35)" strokeWidth="2" strokeDasharray="6 4"/>
+                    <circle cx="45" cy="45" r="33" fill="rgba(99,102,241,0.12)"/>
+                    {/* open folder body */}
+                    <rect x="18" y="38" width="54" height="32" rx="5" fill="rgba(99,102,241,0.25)" stroke="#818cf8" strokeWidth="1.5"/>
+                    {/* folder tab */}
+                    <path d="M18 38 L18 34 Q18 31 21 31 L36 31 Q39 31 40 34 L42 38Z" fill="rgba(99,102,241,0.4)" stroke="#818cf8" strokeWidth="1.2"/>
+                    {/* document flying in */}
+                    <g transform="rotate(-12, 53, 30)">
+                      <rect x="44" y="18" width="18" height="24" rx="3" fill="#1e1e3f" stroke="#6366f1" strokeWidth="1.5"/>
+                      <path d="M44 24 L50 18" stroke="#6366f1" strokeWidth="1.5" strokeLinecap="round"/>
+                      <rect x="44" y="18" width="6" height="6" rx="1" fill="rgba(99,102,241,0.3)"/>
+                      <line x1="48" y1="28" x2="58" y2="28" stroke="rgba(255,255,255,0.25)" strokeWidth="1.2" strokeLinecap="round"/>
+                      <line x1="48" y1="32" x2="58" y2="32" stroke="rgba(255,255,255,0.18)" strokeWidth="1.2" strokeLinecap="round"/>
+                      <line x1="48" y1="36" x2="55" y2="36" stroke="rgba(255,255,255,0.12)" strokeWidth="1.2" strokeLinecap="round"/>
+                    </g>
+                    {/* arrow down into folder */}
+                    <path d="M45 30 L45 46" stroke="#a5b4fc" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M39 41 L45 48 L51 41" stroke="#a5b4fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : (
+                  /* ── Idle upload illustration ── */
+                  <svg width="90" height="90" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* background circle */}
+                    <circle cx="45" cy="45" r="38" fill="rgba(99,102,241,0.08)" stroke="rgba(99,102,241,0.18)" strokeWidth="1.5" strokeDasharray="5 3"/>
+                    {/* document body */}
+                    <rect x="26" y="22" width="32" height="42" rx="4" fill="#1a1a35" stroke="rgba(99,102,241,0.5)" strokeWidth="1.6"/>
+                    {/* dog-ear fold */}
+                    <path d="M49 22 L58 31" stroke="rgba(99,102,241,0.5)" strokeWidth="1.4"/>
+                    <path d="M49 22 L49 31 L58 31" fill="rgba(99,102,241,0.18)" stroke="rgba(99,102,241,0.4)" strokeWidth="1.2"/>
+                    {/* text lines */}
+                    <line x1="32" y1="37" x2="52" y2="37" stroke="rgba(255,255,255,0.22)" strokeWidth="1.4" strokeLinecap="round"/>
+                    <line x1="32" y1="43" x2="52" y2="43" stroke="rgba(255,255,255,0.16)" strokeWidth="1.4" strokeLinecap="round"/>
+                    <line x1="32" y1="49" x2="46" y2="49" stroke="rgba(255,255,255,0.12)" strokeWidth="1.4" strokeLinecap="round"/>
+                    <line x1="32" y1="55" x2="50" y2="55" stroke="rgba(255,255,255,0.10)" strokeWidth="1.4" strokeLinecap="round"/>
+                    {/* upload arrow badge */}
+                    <circle cx="63" cy="63" r="14" fill="#07071a" stroke="rgba(99,102,241,0.45)" strokeWidth="1.5"/>
+                    <circle cx="63" cy="63" r="11" fill="rgba(99,102,241,0.2)"/>
+                    {/* up arrow */}
+                    <path d="M63 69 L63 57" stroke="#a5b4fc" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M58 62 L63 57 L68 62" stroke="#a5b4fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+
                 <div>
                   <p style={{ color: textFull, fontWeight: 600, fontSize: 15, margin: "0 0 4px" }}>
                     {dragging ? "Drop your file here" : "Drag & drop your resume"}

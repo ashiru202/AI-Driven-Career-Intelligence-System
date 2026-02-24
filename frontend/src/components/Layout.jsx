@@ -690,7 +690,7 @@ export default function Layout({ children }) {
             <span style={{ color: '#fff', fontWeight: 800, fontSize: 16, letterSpacing: -0.3 }}>
               Career<span style={{ color: '#818cf8' }}>IQ</span>
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.32)', fontSize: 10, fontWeight: 500, letterSpacing: 0.3, marginTop: 2 }}>
+            <span style={{ color: 'rgb(248, 248, 248)', fontSize: 10, fontWeight: 500, letterSpacing: 0.3, marginTop: 2 }}>
               AI-Driven Career Intelligence System
             </span>
           </div>
