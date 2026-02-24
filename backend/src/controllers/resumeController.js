@@ -112,6 +112,37 @@ const getResumeDetails = asyncHandler(async (req, res) => {
   }));
 });
 
+// Serve / download a resume file
+const downloadResume = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  // Query all fields (filePath is needed to serve the file)
+  const resume = await Resume.findOne({ _id: id, user: userId });
+
+  if (!resume) {
+    throw AppError.notFound('Resume not found');
+  }
+
+  const isPdf = resume.fileType === 'application/pdf';
+
+  res.setHeader('Content-Type', resume.fileType);
+  // inline → browser preview (PDF); attachment → force-download (DOCX)
+  res.setHeader(
+    'Content-Disposition',
+    `${isPdf ? 'inline' : 'attachment'}; filename="${resume.fileName}"`
+  );
+
+  res.sendFile(path.resolve(resume.filePath), (err) => {
+    if (err) {
+      console.error('File send error:', err);
+      if (!res.headersSent) {
+        res.status(404).json({ ok: false, message: 'File not found on disk' });
+      }
+    }
+  });
+});
+
 // Delete resume
 const deleteResume = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -136,5 +167,6 @@ module.exports = {
   uploadResume,
   getUserResumes,
   getResumeDetails,
+  downloadResume,
   deleteResume
 };

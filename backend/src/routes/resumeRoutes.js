@@ -7,6 +7,7 @@ const {
   uploadResume,
   getUserResumes,
   getResumeDetails,
+  downloadResume,
   deleteResume
 } = require('../controllers/resumeController');
 
@@ -21,6 +22,9 @@ router.get('/', getUserResumes);
 
 // Get specific resume details
 router.get('/:id', getResumeDetails);
+
+// Download / preview resume file
+router.get('/:id/download', downloadResume);
 
 // Delete resume
 router.delete('/:id', deleteResume);

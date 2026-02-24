@@ -42,6 +42,28 @@ export default function MyResumes() {
     }
   };
 
+  const handleView = async (id, fileName) => {
+    try {
+      const res = await api.get(`/api/resumes/${id}/download`, { responseType: 'blob' });
+      const contentType = res.headers['content-type'] || 'application/octet-stream';
+      const blob = new Blob([res.data], { type: contentType });
+      const url = URL.createObjectURL(blob);
+      const isPdf = contentType.includes('pdf');
+      if (isPdf) {
+        window.open(url, '_blank');
+      } else {
+        // DOCX: trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err) {
+      alert('Failed to open resume. The file may have been removed from disk.');
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -136,6 +158,12 @@ export default function MyResumes() {
                     )}
 
                     <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleView(resume._id, resume.fileName)}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-medium"
+                      >
+                        👁 View
+                      </button>
                       <button
                         onClick={() => navigate("/compare-job")}
                         className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
