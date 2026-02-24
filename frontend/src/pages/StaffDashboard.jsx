@@ -55,18 +55,6 @@ export default function StaffDashboard() {
     }
   }, []);
 
-  const exportJSON = () => {
-    if (!report && !cvData && !insightsData) return;
-    const payload = { user: selectedUser, cvCompleteness: cvData, insights: insightsData, roadmaps: report?.roadmaps, generatedAt: new Date().toISOString() };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `user-report-${selectedUser.email}-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const downloadPDF = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -196,9 +184,6 @@ export default function StaffDashboard() {
                         <CardDescription>{selectedUser.email}</CardDescription>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700" onClick={exportJSON}>
-                          Export JSON
-                        </Button>
                         <Button size="sm" className="bg-gray-800 text-white hover:bg-gray-900" onClick={downloadPDF}>
                           Download PDF
                         </Button>

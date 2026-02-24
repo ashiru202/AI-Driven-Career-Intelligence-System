@@ -30,16 +30,6 @@ export default function AdminReport() {
     fetchReport();
   }, []);
 
-  const exportJSON = () => {
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `platform-report-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const downloadPDF = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -100,12 +90,6 @@ export default function AdminReport() {
               disabled={refreshing}
             >
               {refreshing ? "Refreshing..." : "Refresh"}
-            </Button>
-            <Button
-              onClick={exportJSON}
-              className="bg-blue-600 text-white hover:bg-blue-700"
-            >
-              Export JSON
             </Button>
             <Button
               onClick={downloadPDF}
