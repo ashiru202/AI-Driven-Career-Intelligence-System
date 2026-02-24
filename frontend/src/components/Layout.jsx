@@ -2,6 +2,272 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../api/api';
 
+// ── Profile Edit Modal ───────────────────────────────────────────────────────
+function ProfileModal({ onClose, onSave }) {
+  const [form, setForm]         = useState({ name: '', phone: '', bio: '', location: '' });
+  const [pwSection, setPwSection] = useState(false);
+  const [pw, setPw]             = useState({ current: '', next: '', confirm: '' });
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState(false);
+  const [msg, setMsg]           = useState(null); // { type: 'ok'|'err', text }
+  const overlayRef              = useRef(null);
+
+  // Load profile on mount
+  useEffect(() => {
+    api.get('/api/users/me')
+      .then(({ data }) => {
+        const u = data.user || {};
+        setForm({
+          name:     u.name     || '',
+          phone:    u.phone    || '',
+          bio:      u.bio      || '',
+          location: u.location || '',
+        });
+      })
+      .catch(() => setMsg({ type: 'err', text: 'Could not load profile' }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Close on overlay click
+  const handleOverlay = (e) => { if (e.target === overlayRef.current) onClose(); };
+
+  // Close on Escape
+  useEffect(() => {
+    const h = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setMsg(null);
+
+    if (pwSection) {
+      if (pw.next !== pw.confirm) {
+        return setMsg({ type: 'err', text: 'New passwords do not match' });
+      }
+      if (pw.next && pw.next.length < 6) {
+        return setMsg({ type: 'err', text: 'New password must be at least 6 characters' });
+      }
+    }
+
+    setSaving(true);
+    try {
+      const payload = { ...form };
+      if (pwSection && pw.next) {
+        payload.currentPassword = pw.current;
+        payload.newPassword     = pw.next;
+      }
+      const { data } = await api.put('/api/users/me', payload);
+      // Sync localStorage so the UI updates immediately
+      const stored = JSON.parse(localStorage.getItem('user') || '{}');
+      const fresh  = { ...stored, ...data.user };
+      localStorage.setItem('user', JSON.stringify(fresh));
+      setMsg({ type: 'ok', text: 'Profile saved successfully!' });
+      setPw({ current: '', next: '', confirm: '' });
+      onSave(data.user);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to save profile';
+      setMsg({ type: 'err', text: msg });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const field = (label, key, type = 'text', placeholder = '') => (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>{label}</label>
+      {key === 'bio' ? (
+        <textarea
+          value={form[key]}
+          onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+          placeholder={placeholder}
+          rows={3}
+          style={inputStyle}
+        />
+      ) : (
+        <input
+          type={type}
+          value={form[key]}
+          onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+          placeholder={placeholder}
+          style={inputStyle}
+        />
+      )}
+    </div>
+  );
+
+  const pwField = (label, key, placeholder = '') => (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>{label}</label>
+      <input
+        type="password"
+        value={pw[key]}
+        onChange={e => setPw(p => ({ ...p, [key]: e.target.value }))}
+        placeholder={placeholder}
+        style={inputStyle}
+      />
+    </div>
+  );
+
+  const initials = form.name
+    ? form.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : '?';
+
+  return (
+    <div
+      ref={overlayRef}
+      onClick={handleOverlay}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 999,
+        background: 'rgba(0,0,0,0.72)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '16px',
+        backdropFilter: 'blur(6px)',
+      }}
+    >
+      <div style={{
+        width: '100%', maxWidth: 480,
+        background: '#13132b',
+        border: '1px solid rgba(99,102,241,0.28)',
+        borderRadius: 18,
+        boxShadow: '0 24px 72px rgba(0,0,0,0.7)',
+        overflow: 'hidden',
+        maxHeight: '90vh',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '20px 24px 16px',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          display: 'flex', alignItems: 'center', gap: 14,
+        }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: '50%',
+            background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 18, fontWeight: 800, color: '#fff', flexShrink: 0,
+          }}>{initials}</div>
+          <div>
+            <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Edit Profile</div>
+            <div style={{ color: 'rgba(255,255,255,0.38)', fontSize: 12, marginTop: 2 }}>Update your personal information</div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', fontSize: 20, lineHeight: 1, padding: '4px 6px', borderRadius: 6 }}
+            onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
+          >✕</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {loading ? (
+            <div style={{ padding: 32, textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>Loading profile…</div>
+          ) : (
+            <form onSubmit={handleSave} style={{ padding: '20px 24px' }}>
+
+              {/* Success / Error banner */}
+              {msg && (
+                <div style={{
+                  marginBottom: 16, padding: '10px 14px', borderRadius: 10, fontSize: 13,
+                  background: msg.type === 'ok' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
+                  border: `1px solid ${msg.type === 'ok' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                  color: msg.type === 'ok' ? '#4ade80' : '#f87171',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                  <span>{msg.type === 'ok' ? '✓' : '✕'}</span> {msg.text}
+                </div>
+              )}
+
+              {/* Personal info */}
+              <div style={{ marginBottom: 6, color: 'rgba(255,255,255,0.22)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Personal Info</div>
+              <div style={{ width: '100%', height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 16 }} />
+
+              {field('Full Name',  'name',     'text',  'John Doe')}
+              {field('Phone',      'phone',    'tel',   '+1 (555) 000-0000')}
+              {field('Location',   'location', 'text',  'San Francisco, CA')}
+              {field('Bio',        'bio',      'text',  'A short bio about you…')}
+
+              {/* Password section toggle */}
+              <button
+                type="button"
+                onClick={() => { setPwSection(s => !s); setMsg(null); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#818cf8', fontSize: 13, fontWeight: 600,
+                  padding: '4px 0', marginBottom: 14,
+                }}
+              >
+                <span style={{ fontSize: 16 }}>{pwSection ? '▾' : '▸'}</span>
+                Change Password
+              </button>
+
+              {pwSection && (
+                <div style={{
+                  background: 'rgba(99,102,241,0.07)',
+                  border: '1px solid rgba(99,102,241,0.18)',
+                  borderRadius: 12, padding: '16px 16px 6px', marginBottom: 16,
+                }}>
+                  {pwField('Current Password', 'current', '••••••••')}
+                  {pwField('New Password',     'next',    '••••••••')}
+                  {pwField('Confirm New',      'confirm', '••••••••')}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  style={{
+                    flex: 1, padding: '11px 0', borderRadius: 10,
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'rgba(255,255,255,0.55)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    flex: 2, padding: '11px 0', borderRadius: 10,
+                    background: saving ? 'rgba(99,102,241,0.4)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                    border: 'none',
+                    color: '#fff', fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
+                    boxShadow: saving ? 'none' : '0 4px 16px rgba(99,102,241,0.4)',
+                    transition: 'all 0.18s',
+                  }}
+                >
+                  {saving ? 'Saving…' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const inputStyle = {
+  width: '100%', padding: '9px 12px',
+  background: 'rgba(255,255,255,0.05)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 9, color: '#fff', fontSize: 14,
+  outline: 'none', boxSizing: 'border-box',
+  transition: 'border-color 0.15s',
+  fontFamily: 'inherit',
+  resize: 'vertical',
+};
+
 const ROLE_NAV = {
   ADMIN: [
     { path: '/admin',            label: 'Admin Dashboard', icon: '⚡' },
@@ -375,9 +641,10 @@ function SidebarContent({ location, navigate, userRole, userName, setSidebarOpen
 export default function Layout({ children }) {
   const location  = useLocation();
   const navigate  = useNavigate();
-  const [userRole, setUserRole] = useState(null);
-  const [userName, setUserName] = useState('');
+  const [userRole,    setUserRole]    = useState(null);
+  const [userName,    setUserName]    = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -435,15 +702,23 @@ export default function Layout({ children }) {
           {/* Notification bell — only mount once role is known so storage key is correct */}
           {userRole && <NotificationDropdown userRole={userRole} />}
 
-          {/* Desktop user avatar pill */}
+          {/* Desktop user avatar pill — click to open profile editor */}
           {userName && (
-            <div className="hidden md:flex" style={{
-              alignItems: 'center', gap: 8,
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.09)',
-              borderRadius: 20, padding: '4px 12px 4px 4px',
-              cursor: 'default',
-            }}>
+            <button
+              onClick={() => setProfileOpen(true)}
+              title="Edit profile"
+              className="hidden md:flex"
+              style={{
+                alignItems: 'center', gap: 8,
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.09)',
+                borderRadius: 20, padding: '4px 12px 4px 4px',
+                cursor: 'pointer',
+                transition: 'all 0.18s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.14)'; e.currentTarget.style.borderColor = 'rgba(99,102,241,0.4)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)'; }}
+            >
               <div style={{
                 width: 26, height: 26, borderRadius: '50%',
                 background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
@@ -455,7 +730,7 @@ export default function Layout({ children }) {
               <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 600 }}>
                 {userName.split(' ')[0]}
               </span>
-            </div>
+            </button>
           )}
 
 
@@ -488,6 +763,16 @@ export default function Layout({ children }) {
         </main>
 
       </div>
+
+      {/* Profile edit modal */}
+      {profileOpen && (
+        <ProfileModal
+          onClose={() => setProfileOpen(false)}
+          onSave={(updatedUser) => {
+            if (updatedUser?.name) setUserName(updatedUser.name);
+          }}
+        />
+      )}
     </div>
   );
 }

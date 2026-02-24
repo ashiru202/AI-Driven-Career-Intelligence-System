@@ -1,15 +1,21 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  name:     { type: String, required: true },
+  email:    { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: {
     type: String,
     enum: ["USER", "STAFF", "ADMIN"],
     default: "USER",
   },
-  active: { type: Boolean, default: true },
+  active:   { type: Boolean, default: true },
+  // Profile fields
+  phone:    { type: String, default: '' },
+  bio:      { type: String, default: '' },
+  location: { type: String, default: '' },
+  jobTitle: { type: String, default: '' },
+  avatar:   { type: String, default: '' }, // future: URL to profile picture
   createdAt: { type: Date, default: Date.now },
 });
 
