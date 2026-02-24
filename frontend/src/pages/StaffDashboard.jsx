@@ -6,6 +6,8 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input, Label } from "../components/ui/input";
 
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
 export default function StaffDashboard() {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
@@ -52,6 +54,37 @@ export default function StaffDashboard() {
       setLoadingAnalysis(false);
     }
   }, []);
+
+  const exportJSON = () => {
+    if (!report && !cvData && !insightsData) return;
+    const payload = { user: selectedUser, cvCompleteness: cvData, insights: insightsData, roadmaps: report?.roadmaps, generatedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `user-report-${selectedUser.email}-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadPDF = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/api/reports/user/${selectedUser._id}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("PDF failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `user-report-${selectedUser.email}-${new Date().toISOString().slice(0, 10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Failed to download PDF. Please try again.");
+    }
+  };
 
   const filteredUsers = users.filter(
     (u) =>
@@ -157,8 +190,20 @@ export default function StaffDashboard() {
                 {/* User Header */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>{selectedUser.name}</CardTitle>
-                    <CardDescription>{selectedUser.email}</CardDescription>
+                    <div className="flex items-start justify-between flex-wrap gap-3">
+                      <div>
+                        <CardTitle>{selectedUser.name}</CardTitle>
+                        <CardDescription>{selectedUser.email}</CardDescription>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700" onClick={exportJSON}>
+                          Export JSON
+                        </Button>
+                        <Button size="sm" className="bg-gray-800 text-white hover:bg-gray-900" onClick={downloadPDF}>
+                          Download PDF
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
                 </Card>
 

@@ -20,7 +20,6 @@ import Analytics from "./pages/Analytics";
 import MyResumes from "./pages/MyResumes";
 import StaffManagement from "./pages/StaffManagement";
 import AdminReport from "./pages/AdminReport";
-import UserReport from "./pages/UserReport";
 import JobPostings from "./pages/JobPostings";
 import SkillsInDemand from "./pages/SkillsInDemand";
 
@@ -191,17 +190,8 @@ export default function App() {
           }
         />
 
-        {/* User Reports — ADMIN + STAFF */}
-        <Route
-          path="/user-report"
-          element={
-            <ProtectedRoute>
-              <RoleRoute roles={["STAFF", "ADMIN"]}>
-                <UserReport />
-              </RoleRoute>
-            </ProtectedRoute>
-          }
-        />
+        {/* User Reports — redirects to Staff View which now includes export */}
+        <Route path="/user-report" element={<Navigate to="/staff" replace />} />
 
         <Route path="/logout" element={<Logout />} />
         <Route path="*" element={<Navigate to="/" replace />} />

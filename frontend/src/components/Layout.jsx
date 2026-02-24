@@ -7,13 +7,11 @@ const ROLE_NAV = {
     { path: '/staff-management', label: 'Staff Management', icon: '👥' },
     { path: '/users',            label: 'Job Seekers',      icon: '🧑‍💼' },
     { path: '/admin-report',     label: 'Platform Report',  icon: '📊' },
-    { path: '/user-report',      label: 'User Reports',     icon: '📋' },
-    { path: '/staff',            label: 'Staff View',       icon: '🔍' },
+    { path: '/staff',            label: 'User Reports',     icon: '📋' },
     { path: '/all-roadmaps',     label: 'All Roadmaps',     icon: '🗺️' },
   ],
   STAFF: [
     { path: '/staff',            label: 'Staff Dashboard',  icon: '🖥️' },
-    { path: '/user-report',      label: 'User Reports',     icon: '📋' },
     { path: '/all-roadmaps',     label: 'All Roadmaps',     icon: '🗺️' },
   ],
   USER: [
