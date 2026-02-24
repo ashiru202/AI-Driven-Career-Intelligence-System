@@ -187,10 +187,11 @@ export default function CompareJob() {
                     id="resume"
                     value={selectedResumeId}
                     onChange={(e) => setSelectedResumeId(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.13)', color: '#fff' }}
                   >
                     {resumes.map((r) => (
-                      <option key={r._id} value={r._id}>
+                      <option key={r._id} value={r._id} style={{ background: '#1e1e2e', color: '#fff' }}>
                         {r.fileName}{" "}
                         ({new Date(r.createdAt).toLocaleDateString()})
                       </option>
