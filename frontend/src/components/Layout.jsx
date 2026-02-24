@@ -46,25 +46,10 @@ function SidebarContent({ location, navigate, userRole, userName, setSidebarOpen
 
   return (
     <div style={{
-      width: 256, height: '100%', minHeight: '100vh', background: '#0c0c20',
+      width: 256, height: '100%', background: '#0c0c20',
       borderRight: '1px solid rgba(255,255,255,0.06)',
       display: 'flex', flexDirection: 'column',
     }}>
-      {/* User block */}
-      {userName && (
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-            {initials}
-          </div>
-          <div style={{ overflow: 'hidden' }}>
-            <div style={{ color: '#fff', fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userName}</div>
-            <span style={{ fontSize: 11, fontWeight: 700, background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 100, padding: '2px 8px', marginTop: 3, display: 'inline-block' }}>
-              {userRole}
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* Nav items */}
       <nav style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
         {navItems.map(({ path, label, icon }) => {
@@ -94,6 +79,44 @@ function SidebarContent({ location, navigate, userRole, userName, setSidebarOpen
           );
         })}
       </nav>
+
+      {/* User card — above System Health */}
+      {userName && (
+        <div style={{ padding: '10px 14px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{
+            borderRadius: 12,
+            background: rc.bg,
+            border: `1px solid ${rc.border}`,
+            overflow: 'hidden',
+          }}>
+            {/* "Logged in as" header strip */}
+            <div style={{
+              padding: '6px 12px',
+              borderBottom: `1px solid ${rc.border}`,
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                Logged in as
+              </span>
+              <span style={{
+                marginLeft: 'auto', fontSize: 11, fontWeight: 800,
+                color: rc.text, letterSpacing: 0.5,
+              }}>
+                {userRole}
+              </span>
+            </div>
+            {/* Avatar + name row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px' }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                {initials}
+              </div>
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ color: '#fff', fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userName}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom links */}
       <div style={{ padding: '10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
@@ -134,28 +157,49 @@ export default function Layout({ children }) {
   }, []);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#07071a', fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif" }}>
-      {/* Desktop sidebar — hidden on small screens */}
-      <div className="hidden md:block" style={{ flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
-        <SidebarContent location={location} navigate={navigate} userRole={userRole} userName={userName} />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#07071a', fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif" }}>
 
-      {/* Right column: topbar + page content stacked vertically */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: '100vh' }}>
+      {/* ── Full-width top bar (spans sidebar + content) ── */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 100, flexShrink: 0,
+        width: '100%', height: 54,
+        background: '#0c0c20',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 20px',
+        boxShadow: '0 2px 16px rgba(0,0,0,0.35)',
+      }}>
+        {/* Left: logo */}
+        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span style={{ color: '#fff', fontSize: 12, fontWeight: 800, letterSpacing: -0.5 }}>AI</span>
+          </div>
+          <span style={{ color: '#fff', fontWeight: 800, fontSize: 17, letterSpacing: -0.3 }}>
+            Career<span style={{ color: '#818cf8' }}>IQ</span>
+          </span>
+        </Link>
 
-        {/* Mobile top bar — sticky inside the column so it naturally pushes content down */}
-        <div className="md:hidden" style={{ position: 'sticky', top: 0, zIndex: 40, flexShrink: 0, background: '#0c0c20', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0 16px', height: 54, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: '#fff', fontSize: 12, fontWeight: 800 }}>AI</span>
-            </div>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>CareerIQ</span>
-          </Link>
-          <button onClick={() => setSidebarOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6 }}>
-            <div style={{ width: 20, height: 2, background: '#fff', marginBottom: 4, borderRadius: 2 }} />
-            <div style={{ width: 20, height: 2, background: '#fff', marginBottom: 4, borderRadius: 2 }} />
+        {/* Right: mobile hamburger */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden"
+            onClick={() => setSidebarOpen(o => !o)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex', flexDirection: 'column', gap: 4 }}
+          >
+            <div style={{ width: 20, height: 2, background: '#fff', borderRadius: 2 }} />
+            <div style={{ width: 20, height: 2, background: '#fff', borderRadius: 2 }} />
             <div style={{ width: 14, height: 2, background: '#fff', borderRadius: 2 }} />
           </button>
+        </div>
+      </div>
+
+      {/* ── Below top bar: sidebar + content ── */}
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+
+        {/* Desktop sidebar */}
+        <div className="hidden md:block" style={{ flexShrink: 0, position: 'sticky', top: 54, height: 'calc(100vh - 54px)', overflowY: 'auto' }}>
+          <SidebarContent location={location} navigate={navigate} userRole={userRole} userName={userName} />
         </div>
 
         {/* Mobile drawer overlay */}
@@ -169,7 +213,7 @@ export default function Layout({ children }) {
         )}
 
         {/* Main content area */}
-        <main style={{ flex: 1, overflow: 'auto' }}>
+        <main style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
           <div style={{ padding: '32px' }}>
             {children}
           </div>
