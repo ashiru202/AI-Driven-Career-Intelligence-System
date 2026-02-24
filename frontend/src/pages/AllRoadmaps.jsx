@@ -295,8 +295,8 @@ const modalBox = {
 
 const label = { display: "block", fontSize: 12, opacity: 0.7, marginBottom: 6, color: "rgba(255,255,255,0.7)" };
 const input = { width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "#fff" };
-const btn = { padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", color: "#fff", cursor: "pointer" };
-const btnSmall = { padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", color: "#fff", cursor: "pointer" };
+const btn = { padding: "10px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 14 };
+const btnSmall = { padding: "6px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", cursor: "pointer", fontWeight: 500, fontSize: 13 };
 
 const th = { textAlign: "left", padding: "12px 10px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: 13, color: "rgba(255,255,255,0.6)" };
 const td = { padding: "12px 10px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 14, color: "#e2e8f0" };

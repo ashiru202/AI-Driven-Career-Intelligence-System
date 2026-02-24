@@ -58,9 +58,22 @@ select option {
 }
 
 /* Buttons (shadcn default variant) */
-button[class*="bg-blue"], a[class*="bg-blue"] {
+button[class*="bg-blue"], a[class*="bg-blue"],
+button[class*="bg-indigo"], a[class*="bg-indigo"] {
   background: linear-gradient(135deg,#6366f1,#8b5cf6) !important;
   border: none !important;
+  color: #fff !important;
+}
+button[class*="bg-gray-8"], button[class*="bg-gray-9"],
+a[class*="bg-gray-8"], a[class*="bg-gray-9"] {
+  background: rgba(255,255,255,0.08) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  color: #fff !important;
+}
+/* Ensure hover states work on gradient buttons */
+button[class*="hover:bg-blue"]:hover,
+button[class*="hover:bg-indigo"]:hover {
+  background: linear-gradient(135deg,#4f46e5,#7c3aed) !important;
 }
 
 /* Tables */

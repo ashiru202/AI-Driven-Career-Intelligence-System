@@ -2,10 +2,10 @@ import * as React from "react"
 
 const Button = React.forwardRef(({ className = "", variant = "default", size = "default", ...props }, ref) => {
   const variants = {
-    default: "bg-blue-600 text-white hover:bg-blue-700",
+    default: "bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 shadow-sm",
     destructive: "bg-red-600 text-white hover:bg-red-700",
     outline: "border border-white/20 bg-transparent hover:bg-white/10 text-gray-100",
-    secondary: "bg-white/10 text-gray-100 hover:bg-white/15",
+    secondary: "border border-white/15 bg-white/8 text-gray-100 hover:bg-white/12",
     ghost: "hover:bg-white/10 text-gray-100",
     link: "text-indigo-400 underline-offset-4 hover:underline",
   }
