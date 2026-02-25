@@ -1,10 +1,30 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import re
+import logging
 
-app = FastAPI(title="NLP Microservice", version="1.0.0")
+logger = logging.getLogger(__name__)
+
+# ── sentence-transformers (loaded lazily on first request) ──────────────────
+_semantic_model = None
+
+def get_semantic_model():
+    """Load the sentence-transformer model once and cache it."""
+    global _semantic_model
+    if _semantic_model is None:
+        try:
+            from sentence_transformers import SentenceTransformer
+            logger.info("Loading sentence-transformer model 'all-MiniLM-L6-v2'…")
+            _semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
+            logger.info("Semantic model loaded successfully.")
+        except Exception as e:
+            logger.error(f"Failed to load semantic model: {e}")
+            _semantic_model = None
+    return _semantic_model
+
+app = FastAPI(title="NLP Microservice", version="2.0.0")
 
 # CORS configuration
 app.add_middleware(
@@ -154,25 +174,132 @@ def extract_skills_from_text(text: str) -> List[str]:
 
 @app.get("/")
 async def root():
-    return {"message": "NLP Microservice API", "version": "1.0.0"}
+    return {"message": "NLP Microservice API", "version": "2.0.0", "features": ["keyword-extraction", "semantic-matching"]}
 
 @app.get("/health")
 async def health():
-    return {"ok": True, "service": "nlp"}
+    model_ready = get_semantic_model() is not None
+    return {"ok": True, "service": "nlp", "semanticModel": model_ready}
+
 
 @app.post("/extract-skills", response_model=SkillsResponse)
 async def extract_skills(input_data: TextInput):
     """
-    Extract technical skills from the provided text (resume content)
+    Extract technical skills from the provided text using keyword matching.
+    This is kept as a reliable fallback. Primary extraction is now done
+    via Groq AI in the backend.
     """
     if not input_data.text or len(input_data.text.strip()) == 0:
         raise HTTPException(status_code=400, detail="Text input is required")
-    
+
     try:
         skills = extract_skills_from_text(input_data.text)
         return SkillsResponse(skills=skills)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error extracting skills: {str(e)}")
+
+
+# ── Schemas for semantic matching ──────────────────────────────────────────
+class SemanticMatchInput(BaseModel):
+    resume_skills: List[str]
+    job_skills: List[str]
+    threshold: float = 0.50   # cosine similarity threshold (0–1)
+
+class SemanticMatchEntry(BaseModel):
+    jobSkill: str
+    matchedWith: str
+    score: float
+    isExact: bool
+
+class SemanticMatchResponse(BaseModel):
+    matchScore: int
+    commonSkills: List[str]
+    missingSkills: List[str]
+    semanticMatches: List[SemanticMatchEntry]
+    modelUsed: str
+
+
+@app.post("/semantic-match", response_model=SemanticMatchResponse)
+async def semantic_match(input_data: SemanticMatchInput):
+    """
+    Compare resume skills vs job skills using transformer embeddings
+    (all-MiniLM-L6-v2). Falls back to exact/keyword matching if the
+    model is unavailable.
+    """
+    resume_skills = [s.strip() for s in input_data.resume_skills if s.strip()]
+    job_skills    = [s.strip() for s in input_data.job_skills    if s.strip()]
+    threshold     = input_data.threshold
+
+    if not job_skills:
+        return SemanticMatchResponse(
+            matchScore=0, commonSkills=[], missingSkills=[],
+            semanticMatches=[], modelUsed="none"
+        )
+    if not resume_skills:
+        return SemanticMatchResponse(
+            matchScore=0, commonSkills=[], missingSkills=job_skills,
+            semanticMatches=[], modelUsed="none"
+        )
+
+    model = get_semantic_model()
+
+    # ── Semantic path ────────────────────────────────────────────────────
+    if model is not None:
+        try:
+            from sentence_transformers import util
+            import torch
+
+            resume_emb = model.encode(resume_skills, convert_to_tensor=True, show_progress_bar=False)
+            job_emb    = model.encode(job_skills,    convert_to_tensor=True, show_progress_bar=False)
+
+            common_skills: List[str] = []
+            missing_skills: List[str] = []
+            semantic_matches: List[dict] = []
+
+            for i, job_skill in enumerate(job_skills):
+                cos_scores = util.cos_sim(job_emb[i], resume_emb)[0]
+                best_idx   = int(cos_scores.argmax())
+                best_score = float(cos_scores[best_idx])
+
+                if best_score >= threshold:
+                    common_skills.append(job_skill)
+                    semantic_matches.append({
+                        "jobSkill":   job_skill,
+                        "matchedWith": resume_skills[best_idx],
+                        "score":      round(best_score, 3),
+                        "isExact":    job_skill.lower() == resume_skills[best_idx].lower()
+                    })
+                else:
+                    missing_skills.append(job_skill)
+
+            match_score = round((len(common_skills) / len(job_skills)) * 100)
+            return SemanticMatchResponse(
+                matchScore=match_score,
+                commonSkills=common_skills,
+                missingSkills=missing_skills,
+                semanticMatches=semantic_matches,
+                modelUsed="all-MiniLM-L6-v2"
+            )
+        except Exception as e:
+            logger.error(f"Semantic matching failed, falling back to keyword: {e}")
+
+    # ── Keyword-exact fallback ───────────────────────────────────────────
+    resume_lower = {s.lower() for s in resume_skills}
+    common_skills  = [s for s in job_skills if s.lower() in resume_lower]
+    missing_skills = [s for s in job_skills if s.lower() not in resume_lower]
+    match_score    = round((len(common_skills) / len(job_skills)) * 100)
+
+    return SemanticMatchResponse(
+        matchScore=match_score,
+        commonSkills=common_skills,
+        missingSkills=missing_skills,
+        semanticMatches=[
+            {"jobSkill": s, "matchedWith": s, "score": 1.0, "isExact": True}
+            for s in common_skills
+        ],
+        modelUsed="keyword-fallback"
+    )
+
 
 if __name__ == "__main__":
     import uvicorn

@@ -3,6 +3,7 @@ const { successResponse, errorResponse } = require('../utils/responseHelper');
 const AppError = require('../utils/AppError');
 const { asyncHandler } = require('../middleware/errorMiddleware');
 const { extractTextFromFile } = require('../services/resumeTextExtractor');
+const { extractSkillsWithAI } = require('../services/aiSkillExtractorService');
 const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
@@ -39,22 +40,9 @@ const uploadResume = asyncHandler(async (req, res) => {
       throw AppError.badRequest('EXTRACTION_FAILED', 'Could not extract text from file');
     }
 
-    // Step 2: Call NLP service to extract skills
-    let extractedSkills = [];
-    try {
-      const nlpResponse = await axios.post(
-        `${process.env.NLP_SERVICE_URL}/extract-skills`,
-        { text: extractedText },
-        { timeout: 10000 }
-      );
-
-      if (nlpResponse.data && Array.isArray(nlpResponse.data.skills)) {
-        extractedSkills = nlpResponse.data.skills;
-      }
-    } catch (nlpError) {
-      console.error('NLP service error:', nlpError.message);
-      throw AppError.internal('NLP service is not responding', 'NLP_DOWN');
-    }
+    // Step 2: Extract skills using AI (Groq → keyword fallback)
+    const { skills: extractedSkills, source: extractionSource } = await extractSkillsWithAI(extractedText);
+    console.log(`[Resume] Skill extraction source: ${extractionSource}, count: ${extractedSkills.length}`);
 
     // Step 3: Save resume data to database
     const resume = await Resume.create({
@@ -71,7 +59,8 @@ const uploadResume = asyncHandler(async (req, res) => {
       resumeId: resume._id,
       fileName: resume.fileName,
       skills: resume.extractedSkills,
-      skillCount: resume.extractedSkills.length
+      skillCount: resume.extractedSkills.length,
+      extractionSource   // 'groq' | 'keyword' | 'none'
     }, 'Resume analyzed successfully'));
 
   } catch (error) {

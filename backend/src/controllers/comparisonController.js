@@ -4,6 +4,7 @@ const { successResponse } = require('../utils/responseHelper');
 const AppError = require('../utils/AppError');
 const { asyncHandler } = require('../middleware/errorMiddleware');
 const { normalizeSkillList, compareSkills } = require('../utils/skillNormalizer');
+const { extractSkillsWithAI } = require('../services/aiSkillExtractorService');
 const axios = require('axios');
 
 // Compare user's resume with a job description
@@ -31,34 +32,42 @@ const compareJob = asyncHandler(async (req, res) => {
 
   const resumeSkills = resume.extractedSkills || [];
 
-  // Extract skills from job description if not provided
+  // ── Step 1: Extract job skills via AI (Groq → keyword fallback) ──────
   let extractedJobSkills = jobSkills || [];
-  
-  if (!extractedJobSkills.length && jobDescription) {
-    try {
-      const nlpResponse = await axios.post(
-        `${process.env.NLP_SERVICE_URL}/extract-skills`,
-        { text: jobDescription },
-        { timeout: 8000 }
-      );
 
-      if (nlpResponse.data && Array.isArray(nlpResponse.data.skills)) {
-        extractedJobSkills = nlpResponse.data.skills;
-      }
-    } catch (nlpError) {
-      console.error('NLP service error:', nlpError.message);
-      // Continue with empty job skills if NLP fails
-    }
+  if (!extractedJobSkills.length && jobDescription) {
+    const { skills: aiJobSkills, source: jdSource } = await extractSkillsWithAI(jobDescription);
+    extractedJobSkills = aiJobSkills;
+    console.log(`[Compare] JD skill extraction source: ${jdSource}, count: ${extractedJobSkills.length}`);
   }
 
-  // Normalize and compare skills
+  // ── Step 2: Normalize both skill lists ──────────────────────────────
   const normalizedResumeSkills = normalizeSkillList(resumeSkills);
-  const normalizedJobSkills = normalizeSkillList(extractedJobSkills);
+  const normalizedJobSkills    = normalizeSkillList(extractedJobSkills);
 
-  const { common, missing, matchScore } = compareSkills(
-    normalizedResumeSkills,
-    normalizedJobSkills
-  );
+  // ── Step 3: Semantic matching (NLP service) with keyword fallback ────
+  let common, missing, matchScore, semanticMatches = [], matchingMethod = 'keyword';
+
+  try {
+    const semResponse = await axios.post(
+      `${process.env.NLP_SERVICE_URL}/semantic-match`,
+      { resume_skills: normalizedResumeSkills, job_skills: normalizedJobSkills, threshold: 0.50 },
+      { timeout: 15000 }
+    );
+    const sem = semResponse.data;
+    common          = sem.commonSkills   || [];
+    missing         = sem.missingSkills  || [];
+    matchScore      = sem.matchScore     ?? 0;
+    semanticMatches = sem.semanticMatches || [];
+    matchingMethod  = sem.modelUsed      || 'semantic';
+    console.log(`[Compare] Semantic match used model: ${matchingMethod}, score: ${matchScore}%`);
+  } catch (semErr) {
+    console.warn('[Compare] Semantic match failed, using keyword comparison:', semErr.message);
+    const result = compareSkills(normalizedResumeSkills, normalizedJobSkills);
+    common     = result.common;
+    missing    = result.missing;
+    matchScore = result.matchScore;
+  }
 
   // Save comparison to database
   const comparison = await Comparison.create({
@@ -71,7 +80,9 @@ const compareJob = asyncHandler(async (req, res) => {
     resumeSkills: normalizedResumeSkills,
     commonSkills: common,
     missingSkills: missing,
-    matchScore
+    matchScore,
+    matchingMethod,
+    semanticMatches
   });
 
   res.json(successResponse({
@@ -83,7 +94,9 @@ const compareJob = asyncHandler(async (req, res) => {
     commonSkills: common,
     missingSkills: missing,
     resumeSkills: normalizedResumeSkills,
-    resumeFileName: resume.fileName
+    resumeFileName: resume.fileName,
+    matchingMethod,       // 'all-MiniLM-L6-v2' | 'keyword-fallback'
+    semanticMatches       // [{jobSkill, matchedWith, score, isExact}]
   }, 'Job comparison completed successfully'));
 });
 
