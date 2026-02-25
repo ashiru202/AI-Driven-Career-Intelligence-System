@@ -106,7 +106,7 @@ export default function Health() {
               onMouseEnter={(e) => { e.target.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.target.style.transform = 'translateY(0)'; }}
             >
-              ↺ Refresh Status
+              Refresh Status
             </button>
           )}
         </div>
