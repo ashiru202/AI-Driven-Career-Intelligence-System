@@ -32,37 +32,115 @@ export default function AllRoadmaps() {
   const [selected, setSelected] = useState(null); // modal roadmap
 
 const exportCSV = () => {
-  const rows = filtered.map((r) => {
-    const completion = completionOf(r);
-    const totalSkills = r.skillsToLearn?.length || 0;
-    const completed = (r.skillsToLearn || []).filter(s => s.status === "COMPLETED").length;
+  const formatDate = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  };
 
-    return {
-      user_name: r.user?.name || "",
-      user_email: r.user?.email || "",
-      user_role: r.user?.role || "",
-      target_role: r.targetRole || "",
-      total_skills: totalSkills,
-      completed_skills: completed,
-      completion_percent: completion,
-      created_at: r.createdAt || "",
-      skills_list: (r.skillsToLearn || []).map(s => `${s.skill}:${s.status}`).join(" | ")
-    };
+  const esc = (val) => `"${String(val ?? "").replace(/"/g, '""')}"`;
+
+  const statusLabel = (s) => {
+    if (s === "COMPLETED") return "Completed";
+    if (s === "IN_PROGRESS") return "In Progress";
+    return "Pending";
+  };
+
+  // ── Section 1: Roadmap Summary ──────────────────────────────────────────
+  const summaryHeaders = [
+    "#",
+    "User Name",
+    "User Email",
+    "User Role",
+    "Target Role",
+    "Total Skills",
+    "Completed",
+    "In Progress",
+    "Pending",
+    "Completion %",
+    "Created Date",
+  ];
+
+  const summaryRows = filtered.map((r, i) => {
+    const skills = r.skillsToLearn || [];
+    const total = skills.length;
+    const completed = skills.filter((s) => s.status === "COMPLETED").length;
+    const inProgress = skills.filter((s) => s.status === "IN_PROGRESS").length;
+    const pending = total - completed - inProgress;
+    const pct = total ? Math.round((completed / total) * 100) : 0;
+
+    return [
+      i + 1,
+      r.user?.name || "",
+      r.user?.email || "",
+      r.user?.role || "",
+      r.targetRole || "",
+      total,
+      completed,
+      inProgress,
+      pending,
+      `${pct}%`,
+      formatDate(r.createdAt),
+    ].map(esc);
   });
 
-  const headers = Object.keys(rows[0] || { note: "no_data" });
-  const csv = [
-    headers.join(","),
-    ...rows.map(obj =>
-      headers.map(h => `"${String(obj[h] ?? "").replace(/"/g, '""')}"`).join(",")
-    )
-  ].join("\n");
+  // ── Section 2: Skills Detail ────────────────────────────────────────────
+  const skillHeaders = [
+    "#",
+    "User Name",
+    "User Email",
+    "Target Role",
+    "Skill Name",
+    "Skill Status",
+    "Roadmap Created Date",
+  ];
+
+  const skillRows = [];
+  let skillIdx = 1;
+  filtered.forEach((r) => {
+    const skills = r.skillsToLearn || [];
+    skills.forEach((s) => {
+      skillRows.push(
+        [
+          skillIdx++,
+          r.user?.name || "",
+          r.user?.email || "",
+          r.targetRole || "",
+          s.skill || "",
+          statusLabel(s.status),
+          formatDate(r.createdAt),
+        ].map(esc)
+      );
+    });
+  });
+
+  const exportedOn = new Date().toLocaleDateString("en-GB", {
+    day: "2-digit", month: "short", year: "numeric",
+  });
+
+  const lines = [
+    // Meta
+    [esc("AI-Driven Career Intelligence System – Roadmaps Report")],
+    [esc(`Exported on: ${exportedOn}`), esc(`Total roadmaps: ${filtered.length}`)],
+    [],
+    // Summary section
+    [esc("SECTION 1: Roadmap Summary")],
+    summaryHeaders.map(esc),
+    ...summaryRows,
+    [],
+    // Skills detail section
+    [esc("SECTION 2: Skills Detail (one row per skill)")],
+    skillHeaders.map(esc),
+    ...skillRows,
+  ];
+
+  const csv = "\uFEFF" + lines.map((row) => row.join(",")).join("\r\n");
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `roadmaps_report_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `roadmaps_report_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 };
