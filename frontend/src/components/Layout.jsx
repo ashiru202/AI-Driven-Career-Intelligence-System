@@ -120,44 +120,57 @@ function ProfileModal({ onClose, onSave }) {
       onClick={handleOverlay}
       style={{
         position: 'fixed', inset: 0, zIndex: 999,
-        background: 'rgba(0,0,0,0.72)',
+        background: 'rgba(0,0,0,0.65)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '16px',
-        backdropFilter: 'blur(6px)',
+        animation: 'pmFadeIn 0.2s ease',
       }}
     >
+      <style>{`@keyframes pmFadeIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}`}</style>
       <div style={{
         width: '100%', maxWidth: 480,
-        background: '#13132b',
-        border: '1px solid rgba(99,102,241,0.28)',
-        borderRadius: 18,
-        boxShadow: '0 24px 72px rgba(0,0,0,0.7)',
+        background: 'rgba(13,13,35,0.82)',
+        backdropFilter: 'blur(28px)',
+        WebkitBackdropFilter: 'blur(28px)',
+        border: '1px solid rgba(99,102,241,0.32)',
+        borderRadius: 22,
+        boxShadow: '0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04) inset',
         overflow: 'hidden',
         maxHeight: '90vh',
         display: 'flex',
         flexDirection: 'column',
+        animation: 'pmFadeIn 0.24s ease',
       }}>
         {/* Header */}
         <div style={{
-          padding: '20px 24px 16px',
+          padding: '22px 26px 18px',
           borderBottom: '1px solid rgba(255,255,255,0.07)',
-          display: 'flex', alignItems: 'center', gap: 14,
+          display: 'flex', alignItems: 'center', gap: 16,
+          background: 'rgba(255,255,255,0.025)',
         }}>
           <div style={{
-            width: 48, height: 48, borderRadius: '50%',
+            width: 52, height: 52, borderRadius: '50%',
             background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18, fontWeight: 800, color: '#fff', flexShrink: 0,
+            fontSize: 19, fontWeight: 800, color: '#fff', flexShrink: 0,
+            boxShadow: '0 0 0 3px rgba(99,102,241,0.25), 0 0 18px rgba(99,102,241,0.35)',
           }}>{initials}</div>
           <div>
-            <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Edit Profile</div>
+            <div style={{ color: '#fff', fontWeight: 800, fontSize: 17, letterSpacing: -0.3 }}>Edit Profile</div>
             <div style={{ color: 'rgba(255,255,255,0.38)', fontSize: 12, marginTop: 2 }}>Update your personal information</div>
           </div>
           <button
             onClick={onClose}
-            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', fontSize: 20, lineHeight: 1, padding: '4px 6px', borderRadius: 6 }}
-            onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
+            style={{
+              marginLeft: 'auto', background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+              color: 'rgba(255,255,255,0.45)', fontSize: 16, lineHeight: 1,
+              padding: '6px 8px', borderRadius: 8, transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}
           >✕</button>
         </div>
 
@@ -182,8 +195,10 @@ function ProfileModal({ onClose, onSave }) {
               )}
 
               {/* Personal info */}
-              <div style={{ marginBottom: 6, color: 'rgba(255,255,255,0.22)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Personal Info</div>
-              <div style={{ width: '100%', height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 16 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.1, color: 'rgba(139,92,246,0.8)', whiteSpace: 'nowrap' }}>Personal Info</div>
+                <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,rgba(99,102,241,0.3),transparent)' }} />
+              </div>
 
               {field('Full Name',  'name',     'text',  'John Doe')}
               {field('Phone',      'phone',    'tel',   '+1 (555) 000-0000')}
@@ -207,9 +222,12 @@ function ProfileModal({ onClose, onSave }) {
 
               {pwSection && (
                 <div style={{
-                  background: 'rgba(99,102,241,0.07)',
-                  border: '1px solid rgba(99,102,241,0.18)',
-                  borderRadius: 12, padding: '16px 16px 6px', marginBottom: 16,
+                  background: 'rgba(99,102,241,0.08)',
+                  border: '1px solid rgba(99,102,241,0.22)',
+                  borderRadius: 14, padding: '16px 16px 6px', marginBottom: 16,
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  boxShadow: '0 0 0 1px rgba(255,255,255,0.03) inset',
                 }}>
                   {pwField('Current Password', 'current', '••••••••')}
                   {pwField('New Password',     'next',    '••••••••')}
@@ -218,19 +236,19 @@ function ProfileModal({ onClose, onSave }) {
               )}
 
               {/* Actions */}
-              <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+              <div style={{ display: 'flex', gap: 10, paddingTop: 6 }}>
                 <button
                   type="button"
                   onClick={onClose}
                   style={{
-                    flex: 1, padding: '11px 0', borderRadius: 10,
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    color: 'rgba(255,255,255,0.55)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                    transition: 'all 0.15s',
+                    flex: 1, padding: '12px 0', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                    transition: 'all 0.18s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.11)'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
                 >
                   Cancel
                 </button>
@@ -238,13 +256,15 @@ function ProfileModal({ onClose, onSave }) {
                   type="submit"
                   disabled={saving}
                   style={{
-                    flex: 2, padding: '11px 0', borderRadius: 10,
+                    flex: 2, padding: '12px 0', borderRadius: 12,
                     background: saving ? 'rgba(99,102,241,0.4)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-                    border: 'none',
+                    border: saving ? '1px solid rgba(99,102,241,0.3)' : '1px solid rgba(99,102,241,0.5)',
                     color: '#fff', fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
-                    boxShadow: saving ? 'none' : '0 4px 16px rgba(99,102,241,0.4)',
+                    boxShadow: saving ? 'none' : '0 6px 20px rgba(99,102,241,0.45)',
                     transition: 'all 0.18s',
                   }}
+                  onMouseEnter={e => { if (!saving) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(99,102,241,0.6)'; } }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = saving ? 'none' : '0 6px 20px rgba(99,102,241,0.45)'; }}
                 >
                   {saving ? 'Saving…' : 'Save Changes'}
                 </button>
@@ -258,14 +278,16 @@ function ProfileModal({ onClose, onSave }) {
 }
 
 const inputStyle = {
-  width: '100%', padding: '9px 12px',
-  background: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: 9, color: '#fff', fontSize: 14,
+  width: '100%', padding: '10px 13px',
+  background: 'rgba(255,255,255,0.06)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 10, color: '#fff', fontSize: 14,
   outline: 'none', boxSizing: 'border-box',
-  transition: 'border-color 0.15s',
+  transition: 'border-color 0.18s, background 0.18s, box-shadow 0.18s',
   fontFamily: 'inherit',
   resize: 'vertical',
+  backdropFilter: 'blur(6px)',
+  WebkitBackdropFilter: 'blur(6px)',
 };
 
 // ── Logout Confirm Modal (glass style) ──────────────────────────────────────
