@@ -41,14 +41,29 @@ export default function Health() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0a0a1e 0%,#0d0d2b 60%,#130d30 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Segoe UI',system-ui,sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0a0a1e 0%,#0d0d2b 60%,#130d30 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Segoe UI',system-ui,sans-serif", position: 'relative' }}>
+      {/* Close button — top-right corner */}
+      <Link
+        to="/"
+        title="Close"
+        style={{
+          position: 'fixed', top: 20, right: 20,
+          width: 38, height: 38,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '50%',
+          color: 'rgba(255,255,255,0.55)', fontSize: 18, lineHeight: 1,
+          textDecoration: 'none',
+          backdropFilter: 'blur(8px)',
+          transition: 'all 0.18s', zIndex: 10,
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.18)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.45)'; e.currentTarget.style.color = '#f87171'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
+      >
+        ✕
+      </Link>
       <div style={{ width: '100%', maxWidth: 580 }}>
-        {/* Nav back */}
-        <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.45)', textDecoration: 'none', fontSize: 14, marginBottom: 28 }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#a5b4fc'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}>
-          ← Back to Home
-        </Link>
 
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 22, padding: '36px 32px', backdropFilter: 'blur(20px)' }}>
           {/* Header */}
