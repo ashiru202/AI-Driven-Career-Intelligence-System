@@ -3,7 +3,6 @@ import api from "../api/api";
 import Layout from "../components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
 import { FileText, BookOpen, Video, GraduationCap, Newspaper, Check, Play, X, Link2, CheckCircle2, Clipboard, Trash2, Eye, ExternalLink, Clock } from "lucide-react";
 
 // ─── Resource helpers ────────────────────────────────────────────────────────
@@ -317,10 +316,9 @@ export default function MyRoadmap() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'COMPLETED': return 'success';
-      case 'IN_PROGRESS': return 'default';
-      case 'PENDING': return 'secondary';
-      default: return 'secondary';
+      case 'COMPLETED':  return { bg: 'rgba(34,197,94,0.18)',  border: 'rgba(34,197,94,0.4)',  color: '#4ade80' };
+      case 'IN_PROGRESS': return { bg: 'rgba(234,179,8,0.18)', border: 'rgba(234,179,8,0.4)',  color: '#fbbf24' };
+      default:            return { bg: 'rgba(100,116,139,0.18)', border: 'rgba(100,116,139,0.35)', color: '#94a3b8' };
     }
   };
 
@@ -492,18 +490,25 @@ export default function MyRoadmap() {
                       {filteredSkills.map((skillItem, index) => (
                         <div
                           key={index}
-                          className="border rounded-lg p-4 flex flex-col gap-3 hover:shadow-md transition-shadow"
+                          className="rounded-xl p-4 flex flex-col gap-3 transition-all duration-200 hover:shadow-lg hover:shadow-black/20"
+                          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                         >
                           {/* Header: skill name + status badge */}
                           <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-semibold text-base leading-tight">{skillItem.skill}</h4>
-                            <Badge variant={getStatusColor(skillItem.status)} className="shrink-0">
-                              {skillItem.status.replace('_', ' ')}
-                            </Badge>
+                            <h4 className="font-semibold text-base leading-tight text-white">{skillItem.skill}</h4>
+                            {(() => {
+                              const sc = getStatusColor(skillItem.status);
+                              return (
+                                <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                  style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.color, letterSpacing: '0.04em' }}>
+                                  {skillItem.status === 'IN_PROGRESS' ? 'IN PROGRESS' : skillItem.status}
+                                </span>
+                              );
+                            })()}
                           </div>
 
                           {skillItem.estimateWeeks && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-slate-400">
                               <Clock size={12} className="inline mr-1" /> Est. {skillItem.estimateWeeks} {skillItem.estimateWeeks === 1 ? 'week' : 'weeks'}
                             </p>
                           )}
@@ -511,7 +516,7 @@ export default function MyRoadmap() {
                           {/* Resources */}
                           {skillItem.resources && skillItem.resources.length > 0 && (
                             <div className="flex-1">
-                              <p className="text-xs text-gray-500 font-medium mb-2">Learning Resources:</p>
+                              <p className="text-xs text-slate-400 font-medium mb-2">Learning Resources:</p>
                               <ul className="space-y-2">
                                 {skillItem.resources.map((resource, ridx) => {
                                   const isObj = resource && typeof resource === 'object';
@@ -524,7 +529,8 @@ export default function MyRoadmap() {
 
                                   return (
                                     <li key={ridx}
-                                      className="rounded-lg border bg-white hover:shadow-sm transition-shadow p-2 flex flex-col gap-1.5"
+                                      className="rounded-lg p-2 flex flex-col gap-1.5 transition-shadow"
+                                      style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.09)' }}
                                     >
                                       {/* Top row: badges + link */}
                                       <div className="flex items-start gap-1.5 flex-wrap">
@@ -555,11 +561,11 @@ export default function MyRoadmap() {
                                       {/* Resource name (link) */}
                                       {url ? (
                                         <a href={url} target="_blank" rel="noopener noreferrer"
-                                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline leading-snug font-medium">
+                                          className="text-xs text-indigo-300 hover:text-indigo-100 hover:underline leading-snug font-medium">
                                           {name}
                                         </a>
                                       ) : (
-                                        <span className="text-xs text-gray-700 leading-snug">{name}</span>
+                                        <span className="text-xs text-slate-300 leading-snug">{name}</span>
                                       )}
 
                                       {/* Action row */}
@@ -573,9 +579,9 @@ export default function MyRoadmap() {
                                               ? <><Play size={11} className="inline mr-1" /> Watch preview</>
                                               : <><Eye size={11} className="inline mr-1" /> Preview</>}
                                           </button>
-                                          <span className="text-gray-300">|</span>
+                                          <span className="text-slate-600">|</span>
                                           <a href={url} target="_blank" rel="noopener noreferrer"
-                                            className="text-xs text-gray-500 hover:text-gray-700">
+                                            className="text-xs text-slate-400 hover:text-slate-200">
                                             Open <ExternalLink size={11} className="inline ml-0.5" />
                                           </a>
                                         </div>
@@ -588,18 +594,32 @@ export default function MyRoadmap() {
                           )}
 
                           {/* Status buttons pinned to bottom */}
-                          <div className="flex flex-wrap gap-1.5 pt-1 border-t mt-auto">
-                            {getStatusOptions(skillItem.status).map((status) => (
-                              <Button
-                                key={status}
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 px-2"
-                                onClick={() => updateSkillStatus(skillItem.skill, status)}
-                              >
-                                {status.replace('_', ' ')}
-                              </Button>
-                            ))}
+                          <div className="flex flex-wrap gap-1.5 pt-2 mt-auto" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                            {getStatusOptions(skillItem.status).map((status) => {
+                              const styles = {
+                                PENDING:     { bg: 'rgba(100,116,139,0.2)',  border: 'rgba(100,116,139,0.4)',  color: '#94a3b8', hover: 'rgba(100,116,139,0.35)' },
+                                IN_PROGRESS: { bg: 'rgba(234,179,8,0.15)',   border: 'rgba(234,179,8,0.45)',   color: '#fbbf24', hover: 'rgba(234,179,8,0.28)' },
+                                COMPLETED:   { bg: 'rgba(34,197,94,0.15)',   border: 'rgba(34,197,94,0.45)',   color: '#4ade80', hover: 'rgba(34,197,94,0.28)' },
+                              };
+                              const s = styles[status] || styles.PENDING;
+                              return (
+                                <button
+                                  key={status}
+                                  onClick={() => updateSkillStatus(skillItem.skill, status)}
+                                  style={{
+                                    fontSize: 11, fontWeight: 600, height: 26, padding: '0 10px',
+                                    borderRadius: 8, border: `1px solid ${s.border}`,
+                                    background: s.bg, color: s.color, cursor: 'pointer',
+                                    transition: 'background 0.15s',
+                                    letterSpacing: '0.02em',
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = s.hover; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = s.bg; }}
+                                >
+                                  {status === 'IN_PROGRESS' ? 'In Progress' : status.charAt(0) + status.slice(1).toLowerCase()}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       ))}
