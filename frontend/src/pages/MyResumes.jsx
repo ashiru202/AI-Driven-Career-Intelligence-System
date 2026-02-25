@@ -216,7 +216,7 @@ export default function MyResumes() {
         {/* Page header */}
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">My Resumes</h1>
+            <h2 className="text-3xl font-bold text-white">My Resumes</h2>
             <p className="text-slate-400 text-sm mt-0.5">
               {resumes.length === 0
                 ? "No resumes uploaded yet"

@@ -159,9 +159,7 @@ export default function SkillsInDemand() {
       <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
         {/* ── Header ── */}
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-            <BarChart2 size={28} /> Skills in Demand
-          </h1>
+          <h2 className="text-3xl font-bold text-white">Skills in Demand</h2>
           <p className="text-slate-400 mt-1 text-sm">
             Platform-wide insights into the most sought-after skills based on
             job comparisons
