@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Link } from "react-router-dom";
+import { Flame, TrendingDown, AlertTriangle } from "lucide-react";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -78,7 +79,7 @@ export default function AdminDashboard() {
           {/* Top Skills */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">🔥 Top Demanding Skills</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2"><Flame size={16} className="text-orange-500" /> Top Demanding Skills</CardTitle>
             </CardHeader>
             <CardContent>
               {stats.topSkills && stats.topSkills.length > 0 ? (
@@ -99,7 +100,7 @@ export default function AdminDashboard() {
           {/* Least Skills */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">📉 Least Demanding Skills</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2"><TrendingDown size={16} className="text-gray-500" /> Least Demanding Skills</CardTitle>
             </CardHeader>
             <CardContent>
               {stats.leastSkills && stats.leastSkills.length > 0 ? (
@@ -120,7 +121,7 @@ export default function AdminDashboard() {
           {/* Common Gaps */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">⚠️ Common Missing Skills</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2"><AlertTriangle size={16} className="text-yellow-500" /> Common Missing Skills</CardTitle>
             </CardHeader>
             <CardContent>
               {stats.commonGaps && stats.commonGaps.length > 0 ? (

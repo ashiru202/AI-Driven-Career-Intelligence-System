@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { X, AlertTriangle, Trash2, ArrowLeft, ArrowRight } from "lucide-react";
 
 function Toast({ message, type, onClose }) {
   useEffect(() => {
@@ -18,7 +19,7 @@ function Toast({ message, type, onClose }) {
       }`}
     >
       {message}
-      <button className="ml-2 opacity-70 hover:opacity-100" onClick={onClose}>×</button>
+      <button className="ml-2 opacity-70 hover:opacity-100" onClick={onClose}><X size={14} /></button>
     </div>
   );
 }
@@ -117,7 +118,7 @@ export default function UserManagement() {
             <p className="text-white font-semibold mb-1">{confirmDelete.name}</p>
             <p className="text-white/50 text-xs mb-5">{confirmDelete.email}</p>
             <p className="text-red-400 text-xs mb-5">
-              ⚠️ This action cannot be undone. All data associated with this account will be lost.
+              <AlertTriangle size={16} className="inline mr-1 text-red-400" /> This action cannot be undone. All data associated with this account will be lost.
             </p>
             <div className="flex gap-3">
               <Button
@@ -240,7 +241,7 @@ export default function UserManagement() {
                             onClick={() => setConfirmDelete(u)}
                             className="bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60"
                           >
-                            🗑 Delete
+                            <Trash2 size={14} className="inline mr-1" /> Delete
                           </Button>
                         </td>
                       </tr>
@@ -258,7 +259,7 @@ export default function UserManagement() {
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
                 >
-                  ← Previous
+                  <ArrowLeft size={14} className="inline mr-1" /> Previous
                 </Button>
                 <span className="text-sm text-gray-500">
                   Page {page} of {totalPages}
@@ -268,7 +269,7 @@ export default function UserManagement() {
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
                 >
-                  Next →
+                  Next <ArrowRight size={14} className="inline ml-1" />
                 </Button>
               </div>
             )}

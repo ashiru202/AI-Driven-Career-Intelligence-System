@@ -4,15 +4,16 @@ import Layout from "../components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { FileText, BookOpen, Video, GraduationCap, Newspaper, Check, Play, X, Link2, CheckCircle2, Clipboard, Trash2, Eye, ExternalLink, Clock } from "lucide-react";
 
 // ─── Resource helpers ────────────────────────────────────────────────────────
 
 const TYPE_META = {
-  documentation: { label: 'Docs', icon: '📄', bg: '#EFF6FF', text: '#1D4ED8' },
-  tutorial:      { label: 'Tutorial', icon: '📘', bg: '#F0FDF4', text: '#15803D' },
-  video:         { label: 'Video', icon: '🎥', bg: '#FEF2F2', text: '#B91C1C' },
-  course:        { label: 'Course', icon: '🎓', bg: '#FAF5FF', text: '#7E22CE' },
-  article:       { label: 'Article', icon: '📰', bg: '#FFF7ED', text: '#C2410C' },
+  documentation: { label: 'Docs', Icon: FileText, bg: '#EFF6FF', text: '#1D4ED8' },
+  tutorial:      { label: 'Tutorial', Icon: BookOpen, bg: '#F0FDF4', text: '#15803D' },
+  video:         { label: 'Video', Icon: Video, bg: '#FEF2F2', text: '#B91C1C' },
+  course:        { label: 'Course', Icon: GraduationCap, bg: '#FAF5FF', text: '#7E22CE' },
+  article:       { label: 'Article', Icon: Newspaper, bg: '#FFF7ED', text: '#C2410C' },
 };
 
 const FREE_DOMAINS = [
@@ -101,17 +102,17 @@ function ResourcePreviewModal({ resource, onClose }) {
             <div className="flex items-center gap-2 flex-wrap">
               {meta && (
                 <span style={{ background: meta.bg, color: meta.text, fontSize: 11,
-                  fontWeight: 700, padding: '2px 8px', borderRadius: 9999 }}>
-                  {meta.icon} {meta.label}
+                  fontWeight: 700, padding: '2px 8px', borderRadius: 9999, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                  <meta.Icon size={11} /> {meta.label}
                 </span>
               )}
               {free && (
                 <span style={{ background: '#F0FDF4', color: '#15803D', fontSize: 11,
-                  fontWeight: 700, padding: '2px 8px', borderRadius: 9999 }}>✓ Free</span>
+                  fontWeight: 700, padding: '2px 8px', borderRadius: 9999, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Check size={10} /> Free</span>
               )}
               {embedUrl && (
                 <span style={{ background: '#FEF2F2', color: '#B91C1C', fontSize: 11,
-                  fontWeight: 700, padding: '2px 8px', borderRadius: 9999 }}>▶ YouTube</span>
+                  fontWeight: 700, padding: '2px 8px', borderRadius: 9999, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Play size={10} /> YouTube</span>
               )}
             </div>
             <h3 className="font-semibold text-gray-900 text-base leading-snug">{name}</h3>
@@ -119,7 +120,7 @@ function ResourcePreviewModal({ resource, onClose }) {
           </div>
           <button onClick={onClose}
             className="text-gray-400 hover:text-gray-700 text-2xl leading-none shrink-0 mt-0.5"
-            aria-label="Close">✕</button>
+            aria-label="Close"><X size={18} /></button>
         </div>
 
         {/* Content area */}
@@ -138,9 +139,9 @@ function ResourcePreviewModal({ resource, onClose }) {
           /* ── Non-YouTube: info card (no iframe — most sites block it) ── */
           <div className="flex flex-col items-center justify-center gap-6 px-10 py-12 bg-gray-50 flex-1">
             {/* Big type icon */}
-            <div className="flex items-center justify-center w-20 h-20 rounded-2xl text-4xl"
+            <div className="flex items-center justify-center w-20 h-20 rounded-2xl"
               style={{ background: meta ? meta.bg : '#F3F4F6' }}>
-              {meta ? meta.icon : '🔗'}
+              {meta ? <meta.Icon size={40} color={meta.text} /> : <Link2 size={40} color="#6b7280" />}
             </div>
 
             <div className="text-center space-y-1 max-w-md">
@@ -151,14 +152,14 @@ function ResourcePreviewModal({ resource, onClose }) {
             {/* Info chips */}
             <div className="flex flex-wrap gap-2 justify-center">
               {meta && (
-                <span className="px-3 py-1 rounded-full text-sm font-medium"
+                <span className="px-3 py-1 rounded-full text-sm font-medium inline-flex items-center gap-1"
                   style={{ background: meta.bg, color: meta.text }}>
-                  {meta.icon} {meta.label}
+                  <meta.Icon size={14} /> {meta.label}
                 </span>
               )}
               {free && (
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-50 text-green-700">
-                  ✓ Free resource
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-50 text-green-700 inline-flex items-center gap-1">
+                  <Check size={13} /> Free resource
                 </span>
               )}
             </div>
@@ -170,7 +171,7 @@ function ResourcePreviewModal({ resource, onClose }) {
 
             <a href={url} target="_blank" rel="noopener noreferrer">
               <Button className="px-8 py-2 text-base">
-                Open {domain} ↗
+                Open {domain} <ExternalLink size={12} className="inline ml-1" />
               </Button>
             </a>
           </div>
@@ -180,10 +181,12 @@ function ResourcePreviewModal({ resource, onClose }) {
         <div className="flex items-center justify-between gap-3 px-5 py-3 border-t bg-white">
           <button onClick={copyUrl}
             className="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1.5">
-            {copied ? '✅ Copied!' : '📋 Copy link'}
+            {copied
+              ? <><CheckCircle2 size={14} className="inline mr-1 text-green-500" /> Copied!</>
+              : <><Clipboard size={14} className="inline mr-1" /> Copy link</>}
           </button>
           <a href={url} target="_blank" rel="noopener noreferrer">
-            <Button size="sm" variant="outline">Open in new tab ↗</Button>
+            <Button size="sm" variant="outline">Open in new tab <ExternalLink size={12} className="inline ml-1" /></Button>
           </a>
         </div>
       </div>
@@ -424,7 +427,7 @@ export default function MyRoadmap() {
                         onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.35)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; }}
                       >
-                        {isDeleting ? '…' : '🗑'}
+                        {isDeleting ? '…' : <Trash2 size={14} />}
                       </button>
                     </div>
                   );
@@ -468,7 +471,7 @@ export default function MyRoadmap() {
                           disabled={refreshing}
                           title="Fetch real documentation and tutorial links for all skills"
                         >
-                          {refreshing ? 'Fetching resources...' : '🔗 Refresh Resources'}
+                          {refreshing ? 'Fetching resources...' : <><Link2 size={13} className="inline mr-1" /> Refresh Resources</>}
                         </Button>
                         <select
                           value={statusFilter}
@@ -501,7 +504,7 @@ export default function MyRoadmap() {
 
                           {skillItem.estimateWeeks && (
                             <p className="text-xs text-gray-500">
-                              ⏱ Est. {skillItem.estimateWeeks} {skillItem.estimateWeeks === 1 ? 'week' : 'weeks'}
+                              <Clock size={12} className="inline mr-1" /> Est. {skillItem.estimateWeeks} {skillItem.estimateWeeks === 1 ? 'week' : 'weeks'}
                             </p>
                           )}
 
@@ -529,22 +532,22 @@ export default function MyRoadmap() {
                                           <span style={{ background: meta.bg, color: meta.text,
                                             fontSize: 9, fontWeight: 700, padding: '2px 6px',
                                             borderRadius: 9999, whiteSpace: 'nowrap', letterSpacing: '0.03em',
-                                            marginTop: 1 }}>
-                                            {meta.icon} {meta.label}
+                                            marginTop: 1, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                                            <meta.Icon size={9} /> {meta.label}
                                           </span>
                                         )}
                                         {free && (
                                           <span style={{ background: '#F0FDF4', color: '#15803D',
                                             fontSize: 9, fontWeight: 700, padding: '2px 6px',
-                                            borderRadius: 9999, whiteSpace: 'nowrap', marginTop: 1 }}>
-                                            ✓ Free
+                                            borderRadius: 9999, whiteSpace: 'nowrap', marginTop: 1, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                                            <Check size={9} /> Free
                                           </span>
                                         )}
                                         {isYT && (
                                           <span style={{ background: '#FEF2F2', color: '#B91C1C',
                                             fontSize: 9, fontWeight: 700, padding: '2px 6px',
-                                            borderRadius: 9999, whiteSpace: 'nowrap', marginTop: 1 }}>
-                                            ▶ YouTube
+                                            borderRadius: 9999, whiteSpace: 'nowrap', marginTop: 1, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                                            <Play size={9} /> YouTube
                                           </span>
                                         )}
                                       </div>
@@ -566,12 +569,14 @@ export default function MyRoadmap() {
                                             onClick={() => setPreviewResource(resource)}
                                             className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1"
                                           >
-                                            {isYT ? '▶ Watch preview' : '👁 Preview'}
+                                            {isYT
+                                              ? <><Play size={11} className="inline mr-1" /> Watch preview</>
+                                              : <><Eye size={11} className="inline mr-1" /> Preview</>}
                                           </button>
                                           <span className="text-gray-300">|</span>
                                           <a href={url} target="_blank" rel="noopener noreferrer"
                                             className="text-xs text-gray-500 hover:text-gray-700">
-                                            Open ↗
+                                            Open <ExternalLink size={11} className="inline ml-0.5" />
                                           </a>
                                         </div>
                                       )}

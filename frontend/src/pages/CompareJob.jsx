@@ -7,6 +7,7 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input, Label } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
+import { FileText } from "lucide-react";
 
 export default function CompareJob() {
   const navigate = useNavigate();
@@ -258,7 +259,7 @@ export default function CompareJob() {
                         style={{background:'rgba(99,102,241,0.15)', color:'#a5b4fc', border:'1px solid rgba(99,102,241,0.3)'}}
                         title={item.resumeFileName}
                       >
-                        <span>📄</span>
+                        <FileText size={14} />
                         <span className="truncate">{item.resumeFileName}</span>
                       </div>
                     ) : (
@@ -266,7 +267,7 @@ export default function CompareJob() {
                         className="flex items-center gap-1 text-xs rounded px-2 py-1"
                         style={{background:'rgba(255,255,255,0.08)', color:'rgba(255,255,255,0.55)', border:'1px solid rgba(255,255,255,0.15)'}}
                       >
-                        <span>📄</span>
+                        <FileText size={14} />
                         <span>Resume not recorded (old entry)</span>
                       </div>
                     )}
@@ -288,11 +289,11 @@ export default function CompareJob() {
                 {selectedHistory ? `Result: ${activeResult.jobTitle}` : 'Latest Comparison Result'}
               </h3>
               {activeResult.resumeFileName && (
-                <span
+                  <span
                   className="text-xs rounded-full px-3 py-1 font-medium flex items-center gap-1"
                   style={{background:'rgba(99,102,241,0.15)', color:'#a5b4fc', border:'1px solid rgba(99,102,241,0.3)'}}
                 >
-                  <span>📄</span> {activeResult.resumeFileName}
+                  <FileText size={13} /> {activeResult.resumeFileName}
                 </span>
               )}
               {selectedHistory && (

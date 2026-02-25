@@ -4,6 +4,7 @@ import api from "../api/api";
 import Layout from "../components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
+import { Flame, AlertTriangle, ClipboardList, Map, Clock } from "lucide-react";
 
 // ── Mini progress bar ─────────────────────────────────────────────────────────
 function Bar({ pct, color = "#6366f1" }) {
@@ -124,7 +125,7 @@ export default function StaffHome() {
           {/* Top Skills in Demand */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">🔥 Top Skills in Demand</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2"><Flame size={16} className="text-orange-400" /> Top Skills in Demand</CardTitle>
             </CardHeader>
             <CardContent>
               {skillDemand.topSkills.length === 0 ? (
@@ -150,7 +151,7 @@ export default function StaffHome() {
           {/* Common Skill Gaps */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">⚠️ Common Skill Gaps</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2"><AlertTriangle size={16} className="text-yellow-400" /> Common Skill Gaps</CardTitle>
             </CardHeader>
             <CardContent>
               {gaps.length === 0 ? (
@@ -179,7 +180,7 @@ export default function StaffHome() {
           <Link to="/staff">
             <Card className="hover:shadow-md transition-shadow cursor-pointer border-indigo-200">
               <CardContent className="pt-4">
-                <p className="font-semibold text-indigo-400">📋 User Reports</p>
+                <p className="font-semibold text-indigo-400 flex items-center gap-1"><ClipboardList size={14} /> User Reports</p>
                 <p className="text-sm text-gray-500 mt-1">View skill gaps & CV scores per user</p>
               </CardContent>
             </Card>
@@ -187,7 +188,7 @@ export default function StaffHome() {
           <Link to="/all-roadmaps">
             <Card className="hover:shadow-md transition-shadow cursor-pointer border-purple-200">
               <CardContent className="pt-4">
-                <p className="font-semibold text-purple-400">🗺️ All Roadmaps</p>
+                <p className="font-semibold text-purple-400 flex items-center gap-1"><Map size={14} /> All Roadmaps</p>
                 <p className="text-sm text-gray-500 mt-1">Browse all user learning roadmaps</p>
               </CardContent>
             </Card>
@@ -197,7 +198,7 @@ export default function StaffHome() {
         {/* ── Recent Job Seekers ── */}
         <Card>
           <CardHeader>
-            <CardTitle>🕒 Recently Registered Job Seekers</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Clock size={16} /> Recently Registered Job Seekers</CardTitle>
           </CardHeader>
           <CardContent>
             {recentUsers.length === 0 ? (

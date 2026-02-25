@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../co
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
+import { Users, AlertTriangle, PenLine, ArrowRight, Lightbulb, Check, Map } from "lucide-react";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -165,15 +166,15 @@ export default function StaffDashboard() {
             </p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ background: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 99, padding: "4px 14px", fontSize: 13, fontWeight: 600 }}>
-              👥 {filteredUsers.length} users
+            <span style={{ background: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 99, padding: "4px 14px", fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <Users size={13} /> {filteredUsers.length} users
             </span>
           </div>
         </div>
 
         {error && (
-          <div style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)", color: "#fca5a5", borderRadius: 12, padding: "12px 18px", fontSize: 14 }}>
-            ⚠️ {error}
+          <div style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)", color: "#fca5a5", borderRadius: 12, padding: "12px 18px", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+            <AlertTriangle size={14} /> {error}
           </div>
         )}
 
@@ -279,7 +280,7 @@ export default function StaffDashboard() {
                 {/* ── CV Completeness ── */}
                 {cvData && (
                   <div style={card}>
-                    <p style={sectionTitle}>📝 CV Completeness</p>
+                    <p style={sectionTitle} className="flex items-center gap-1"><PenLine size={14} /> CV Completeness</p>
                     <div style={{ display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
                       <ScoreRing score={cvData.score} size={90} />
                       <div style={{ flex: 1, minWidth: 180 }}>
@@ -310,7 +311,7 @@ export default function StaffDashboard() {
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                           {cvData.suggestions.map((s, i) => (
                             <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                              <span style={{ color: "#6366f1", fontSize: 14, marginTop: 1 }}>→</span>
+                              <span style={{ color: "#6366f1", fontSize: 14, marginTop: 1, display: 'flex' }}><ArrowRight size={14} /></span>
                               <span style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{s}</span>
                             </div>
                           ))}
@@ -323,7 +324,7 @@ export default function StaffDashboard() {
                 {/* ── Career Insights ── */}
                 {insightsData && (
                   <div style={card}>
-                    <p style={sectionTitle}>💡 Career Insights</p>
+                    <p style={sectionTitle} className="flex items-center gap-1"><Lightbulb size={14} /> Career Insights</p>
 
                     {insightsData.reasons?.length > 0 && (
                       <div style={{ marginBottom: 16 }}>
@@ -331,7 +332,7 @@ export default function StaffDashboard() {
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                           {insightsData.reasons.map((r, i) => (
                             <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "rgba(239,68,68,0.07)", borderRadius: 8, padding: "8px 12px" }}>
-                              <span style={{ color: "#f87171", fontSize: 14 }}>⚠</span>
+                              <span style={{ color: "#f87171", fontSize: 14, display: 'flex' }}><AlertTriangle size={14} /></span>
                               <span style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{r}</span>
                             </div>
                           ))}
@@ -356,7 +357,7 @@ export default function StaffDashboard() {
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                           {insightsData.actions.map((a, i) => (
                             <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "rgba(34,197,94,0.07)", borderRadius: 8, padding: "8px 12px" }}>
-                              <span style={{ color: "#4ade80", fontSize: 14 }}>✓</span>
+                              <span style={{ color: "#4ade80", fontSize: 14, display: 'flex' }}><Check size={14} /></span>
                               <span style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{a}</span>
                             </div>
                           ))}
@@ -369,7 +370,7 @@ export default function StaffDashboard() {
                 {/* ── Roadmaps ── */}
                 {report && report.roadmaps && report.roadmaps.length > 0 && (
                   <div style={card}>
-                    <p style={sectionTitle}>🗺️ Learning Roadmaps ({report.roadmaps.length})</p>
+                    <p style={sectionTitle} className="flex items-center gap-1"><Map size={14} /> Learning Roadmaps ({report.roadmaps.length})</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       {report.roadmaps.map((rm) => {
                         const pct = rm.totalSkills ? Math.round((rm.skillsCompleted / rm.totalSkills) * 100) : 0;

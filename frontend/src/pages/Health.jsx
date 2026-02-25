@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { X, Circle, CheckCircle2 } from 'lucide-react';
 
 export default function Health() {
   const [healthData, setHealthData] = useState(null);
@@ -61,7 +62,7 @@ export default function Health() {
         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.18)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.45)'; e.currentTarget.style.color = '#f87171'; }}
         onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
       >
-        ✕
+        <X size={16} />
       </Link>
       <div style={{ width: '100%', maxWidth: 580 }}>
 
@@ -102,7 +103,9 @@ export default function Health() {
                   </p>
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 800, background: healthData.ok ? 'rgba(52,211,153,0.15)' : 'rgba(239,68,68,0.15)', color: healthData.ok ? '#34d399' : '#f87171', border: `1px solid ${healthData.ok ? 'rgba(52,211,153,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: 100, padding: '5px 14px', letterSpacing: '0.5px' }}>
-                  {healthData.ok ? '● HEALTHY' : '● UNHEALTHY'}
+                  {healthData.ok
+                    ? <><CheckCircle2 size={13} className="inline mr-1" /> HEALTHY</>
+                    : <><Circle size={13} className="inline mr-1" /> UNHEALTHY</>}
                 </span>
               </div>
 

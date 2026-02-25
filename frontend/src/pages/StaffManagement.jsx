@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { Check, X, AlertTriangle, Trash2 } from "lucide-react";
 
 function Toast({ message, type, onClose }) {
   useEffect(() => {
@@ -18,9 +19,9 @@ function Toast({ message, type, onClose }) {
         type === "success" ? "bg-green-600" : "bg-red-600"
       }`}
     >
-      <span>{type === "success" ? "✓" : "✕"}</span>
+      <span>{type === "success" ? <Check size={14} /> : <X size={14} />}</span>
       {message}
-      <button className="ml-2 text-white opacity-70 hover:opacity-100" onClick={onClose}>×</button>
+      <button className="ml-2 text-white opacity-70 hover:opacity-100" onClick={onClose}><X size={14} /></button>
     </div>
   );
 }
@@ -113,7 +114,7 @@ export default function StaffManagement() {
             <p className="text-white font-semibold mb-1">{confirmDelete.name}</p>
             <p className="text-white/50 text-xs mb-5">{confirmDelete.email}</p>
             <p className="text-red-400 text-xs mb-5">
-              ⚠️ This action cannot be undone. The staff account will be permanently removed.
+              <AlertTriangle size={16} className="inline mr-1 text-red-400" /> This action cannot be undone. The staff account will be permanently removed.
             </p>
             <div className="flex gap-3">
               <Button
@@ -259,7 +260,7 @@ export default function StaffManagement() {
                               onClick={() => setConfirmDelete(s)}
                               className="bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60"
                             >
-                              🗑 Delete
+                              <Trash2 size={14} className="inline mr-1" /> Delete
                             </Button>
                           </td>
                         </tr>

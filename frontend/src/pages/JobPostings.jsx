@@ -10,6 +10,7 @@ import {
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import api from "../api/api";
+import { FileText, FileEdit, Check, MapPin, DollarSign, Briefcase, FolderOpen, Search, ArrowRight, ExternalLink } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -61,13 +62,12 @@ function ResumeCard({ resume, selected, onClick }) {
             width: 40, height: 40,
             borderRadius: 10,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 20,
             background: selected
               ? 'linear-gradient(135deg,#6366f1,#8b5cf6)'
               : 'rgba(255,255,255,0.08)',
           }}
         >
-          {resume.fileType?.includes('pdf') ? '📄' : '📝'}
+          {resume.fileType?.includes('pdf') ? <FileText size={20} color={selected ? '#fff' : 'rgba(255,255,255,0.6)'} /> : <FileEdit size={20} color={selected ? '#fff' : 'rgba(255,255,255,0.6)'} />}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p
@@ -102,7 +102,7 @@ function ResumeCard({ resume, selected, onClick }) {
               {resume.extractedSkills?.length ?? 0} skills
             </span>
             {selected && (
-              <span style={{ fontSize: 11, color: '#a5b4fc', fontWeight: 600 }}>✓ Selected</span>
+              <span style={{ fontSize: 11, color: '#a5b4fc', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><Check size={11} /> Selected</span>
             )}
           </div>
         </div>
@@ -151,12 +151,12 @@ function JobCard({ job }) {
             {job.title}
           </p>
           <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{job.company}</p>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginTop: 1 }}>📍 {job.location}</p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginTop: 1, display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={11} /> {job.location}</p>
         </div>
       </div>
       {(job.salaryMin || job.salaryMax) && (
-        <p style={{ fontSize: 11, fontWeight: 600, color: '#4ade80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 8, padding: '4px 10px' }}>
-          💰{" "}
+        <p style={{ fontSize: 11, fontWeight: 600, color: '#4ade80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 8, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <DollarSign size={11} />{" "}
           {job.salaryMin && job.salaryMax
             ? `$${job.salaryMin.toLocaleString()} – $${job.salaryMax.toLocaleString()}`
             : job.salaryMax
@@ -329,7 +329,7 @@ export default function JobPostings() {
 
         {/* ── Header ── */}
         <div>
-          <h2 className="text-3xl font-bold text-white">💼 Job Postings</h2>
+          <h2 className="text-3xl font-bold text-white flex items-center gap-2"><Briefcase size={28} /> Job Postings</h2>
           <p className="text-slate-400 mt-1 text-sm">
             Select a resume to see live job postings that match your skills.
           </p>
@@ -342,14 +342,14 @@ export default function JobPostings() {
           </h3>
           {resumes.length === 0 ? (
             <div className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center">
-              <p className="text-4xl mb-3">📂</p>
+              <FolderOpen size={40} className="mx-auto mb-3 text-gray-400" />
               <p className="text-gray-600 font-medium">No resumes uploaded yet</p>
               <p className="text-gray-400 text-sm mt-1">
                 Upload a resume to get personalised job matches.
               </p>
               <a href="/resume-analyze">
                 <Button className="mt-4" size="sm">
-                  Upload Resume →
+                  Upload Resume <ArrowRight size={14} className="inline ml-1" />
                 </Button>
               </a>
             </div>
@@ -373,7 +373,7 @@ export default function JobPostings() {
             <CardHeader>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <CardTitle>🔍 Live Job Postings</CardTitle>
+                  <CardTitle className="flex items-center gap-2"><Search size={18} /> Live Job Postings</CardTitle>
                   <CardDescription className="mt-1">
                     Jobs matching skills from{" "}
                     <span className="font-medium text-gray-700">
@@ -469,15 +469,15 @@ export default function JobPostings() {
                     )}
 
                     {!hasMore && totalJobs > PAGE_SIZE && (
-                      <p className="text-xs text-green-600 font-medium">
-                        ✓ All jobs loaded
+                      <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+                        <Check size={12} /> All jobs loaded
                       </p>
                     )}
                   </div>
                 </div>
               ) : (
                 <div className="rounded-lg bg-gray-50 border border-dashed border-gray-200 p-8 text-center">
-                  <p className="text-2xl mb-2">🔍</p>
+                  <Search size={24} className="mx-auto mb-2 text-gray-400" />
                   {!jobPostings?.available &&
                   jobPostings?.message?.includes("not configured") ? (
                     <>
@@ -497,7 +497,7 @@ export default function JobPostings() {
                         rel="noopener noreferrer"
                       >
                         <Button variant="outline" size="sm" className="mt-3">
-                          Get Free Adzuna API Key →
+                          Get Free Adzuna API Key <ExternalLink size={12} className="inline ml-1" />
                         </Button>
                       </a>
                     </>

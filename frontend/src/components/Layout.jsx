@@ -1,5 +1,10 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Zap, Users, UserCheck, BarChart2, ClipboardList, Map, Home, FileText,
+  Folder, Target, TrendingUp, Briefcase, Flame, LogOut, HeartPulse,
+  ArrowLeft, RefreshCw, Check, X, ChevronDown, ChevronRight,
+} from 'lucide-react';
 import api from '../api/api';
 
 // ── Profile Edit Modal ───────────────────────────────────────────────────────
@@ -168,10 +173,11 @@ function ProfileModal({ onClose, onSave }) {
               border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer',
               color: 'rgba(255,255,255,0.45)', fontSize: 16, lineHeight: 1,
               padding: '6px 8px', borderRadius: 8, transition: 'all 0.15s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = '#fff'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}
-          >✕</button>
+          ><X size={16} /></button>
         </div>
 
         {/* Body */}
@@ -190,7 +196,7 @@ function ProfileModal({ onClose, onSave }) {
                   color: msg.type === 'ok' ? '#4ade80' : '#f87171',
                   display: 'flex', alignItems: 'center', gap: 8,
                 }}>
-                  <span>{msg.type === 'ok' ? '✓' : '✕'}</span> {msg.text}
+                  <span>{msg.type === 'ok' ? <Check size={14} /> : <X size={14} />}</span> {msg.text}
                 </div>
               )}
 
@@ -216,7 +222,7 @@ function ProfileModal({ onClose, onSave }) {
                   padding: '4px 0', marginBottom: 14,
                 }}
               >
-                <span style={{ fontSize: 16 }}>{pwSection ? '▾' : '▸'}</span>
+                <span style={{ display: 'flex' }}>{pwSection ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
                 Change Password
               </button>
 
@@ -337,8 +343,9 @@ function LogoutConfirmModal({ onConfirm, onCancel }) {
           background: 'rgba(239,68,68,0.14)',
           border: '1px solid rgba(239,68,68,0.3)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 20px', fontSize: 26,
-        }}>🚪</div>
+          margin: '0 auto 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}><LogOut size={26} /></div>
 
         <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 800, margin: '0 0 8px', letterSpacing: -0.3 }}>
           Sign out?
@@ -387,27 +394,27 @@ function LogoutConfirmModal({ onConfirm, onCancel }) {
 
 const ROLE_NAV = {
   ADMIN: [
-    { path: '/admin',               label: 'Admin Dashboard', icon: '⚡' },
-    { path: '/staff-management',    label: 'Staff Management', icon: '👥' },
-    { path: '/users',               label: 'Job Seekers',      icon: '🧑‍💼' },
-    { path: '/admin-report',        label: 'Platform Report',  icon: '📊' },
-    { path: '/admin/user-reports',  label: 'User Reports',     icon: '📋' },
-    { path: '/all-roadmaps',        label: 'All Roadmaps',     icon: '🗺️' },
+    { path: '/admin',               label: 'Admin Dashboard', Icon: Zap },
+    { path: '/staff-management',    label: 'Staff Management', Icon: Users },
+    { path: '/users',               label: 'Job Seekers',      Icon: UserCheck },
+    { path: '/admin-report',        label: 'Platform Report',  Icon: BarChart2 },
+    { path: '/admin/user-reports',  label: 'User Reports',     Icon: ClipboardList },
+    { path: '/all-roadmaps',        label: 'All Roadmaps',     Icon: Map },
   ],
   STAFF: [
-    { path: '/staff-home',       label: 'Dashboard',        icon: '⚡' },
-    { path: '/staff',            label: 'User Reports',     icon: '📋' },
-    { path: '/all-roadmaps',     label: 'All Roadmaps',     icon: '🗺️' },
+    { path: '/staff-home',       label: 'Dashboard',        Icon: Zap },
+    { path: '/staff',            label: 'User Reports',     Icon: ClipboardList },
+    { path: '/all-roadmaps',     label: 'All Roadmaps',     Icon: Map },
   ],
   USER: [
-    { path: '/dashboard',          label: 'Dashboard',          icon: '🏠' },
-    { path: '/resume-analyze',     label: 'Resume Analyze',     icon: '📄' },
-    { path: '/my-resumes',         label: 'My Resumes',         icon: '📁' },
-    { path: '/compare-job',        label: 'Compare Job',        icon: '🎯' },
-    { path: '/my-roadmap',         label: 'My Roadmaps',        icon: '🗺️' },
-    { path: '/analytics',          label: 'Analytics',          icon: '📈' },
-    { path: '/job-postings',       label: 'Job Postings',       icon: '💼' },
-    { path: '/skills-in-demand',   label: 'Skills in Demand',   icon: '🔥' },
+    { path: '/dashboard',          label: 'Dashboard',          Icon: Home },
+    { path: '/resume-analyze',     label: 'Resume Analyze',     Icon: FileText },
+    { path: '/my-resumes',         label: 'My Resumes',         Icon: Folder },
+    { path: '/compare-job',        label: 'Compare Job',        Icon: Target },
+    { path: '/my-roadmap',         label: 'My Roadmaps',        Icon: Map },
+    { path: '/analytics',          label: 'Analytics',          Icon: TrendingUp },
+    { path: '/job-postings',       label: 'Job Postings',       Icon: Briefcase },
+    { path: '/skills-in-demand',   label: 'Skills in Demand',   Icon: Flame },
   ],
 };
 
@@ -551,8 +558,8 @@ function NotificationDropdown({ userRole }) {
               <button
                 onClick={fetchNotifications}
                 title="Refresh"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: 14, lineHeight: 1, padding: 0 }}
-              >↻</button>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: 14, lineHeight: 1, padding: 0, display: 'flex', alignItems: 'center' }}
+              ><RefreshCw size={14} /></button>
             </div>
           </div>
 
@@ -625,7 +632,7 @@ function NotificationDropdown({ userRole }) {
           {/* All-read footer */}
           {!loading && !error && notifications.length > 0 && unread === 0 && (
             <div style={{ padding: '18px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.28)', fontSize: 13 }}>
-              ✓ All caught up
+              <Check size={14} style={{ display: 'inline', marginRight: 4 }} /> All caught up
             </div>
           )}
 
@@ -667,7 +674,7 @@ function SidebarContent({ location, navigate, userRole, userName, setSidebarOpen
     }}>
       {/* Nav items */}
       <nav style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
-        {navItems.map(({ path, label, icon }) => {
+        {navItems.map(({ path, label, Icon: NavIcon }) => {
           const active = location.pathname === path;
           return (
             <Link
@@ -688,7 +695,7 @@ function SidebarContent({ location, navigate, userRole, userName, setSidebarOpen
               onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.82)'; } }}
               onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.48)'; } }}
             >
-              <span style={{ fontSize: 16, lineHeight: 1 }}>{icon}</span>
+              {NavIcon && <NavIcon size={16} style={{ flexShrink: 0 }} />}
               {label}
             </Link>
           );
@@ -741,7 +748,7 @@ function SidebarContent({ location, navigate, userRole, userName, setSidebarOpen
           onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.32)'; e.currentTarget.style.background = 'transparent'; }}
         >
-          <span>💚</span> System Health
+          <HeartPulse size={14} style={{ flexShrink: 0 }} /> System Health
         </Link>
         <button
           onClick={logout}
@@ -749,7 +756,7 @@ function SidebarContent({ location, navigate, userRole, userName, setSidebarOpen
           onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(239,68,68,0.55)'; e.currentTarget.style.background = 'transparent'; }}
         >
-          <span>🚪</span> Logout
+          <LogOut size={14} style={{ flexShrink: 0 }} /> Logout
         </button>
       </div>
     </div>
@@ -846,7 +853,7 @@ export default function Layout({ children }) {
                 e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
               }}
             >
-              <span style={{ fontSize: 15, lineHeight: 1 }}>←</span>
+              <ArrowLeft size={15} />
               Back
             </button>
           )}

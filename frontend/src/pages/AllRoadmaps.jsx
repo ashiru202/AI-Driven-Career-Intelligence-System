@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../api/api";
 import Layout from "../components/Layout";
+import { X } from "lucide-react";
 
 export default function AllRoadmaps() {
   const [roadmaps, setRoadmaps] = useState([]);
@@ -230,8 +231,8 @@ const exportCSV = () => {
           <label style={label}>Sort</label>
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={input}>
             <option value="LATEST">Latest</option>
-            <option value="COMPLETION_DESC">Completion (High → Low)</option>
-            <option value="COMPLETION_ASC">Completion (Low → High)</option>
+            <option value="COMPLETION_DESC">Completion (High to Low)</option>
+            <option value="COMPLETION_ASC">Completion (Low to High)</option>
           </select>
         </div>
 
@@ -316,8 +317,9 @@ const exportCSV = () => {
         </div>
         <button
           onClick={() => setSelected(null)}
-          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13 }}
-        >✕ Close</button>
+          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 5 }}
+        >
+          <X size={14} /> Close</button>
       </div>
 
       {/* Info Grid */}

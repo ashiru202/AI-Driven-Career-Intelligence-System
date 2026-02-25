@@ -4,6 +4,11 @@ import Layout from "../components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
+import {
+  Users, Shield, FileText, Map, Search, Settings,
+  Target, PenLine, Flame, TrendingDown, AlertTriangle,
+  Inbox, CheckCircle2,
+} from "lucide-react";
 
 // Mini progress bar used throughout the page
 function Bar({ pct, colorClass }) {
@@ -82,7 +87,7 @@ export default function AdminReport() {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center h-64 gap-3">
-          <span className="text-5xl">⚠️</span>
+          <AlertTriangle size={48} className="text-yellow-500" />
           <p className="text-red-600 font-semibold">{error}</p>
           <Button onClick={() => fetchReport()}>Try Again</Button>
         </div>
@@ -96,12 +101,12 @@ export default function AdminReport() {
   const gapMax = report.commonGaps?.[0]?.count || 1;
 
   const kpiStats = [
-    { label: "Total Job Seekers", value: p.totalUsers,        icon: "👥", color: "text-blue-600",   ring: "ring-blue-100",   bg: "bg-blue-50"   },
-    { label: "Staff Members",     value: p.totalStaff,        icon: "🛡️", color: "text-purple-600", ring: "ring-purple-100", bg: "bg-purple-50" },
-    { label: "Resumes Uploaded",  value: p.totalResumes,      icon: "📄", color: "text-indigo-600", ring: "ring-indigo-100", bg: "bg-indigo-50" },
-    { label: "Roadmaps Created",  value: p.totalRoadmaps,     icon: "🗺️", color: "text-teal-600",   ring: "ring-teal-100",   bg: "bg-teal-50"   },
-    { label: "Job Comparisons",   value: p.totalComparisons,  icon: "🔍", color: "text-orange-600", ring: "ring-orange-100", bg: "bg-orange-50" },
-    { label: "Admins",            value: p.totalAdmins,       icon: "⚙️", color: "text-gray-600",   ring: "ring-gray-100",   bg: "bg-gray-50"   },
+    { label: "Total Job Seekers", value: p.totalUsers,        Icon: Users,    color: "text-blue-600",   ring: "ring-blue-100",   bg: "bg-blue-50"   },
+    { label: "Staff Members",     value: p.totalStaff,        Icon: Shield,   color: "text-purple-600", ring: "ring-purple-100", bg: "bg-purple-50" },
+    { label: "Resumes Uploaded",  value: p.totalResumes,      Icon: FileText, color: "text-indigo-600", ring: "ring-indigo-100", bg: "bg-indigo-50" },
+    { label: "Roadmaps Created",  value: p.totalRoadmaps,     Icon: Map,      color: "text-teal-600",   ring: "ring-teal-100",   bg: "bg-teal-50"   },
+    { label: "Job Comparisons",   value: p.totalComparisons,  Icon: Search,   color: "text-orange-600", ring: "ring-orange-100", bg: "bg-orange-50" },
+    { label: "Admins",            value: p.totalAdmins,       Icon: Settings, color: "text-gray-600",   ring: "ring-gray-100",   bg: "bg-gray-50"   },
   ];
 
   return (
@@ -137,7 +142,7 @@ export default function AdminReport() {
             <Card key={s.label} className={`ring-1 ${s.ring} border-0 ${s.bg}`}>
               <CardContent className="pt-4 pb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xl">{s.icon}</span>
+                  <s.Icon size={20} className={s.color} />
                 </div>
                 <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
                 <p className="text-xs text-gray-500 mt-0.5 leading-tight">{s.label}</p>
@@ -155,7 +160,7 @@ export default function AdminReport() {
                   <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Avg Match Score</p>
                   <p className="text-4xl font-extrabold text-green-700 mt-1">{p.avgMatchScore}%</p>
                 </div>
-                <span className="text-4xl">🎯</span>
+                <Target size={36} className="text-green-500" />
               </div>
               <Bar pct={p.avgMatchScore} colorClass="bg-green-500" />
               <p className="text-xs text-green-600 mt-2">How well users match job requirements on average</p>
@@ -169,7 +174,7 @@ export default function AdminReport() {
                   <p className="text-xs font-semibold text-yellow-700 uppercase tracking-wide">Avg CV Completeness</p>
                   <p className="text-4xl font-extrabold text-yellow-700 mt-1">{p.avgCvCompleteness}%</p>
                 </div>
-                <span className="text-4xl">📝</span>
+                <PenLine size={36} className="text-yellow-500" />
               </div>
               <Bar pct={p.avgCvCompleteness} colorClass="bg-yellow-500" />
               <p className="text-xs text-yellow-600 mt-2">Average completeness of user resumes across the platform</p>
@@ -182,7 +187,7 @@ export default function AdminReport() {
           {/* Top Skills */}
           <Card>
             <CardHeader className="pb-3 border-b border-gray-100">
-              <CardTitle className="text-base">🔥 Top In-Demand Skills</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2"><Flame size={16} className="text-orange-500" /> Top In-Demand Skills</CardTitle>
               <p className="text-xs text-gray-400">Skills most sought after by job postings</p>
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
@@ -201,7 +206,7 @@ export default function AdminReport() {
                 ))
               ) : (
                 <div className="py-8 text-center text-gray-400">
-                  <p className="text-3xl mb-1">📭</p>
+                  <Inbox size={30} className="mx-auto mb-1 text-gray-400" />
                   <p className="text-sm">No skill demand data yet</p>
                 </div>
               )}
@@ -211,7 +216,7 @@ export default function AdminReport() {
           {/* Least Demanded */}
           <Card>
             <CardHeader className="pb-3 border-b border-gray-100">
-              <CardTitle className="text-base">📉 Least Demanded Skills</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2"><TrendingDown size={16} className="text-gray-500" /> Least Demanded Skills</CardTitle>
               <p className="text-xs text-gray-400">Skills with lower market demand</p>
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
@@ -230,7 +235,7 @@ export default function AdminReport() {
                 ))
               ) : (
                 <div className="py-8 text-center text-gray-400">
-                  <p className="text-3xl mb-1">📭</p>
+                  <Inbox size={30} className="mx-auto mb-1 text-gray-400" />
                   <p className="text-sm">No data available yet</p>
                 </div>
               )}
@@ -241,7 +246,7 @@ export default function AdminReport() {
         {/* ── Skill Gaps ── */}
         <Card>
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base">⚠️ Most Common Skill Gaps</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><AlertTriangle size={16} className="text-yellow-500" /> Most Common Skill Gaps</CardTitle>
             <p className="text-xs text-gray-400">Skills that users are most frequently missing</p>
           </CardHeader>
           <CardContent className="pt-5">
@@ -273,7 +278,7 @@ export default function AdminReport() {
               </div>
             ) : (
               <div className="py-10 text-center text-gray-400">
-                <p className="text-4xl mb-2">✅</p>
+                <CheckCircle2 size={36} className="mx-auto mb-2 text-green-500" />
                 <p className="text-sm font-medium">No significant skill gaps detected</p>
               </div>
             )}

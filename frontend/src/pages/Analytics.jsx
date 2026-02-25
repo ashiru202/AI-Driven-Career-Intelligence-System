@@ -10,6 +10,11 @@ import {
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import api from "../api/api";
+import {
+  FileText, FileEdit, Check, Circle, FolderOpen,
+  ClipboardList, Lightbulb, Sparkles, AlertTriangle,
+  RefreshCw, Target, Rocket, CheckCircle2, ArrowRight, ExternalLink,
+} from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -67,13 +72,12 @@ function ResumeCard({ resume, selected, onClick }) {
             width: 40, height: 40,
             borderRadius: 10,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 20,
             background: selected
               ? 'linear-gradient(135deg,#6366f1,#8b5cf6)'
               : 'rgba(255,255,255,0.08)',
           }}
         >
-          {resume.fileType?.includes('pdf') ? '📄' : '📝'}
+          {resume.fileType?.includes('pdf') ? <FileText size={20} color={selected ? '#fff' : 'rgba(255,255,255,0.6)'} /> : <FileEdit size={20} color={selected ? '#fff' : 'rgba(255,255,255,0.6)'} />}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p
@@ -108,7 +112,7 @@ function ResumeCard({ resume, selected, onClick }) {
               {resume.extractedSkills?.length ?? 0} skills
             </span>
             {selected && (
-              <span style={{ fontSize: 11, color: '#a5b4fc', fontWeight: 600 }}>✓ Selected</span>
+              <span style={{ fontSize: 11, color: '#a5b4fc', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><Check size={11} /> Selected</span>
             )}
           </div>
         </div>
@@ -153,8 +157,8 @@ function CVScoreRing({ score }) {
 function SectionCheck({ label, detected }) {
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span style={{ color: detected ? '#4ade80' : 'rgba(255,255,255,0.2)' }}>
-        {detected ? "✓" : "○"}
+      <span style={{ color: detected ? '#4ade80' : 'rgba(255,255,255,0.2)', display: 'flex' }}>
+        {detected ? <Check size={14} /> : <Circle size={14} />}
       </span>
       <span style={{ color: detected ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.35)' }}>{label}</span>
     </div>
@@ -285,13 +289,13 @@ export default function Analytics() {
           <h3 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginBottom: 12 }}>Your Uploaded Resumes</h3>
           {resumes.length === 0 ? (
             <div className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center">
-              <p className="text-4xl mb-3">📂</p>
+            <FolderOpen size={40} className="mx-auto mb-3 text-gray-400" />
               <p className="text-gray-600 font-medium">No resumes uploaded yet</p>
               <p className="text-gray-400 text-sm mt-1">
                 Upload a resume from your Dashboard to get started.
               </p>
               <a href="/dashboard">
-                <Button className="mt-4" size="sm">Go to Dashboard →</Button>
+                <Button className="mt-4" size="sm">Go to Dashboard <ArrowRight size={14} className="inline ml-1" /></Button>
               </a>
             </div>
           ) : (
@@ -323,7 +327,7 @@ export default function Analytics() {
                 {/* ── CV Completeness ── */}
                 <Card className="border-2">
                   <CardHeader className="pb-2">
-                    <CardTitle>📋 CV Completeness Score</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><ClipboardList size={18} /> CV Completeness Score</CardTitle>
                     <CardDescription>
                       Sections detected in{" "}
                       <span className="font-medium text-gray-700">
@@ -386,8 +390,8 @@ export default function Analytics() {
                         {/* Suggestions */}
                         {cvCompleteness.suggestions?.length > 0 && (
                           <div>
-                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>
-                              💡 Suggestions:
+                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Lightbulb size={13} /> Suggestions:
                             </p>
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
                               {cvCompleteness.suggestions.map((s, i) => (
@@ -416,7 +420,7 @@ export default function Analytics() {
                               className="w-full text-xs border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400"
                               onClick={fetchAISuggestions}
                             >
-                              ✨ Generate AI Suggestions
+                              <Sparkles size={13} className="inline mr-1" /> Generate AI Suggestions
                             </Button>
                           )}
                           {aiLoading && (
@@ -429,7 +433,7 @@ export default function Analytics() {
                             <>
                               {aiSuggestions.model === "quota-exceeded" ? (
                                 <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 space-y-2">
-                                  <p className="font-semibold">⚠️ Groq API rate limit hit</p>
+                                  <p className="font-semibold flex items-center gap-1"><AlertTriangle size={13} /> Groq API rate limit hit</p>
                                   <p>{aiSuggestions.error}</p>
                                   <div className="flex items-center gap-3 mt-1">
                                     <a
@@ -438,7 +442,7 @@ export default function Analytics() {
                                       rel="noopener noreferrer"
                                       className="underline text-amber-700 hover:text-amber-900"
                                     >
-                                      Manage at console.groq.com →
+                                      Manage at console.groq.com <ExternalLink size={12} className="inline ml-1" />
                                     </a>
                                     <button
                                       className="text-gray-400 hover:text-gray-600 underline underline-offset-2"
@@ -462,7 +466,7 @@ export default function Analytics() {
                                     className="text-[10px] text-purple-400 hover:text-purple-700 mt-2.5 flex items-center gap-1"
                                     onClick={() => { setAiSuggestions(null); }}
                                   >
-                                    ↻ Regenerate suggestions
+                                    <RefreshCw size={10} /> Regenerate suggestions
                                   </button>
                                 </>
                               )}
@@ -479,7 +483,7 @@ export default function Analytics() {
                 {/* ── Career Insights ── */}
                 <Card className="border-2">
                   <CardHeader className="pb-2">
-                    <CardTitle>🎯 Career Insights</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Target size={18} /> Career Insights</CardTitle>
                     <CardDescription>
                       Why you might not get the job - and what to do
                     </CardDescription>
@@ -489,7 +493,7 @@ export default function Analytics() {
                       <>
                         {insights.reasons?.length > 0 && (
                           <div>
-                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>⚠️ Reasons:</p>
+                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}><AlertTriangle size={13} /> Reasons:</p>
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
                               {insights.reasons.map((reason, idx) => (
                                 <li
@@ -505,8 +509,8 @@ export default function Analytics() {
 
                         {insights.prioritySkills?.length > 0 && (
                           <div>
-                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>
-                              🚀 Priority Skills to Learn:
+                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Rocket size={13} /> Priority Skills to Learn:
                             </p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                               {insights.prioritySkills.map((skill, idx) => (
@@ -520,8 +524,8 @@ export default function Analytics() {
 
                         {insights.resumeSkills?.length > 0 && (
                           <div>
-                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>
-                              ✅ Skills on this Resume ({insights.resumeSkills.length}):
+                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <CheckCircle2 size={13} /> Skills on this Resume ({insights.resumeSkills.length}):
                             </p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                               {insights.resumeSkills.map((skill, idx) => (
@@ -535,8 +539,8 @@ export default function Analytics() {
 
                         {insights.actions?.length > 0 && (
                           <div>
-                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>
-                              ✔ Recommended Actions:
+                            <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Check size={13} /> Recommended Actions:
                             </p>
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
                               {insights.actions.map((action, idx) => (

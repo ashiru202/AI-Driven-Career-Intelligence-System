@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/api";
 import Layout from "../components/Layout";
+import { Folder, FileText, X, AlertTriangle, Search, CheckCircle2 } from "lucide-react";
 
 const VALID_TYPES = [
   "application/pdf",
@@ -97,9 +98,9 @@ export default function ResumeAnalyze() {
           </div>
           <Link
             to="/my-resumes"
-            style={{ padding: "9px 18px", borderRadius: 10, background: surface, border: `1px solid ${border}`, color: textFull, textDecoration: "none", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}
+            style={{ padding: "9px 18px", borderRadius: 10, background: surface, border: `1px solid ${border}`, color: textFull, textDecoration: "none", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            📁 View My Resumes
+            <Folder size={15} /> View My Resumes
           </Link>
         </div>
 
@@ -142,7 +143,7 @@ export default function ResumeAnalyze() {
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
                 {/* File icon */}
                 <div style={{ width: 56, height: 68, borderRadius: 10, background: `${extColor}22`, border: `1.5px solid ${extColor}55`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
-                  <span style={{ fontSize: 20 }}>📄</span>
+                  <FileText size={24} color={extColor} />
                   <span style={{ fontSize: 9, fontWeight: 800, color: extColor, letterSpacing: 0.5 }}>{fileExt}</span>
                 </div>
                 <div>
@@ -151,9 +152,9 @@ export default function ResumeAnalyze() {
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); removeFile(); }}
-                  style={{ marginTop: 4, padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.08)", color: "#f87171", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                  style={{ marginTop: 4, padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.08)", color: "#f87171", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}
                 >
-                  ✕ Remove
+                  <X size={12} /> Remove
                 </button>
               </div>
             ) : (
@@ -227,7 +228,7 @@ export default function ResumeAnalyze() {
           {/* ── Error ── */}
           {error && (
             <div style={{ marginTop: 14, padding: "11px 16px", borderRadius: 10, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
-              <p style={{ color: "#f87171", fontSize: 13, margin: 0 }}>⚠️ {error}</p>
+              <p style={{ color: "#f87171", fontSize: 13, margin: 0, display: "flex", alignItems: "center", gap: 5 }}><AlertTriangle size={13} /> {error}</p>
             </div>
           )}
 
@@ -257,7 +258,7 @@ export default function ResumeAnalyze() {
                 <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
                 Analyzing…
               </span>
-            ) : "🔍 Analyze Resume"}
+            ) : <><Search size={15} className="inline mr-2" /> Analyze Resume</>}
           </button>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -266,7 +267,7 @@ export default function ResumeAnalyze() {
         {result && (
           <div style={{ marginTop: 24, background: surface, border: `1px solid ${border}`, borderRadius: 18, padding: 28 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(99,102,241,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>✅</div>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(99,102,241,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}><CheckCircle2 size={22} color="#4ade80" /></div>
               <div>
                 <h3 style={{ color: textFull, fontWeight: 700, fontSize: 16, margin: 0 }}>Analysis Results</h3>
                 <p style={{ color: textMid, fontSize: 13, margin: "3px 0 0" }}>{result.skillCount} skills extracted from your resume</p>

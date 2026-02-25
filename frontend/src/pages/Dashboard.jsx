@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { FileText, Folder, Target, Briefcase, TrendingUp, Map } from "lucide-react";
 
 const USER_CARDS = [
   {
@@ -9,7 +10,7 @@ const USER_CARDS = [
     description: "Upload and analyze your resume with AI",
     link: "/resume-analyze",
     cta: "Get Started ",
-    icon: "📄",
+    Icon: FileText,
     color: "blue",
   },
   {
@@ -17,7 +18,7 @@ const USER_CARDS = [
     description: "View and manage all your uploaded resumes",
     link: "/my-resumes",
     cta: "View Resumes ",
-    icon: "📁",
+    Icon: Folder,
     color: "violet",
   },
   {
@@ -25,7 +26,7 @@ const USER_CARDS = [
     description: "Paste a job description and match it to your skills",
     link: "/compare-job",
     cta: "Compare Now ",
-    icon: "🎯",
+    Icon: Target,
     color: "orange",
   },
   {
@@ -33,7 +34,7 @@ const USER_CARDS = [
     description: "Browse live jobs matched to your resume and explore skills in demand",
     link: "/job-postings",
     cta: "View Jobs ",
-    icon: "💼",
+    Icon: Briefcase,
     color: "indigo",
   },
   {
@@ -41,7 +42,7 @@ const USER_CARDS = [
     description: "CV completeness score and personalised career insights",
     link: "/analytics",
     cta: "View Analytics ",
-    icon: "📈",
+    Icon: TrendingUp,
     color: "green",
   },
   {
@@ -49,7 +50,7 @@ const USER_CARDS = [
     description: "Follow your personalised learning path to your dream role",
     link: "/my-roadmap",
     cta: "View Roadmaps ",
-    icon: "🗺️",
+    Icon: Map,
     color: "purple",
   },
 ];
@@ -84,7 +85,7 @@ export default function Dashboard() {
 
         {/* Header */}
         <div>
-          <h2 className="text-3xl font-bold text-white">Welcome back, {user.name}! 👋</h2>
+          <h2 className="text-3xl font-bold text-white">Welcome back, {user.name}!</h2>
           <p className="text-slate-400 mt-1 text-sm">
             Here’s everything you need to advance your career.
           </p>
@@ -93,7 +94,7 @@ export default function Dashboard() {
         {/* User feature cards */}
         {user.role === 'USER' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {USER_CARDS.map(({ title, description, link, cta, icon, color }) => {
+            {USER_CARDS.map(({ title, description, link, cta, Icon, color }) => {
               const c = COLOR_MAP[color];
               return (
                 <Link
@@ -103,8 +104,8 @@ export default function Dashboard() {
                   style={{ textDecoration: "none" }}
                 >
                   {/* Icon badge */}
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-2xl ${c.icon}`}>
-                    {icon}
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${c.icon}`}>
+                    <Icon size={22} />
                   </div>
 
                   {/* Text */}

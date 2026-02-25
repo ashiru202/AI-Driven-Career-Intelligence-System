@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import api from "../api/api";
+import { Trophy, Hash, Briefcase, TrendingUp, AlertTriangle, BarChart2 } from "lucide-react";
 
 // ─── Bar style per rank ───────────────────────────────────────────────────────
 const RANK_STYLE = [
-  { icon: "🥇", bar: "rgba(234,179,8,0.82)",   count: "#fde047", track: "rgba(234,179,8,0.08)"   },
-  { icon: "🥈", bar: "rgba(180,196,214,0.65)", count: "#cbd5e1", track: "rgba(148,163,184,0.07)" },
-  { icon: "🥉", bar: "rgba(194,140,90,0.7)",   count: "#d4a06a", track: "rgba(180,120,70,0.07)"  },
+  { bar: "rgba(234,179,8,0.82)",   count: "#fde047", track: "rgba(234,179,8,0.08)"   },
+  { bar: "rgba(180,196,214,0.65)", count: "#cbd5e1", track: "rgba(148,163,184,0.07)" },
+  { bar: "rgba(194,140,90,0.7)",   count: "#d4a06a", track: "rgba(180,120,70,0.07)"  },
 ];
 function indigoBar(rank) {
   const a = Math.max(0.42, 0.88 - (rank - 4) * 0.04).toFixed(2);
@@ -44,7 +45,7 @@ function HBarChart({ skills }) {
               {/* Label */}
               <div style={{ width: 170, display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                 {rs ? (
-                  <span style={{ fontSize: 17, lineHeight: 1, width: 22, textAlign: "center" }}>{rs.icon}</span>
+                  <span style={{ width: 22, display: 'flex', justifyContent: 'center', color: rs.count }}><Trophy size={16} /></span>
                 ) : (
                   <span style={{ width: 22, textAlign: "center", fontSize: 11, fontWeight: 600, color: "rgba(165,180,252,0.45)" }}>{rank}</span>
                 )}
@@ -84,7 +85,7 @@ function HBarChart({ skills }) {
 }
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, color }) {
+function StatCard({ Icon, label, value, color }) {
   return (
     <div
       style={{
@@ -107,11 +108,11 @@ function StatCard({ icon, label, value, color }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 22,
+          color,
           flexShrink: 0,
         }}
       >
-        {icon}
+        <Icon size={22} />
       </div>
       <div>
         <p style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9", margin: 0 }}>
@@ -158,8 +159,8 @@ export default function SkillsInDemand() {
       <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
         {/* ── Header ── */}
         <div>
-          <h1 className="text-3xl font-bold text-white">
-            📊 Skills in Demand
+          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+            <BarChart2 size={28} /> Skills in Demand
           </h1>
           <p className="text-slate-400 mt-1 text-sm">
             Platform-wide insights into the most sought-after skills based on
@@ -207,7 +208,7 @@ export default function SkillsInDemand() {
               fontSize: 14,
             }}
           >
-            ⚠️ {error}
+            <AlertTriangle size={16} className="inline mr-1" /> {error}
           </div>
         )}
 
@@ -222,25 +223,25 @@ export default function SkillsInDemand() {
               }}
             >
               <StatCard
-                icon="🏆"
+                Icon={Trophy}
                 label="Top Skill in Demand"
                 value={topSkills[0]?.skill || "—"}
                 color="#6366f1"
               />
               <StatCard
-                icon="🔢"
+                Icon={Hash}
                 label="Unique Skills Tracked"
                 value={topSkills.length}
                 color="#8b5cf6"
               />
               <StatCard
-                icon="💼"
+                Icon={Briefcase}
                 label="Total Job Comparisons"
                 value={totalJobs.toLocaleString()}
                 color="#06b6d4"
               />
               <StatCard
-                icon="📈"
+                Icon={TrendingUp}
                 label="Leading Count"
                 value={`${maxCount} jobs`}
                 color="#10b981"
@@ -340,7 +341,7 @@ export default function SkillsInDemand() {
               textAlign: "center",
             }}
           >
-            <p style={{ fontSize: 48, marginBottom: 12 }}>📊</p>
+            <BarChart2 size={48} className="mx-auto mb-3 text-gray-400" />
             <p
               style={{
                 fontSize: 16,

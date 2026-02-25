@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
+import { FileText, Target, Map, BarChart2, Lock, TrendingUp, User, Upload, Search, Rocket, GraduationCap, Globe, Bot, Unlock, Play, Heart } from "lucide-react";
 
 /* ─────────────────────────────────────────────
    Tiny hook: returns true once the element enters the viewport
@@ -265,7 +266,7 @@ function Hero() {
           onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.1)"; e.target.style.borderColor = "rgba(255,255,255,0.3)"; }}
           onMouseLeave={(e) => { e.target.style.background = "rgba(255,255,255,0.05)"; e.target.style.borderColor = "rgba(255,255,255,0.15)"; }}
         >
-          ▶ See How It Works
+          <Play size={14} className="inline mr-1" /> See How It Works
         </button>
       </div>
 
@@ -305,37 +306,37 @@ function Hero() {
 ════════════════════════════════════════════ */
 const features = [
   {
-    icon: "📄",
+    Icon: FileText,
     title: "Smart Resume Analysis",
     desc: "Upload your PDF or DOCX resume. Our NLP engine instantly extracts your skills, qualifications, and experience with high accuracy.",
     color: "#6366f1",
   },
   {
-    icon: "🎯",
+    Icon: Target,
     title: "Skill Gap Detection",
     desc: "Paste any job description and instantly discover your match score, existing strengths, and the exact skills holding you back.",
     color: "#8b5cf6",
   },
   {
-    icon: "🗺️",
+    Icon: Map,
     title: "Personalized Roadmaps",
     desc: "Get a curated, step-by-step learning roadmap built from your specific skill gaps. Track progress as you grow.",
     color: "#a78bfa",
   },
   {
-    icon: "📊",
+    Icon: BarChart2,
     title: "Analytics & Insights",
     desc: "See which skills are in highest demand on the market and understand why candidates get overlooked for roles.",
     color: "#60a5fa",
   },
   {
-    icon: "🔒",
+    Icon: Lock,
     title: "Role-Based Access",
     desc: "Designed for everyone: job seekers get personal insights, staff monitor users, and admins manage the full platform.",
     color: "#34d399",
   },
   {
-    icon: "📈",
+    Icon: TrendingUp,
     title: "CV Completeness Score",
     desc: "Receive an actionable completeness score for your CV with specific tips on what to add to stand out to recruiters.",
     color: "#f59e0b",
@@ -360,9 +361,9 @@ function Features() {
         </FadeUp>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 22 }}>
-          {features.map(({ icon, title, desc, color }, i) => (
+          {features.map(({ Icon, title, desc, color }, i) => (
             <FadeUp key={title} delay={i * 0.08}>
-              <FeatureCard icon={icon} title={title} desc={desc} color={color} />
+              <FeatureCard Icon={Icon} title={title} desc={desc} color={color} />
             </FadeUp>
           ))}
         </div>
@@ -371,7 +372,7 @@ function Features() {
   );
 }
 
-function FeatureCard({ icon, title, desc, color }) {
+function FeatureCard({ Icon, title, desc, color }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div
@@ -386,7 +387,7 @@ function FeatureCard({ icon, title, desc, color }) {
         cursor: "default",
       }}
     >
-      <div style={{ fontSize: 36, marginBottom: 16 }}>{icon}</div>
+      <div style={{ marginBottom: 16, color }}><Icon size={36} /></div>
       <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 18, marginBottom: 10 }}>{title}</h3>
       <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14.5, lineHeight: 1.65 }}>{desc}</p>
       <div style={{ marginTop: 18, height: 2, borderRadius: 100, background: `linear-gradient(90deg, ${color}, transparent)`, opacity: hovered ? 1 : 0, transition: "opacity 0.3s" }} />
@@ -398,10 +399,10 @@ function FeatureCard({ icon, title, desc, color }) {
    HOW IT WORKS
 ════════════════════════════════════════════ */
 const steps = [
-  { step: "01", title: "Create Your Account", desc: "Register in seconds. No credit card required. Pick your role — job seeker, staff, or admin.", icon: "👤" },
-  { step: "02", title: "Upload Your Resume", desc: "Upload your resume in PDF or DOCX format. Our AI instantly extracts your skills and experience.", icon: "📤" },
-  { step: "03", title: "Compare With Job Descriptions", desc: "Paste a job description to get your match score, common skills, and a full list of what's missing.", icon: "🔍" },
-  { step: "04", title: "Follow Your Roadmap", desc: "Your personalised learning roadmap is generated automatically. Mark steps as complete and track your growth.", icon: "🚀" },
+  { step: "01", title: "Create Your Account", desc: "Register in seconds. No credit card required. Pick your role — job seeker, staff, or admin.", Icon: User },
+  { step: "02", title: "Upload Your Resume", desc: "Upload your resume in PDF or DOCX format. Our AI instantly extracts your skills and experience.", Icon: Upload },
+  { step: "03", title: "Compare With Job Descriptions", desc: "Paste a job description to get your match score, common skills, and a full list of what's missing.", Icon: Search },
+  { step: "04", title: "Follow Your Roadmap", desc: "Your personalised learning roadmap is generated automatically. Mark steps as complete and track your growth.", Icon: Rocket },
 ];
 
 function HowItWorks() {
@@ -418,15 +419,15 @@ function HowItWorks() {
           </div>
         </FadeUp>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 28, position: "relative" }}>
-          {steps.map(({ step, title, desc, icon }, i) => (
+          {steps.map(({ step, title, desc, Icon }, i) => (
             <FadeUp key={step} delay={i * 0.1}>
               <div style={{ textAlign: "center", padding: "32px 20px", position: "relative" }}>
                 {/* connector line */}
                 {i < steps.length - 1 && (
                   <div style={{ display: "none" }} className="lg:block" />
                 )}
-                <div style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.2))", border: "2px solid rgba(99,102,241,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 20px" }}>
-                  {icon}
+                <div style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.2))", border: "2px solid rgba(99,102,241,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", color: "#a5b4fc" }}>
+                  <Icon size={28} />
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 800, color: "#6366f1", letterSpacing: "3px", marginBottom: 10 }}>STEP {step}</div>
                 <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 17, marginBottom: 10 }}>{title}</h3>
@@ -445,10 +446,10 @@ function HowItWorks() {
 ════════════════════════════════════════════ */
 function AboutUs() {
   const pillars = [
-    { icon: "🎓", title: "Academic Roots", desc: "Built as a research project combining NLP, machine learning, and software engineering to solve real-world career challenges." },
-    { icon: "🌍", title: "Global + Local Focus", desc: "Designed for both local Sri Lankan job markets and international career pathways, with relevant skill benchmarks." },
-    { icon: "🤖", title: "AI at the Core", desc: "Our Python NLP microservice (spaCy) powers all skill extraction, normalisation, and matching — no generic keyword lists." },
-    { icon: "🔓", title: "Open & Transparent", desc: "We show you exactly why you match or don't match a role — no black-box scores, full explainability." },
+    { Icon: GraduationCap, title: "Academic Roots", desc: "Built as a research project combining NLP, machine learning, and software engineering to solve real-world career challenges." },
+    { Icon: Globe, title: "Global + Local Focus", desc: "Designed for both local Sri Lankan job markets and international career pathways, with relevant skill benchmarks." },
+    { Icon: Bot, title: "AI at the Core", desc: "Our Python NLP microservice (spaCy) powers all skill extraction, normalisation, and matching — no generic keyword lists." },
+    { Icon: Unlock, title: "Open & Transparent", desc: "We show you exactly why you match or don't match a role — no black-box scores, full explainability." },
   ];
 
   return (
@@ -481,10 +482,10 @@ function AboutUs() {
 
           {/* Right pillars */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-            {pillars.map(({ icon, title, desc }, i) => (
+            {pillars.map(({ Icon, title, desc }, i) => (
               <FadeUp key={title} delay={i * 0.1}>
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "20px 18px" }}>
-                  <div style={{ fontSize: 26, marginBottom: 10 }}>{icon}</div>
+                  <div style={{ marginBottom: 10, color: "#a5b4fc" }}><Icon size={26} /></div>
                   <h4 style={{ color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 8 }}>{title}</h4>
                   <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, lineHeight: 1.6 }}>{desc}</p>
                 </div>
@@ -506,7 +507,7 @@ function CTA() {
     <section style={{ background: "linear-gradient(135deg,#0a0a1e,#0d0d2b)", padding: "100px 24px", textAlign: "center" }}>
       <FadeUp>
         <div style={{ maxWidth: 680, margin: "0 auto", background: "linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.1))", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 28, padding: "64px 48px" }}>
-          <div style={{ fontSize: 48, marginBottom: 20 }}>🚀</div>
+          <div style={{ marginBottom: 20, color: "#a5b4fc" }}><Rocket size={48} /></div>
           <h2 style={{ fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 800, color: "#fff", marginBottom: 16 }}>
             Ready to Take Control of Your Career?
           </h2>
@@ -598,7 +599,7 @@ function Footer() {
         </div>
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 13 }}>© 2026 AptitudeX &middot; AI-Driven Career Intelligence System</span>
-          <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 13 }}>Built with ♥ using MERN + FastAPI</span>
+          <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 13 }}>Built with <Heart size={13} className="inline text-red-400" /> using MERN + FastAPI</span>
         </div>
       </div>
     </footer>

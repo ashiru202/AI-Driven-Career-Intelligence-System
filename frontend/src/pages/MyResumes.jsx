@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import api from "../api/api";
+import { Eye } from "lucide-react";
 
 export default function MyResumes() {
   const [resumes, setResumes] = useState([]);
@@ -162,7 +163,7 @@ export default function MyResumes() {
                         onClick={() => handleView(resume._id, resume.fileName)}
                         className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-medium"
                       >
-                        👁 View
+                        <Eye size={15} className="inline mr-1" /> View
                       </button>
                       <button
                         onClick={() => navigate("/compare-job")}
