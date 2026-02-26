@@ -79,7 +79,7 @@ async function extractWithKeywords(text) {
 async function extractSkillsWithAI(text) {
   if (!text || !text.trim()) return { skills: [], source: 'none' };
 
-  // ── Layer 1: Groq AI ─────────────────────────────────────────────────
+  // Layer 1: Groq AI 
   if (process.env.GROQ_API_KEY) {
     try {
       const skills = await extractWithGroq(text);
@@ -90,7 +90,7 @@ async function extractSkillsWithAI(text) {
     }
   }
 
-  // ── Layer 2: NLP keyword microservice ────────────────────────────────
+  // Layer 2: NLP keyword microservice 
   if (process.env.NLP_SERVICE_URL) {
     try {
       const skills = await extractWithKeywords(text);
@@ -101,7 +101,7 @@ async function extractSkillsWithAI(text) {
     }
   }
 
-  // ── Layer 3: Give up gracefully ──────────────────────────────────────
+  // Layer 3: Empty Array Fallback
   console.error('[AI Extractor] All extraction methods failed');
   return { skills: [], source: 'none' };
 }
