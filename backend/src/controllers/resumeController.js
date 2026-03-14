@@ -4,6 +4,7 @@ const AppError = require('../utils/AppError');
 const { asyncHandler } = require('../middleware/errorMiddleware');
 const { extractTextFromFile } = require('../services/resumeTextExtractor');
 const { extractSkillsWithAI } = require('../services/aiSkillExtractorService');
+const { sendToUser } = require('../utils/sseManager');
 const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
@@ -16,43 +17,87 @@ const uploadResume = asyncHandler(async (req, res) => {
 
   const file = req.file;
   const userId = req.user.id;
+  const operationId = `resume_upload_${userId}_${Date.now()}`;
 
   // Validate file type
   const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
   if (!allowedTypes.includes(file.mimetype)) {
-    // Clean up uploaded file
     await fs.unlink(file.path).catch(() => {});
     throw AppError.badRequest('INVALID_FILE_TYPE', 'Only PDF and DOCX files are allowed');
   }
 
   // Validate file size (5MB limit)
-  const maxSize = 5 * 1024 * 1024; // 5MB
+  const maxSize = 5 * 1024 * 1024;
   if (file.size > maxSize) {
     await fs.unlink(file.path).catch(() => {});
     throw AppError.badRequest('FILE_TOO_LARGE', 'File size must be less than 5MB');
   }
 
   try {
-    // Step 1: Extract text from file
+    // Step 1: Extract text
+    sendToUser(userId, 'progress', {
+      operationId,
+      operation: 'resume_upload',
+      step: 'extracting_text',
+      progress: 25,
+      message: 'Extracting text from resume…',
+    });
     const extractedText = await extractTextFromFile(file.path);
 
     if (!extractedText || extractedText.trim().length === 0) {
       throw AppError.badRequest('EXTRACTION_FAILED', 'Could not extract text from file');
     }
 
-    // Step 2: Extract skills using AI (Groq → keyword fallback)
+    // Step 2: AI skill extraction
+    sendToUser(userId, 'progress', {
+      operationId,
+      operation: 'resume_upload',
+      step: 'analyzing_skills',
+      progress: 60,
+      message: 'Analysing skills with AI…',
+    });
     const { skills: extractedSkills, source: extractionSource } = await extractSkillsWithAI(extractedText);
     console.log(`[Resume] Skill extraction source: ${extractionSource}, count: ${extractedSkills.length}`);
 
-    // Step 3: Save resume data to database
+    // Step 3: Persist to DB
+    sendToUser(userId, 'progress', {
+      operationId,
+      operation: 'resume_upload',
+      step: 'saving',
+      progress: 85,
+      message: 'Saving resume…',
+    });
     const resume = await Resume.create({
       user: userId,
       fileName: file.originalname,
       filePath: file.path,
       fileSize: file.size,
       fileType: file.mimetype,
-      extractedText: extractedText.substring(0, 10000), // Store first 10k chars
+      extractedText: extractedText.substring(0, 10000),
       extractedSkills
+    });
+
+    // Step 4: Done — notify via SSE
+    sendToUser(userId, 'progress', {
+      operationId,
+      operation: 'resume_upload',
+      step: 'complete',
+      progress: 100,
+      message: 'Resume analysed successfully!',
+      resumeId: resume._id,
+    });
+
+    // Push a fresh notification card for this resume
+    sendToUser(userId, 'notification', {
+      id: `resume_${resume._id}`,
+      icon: '📄',
+      title: `Resume analysed: ${resume.fileName}`,
+      body: extractedSkills.length > 0
+        ? `${extractedSkills.length} skill${extractedSkills.length > 1 ? 's' : ''} detected. View your full analysis.`
+        : 'Analysis complete. View your resume details.',
+      link: '/my-resumes',
+      time: 'Just now',
+      createdAt: new Date(),
     });
 
     res.status(201).json(successResponse({
@@ -60,11 +105,18 @@ const uploadResume = asyncHandler(async (req, res) => {
       fileName: resume.fileName,
       skills: resume.extractedSkills,
       skillCount: resume.extractedSkills.length,
-      extractionSource   // 'groq' | 'keyword' | 'none'
+      extractionSource
     }, 'Resume analyzed successfully'));
 
   } catch (error) {
-    // Clean up file on error
+    // Notify the browser of the failure
+    sendToUser(userId, 'progress', {
+      operationId,
+      operation: 'resume_upload',
+      step: 'error',
+      progress: 0,
+      message: 'Resume analysis failed.',
+    });
     await fs.unlink(file.path).catch(() => {});
     throw error;
   }

@@ -49,7 +49,11 @@ app.use((req, _res, next) => {
   next();
 });
 
-// ── Global rate limit (all /api/* routes) ────────────────────────────────────
+// ── SSE — mounted BEFORE the global rate limiter (long-lived streaming endpoint) ──
+const sseRoutes = require("./routes/sseRoutes");
+app.use("/api/sse", sseRoutes);
+
+// ── Global rate limit (all /api/* routes except /api/sse) ─────────────────────
 // Disabled in test environment to avoid interfering with rapid test requests
 if (process.env.NODE_ENV !== "test") {
   app.use("/api", generalLimiter);

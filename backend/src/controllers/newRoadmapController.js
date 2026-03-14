@@ -4,11 +4,13 @@ const { successResponse } = require('../utils/responseHelper');
 const AppError = require('../utils/AppError');
 const { asyncHandler } = require('../middleware/errorMiddleware');
 const { generateRoadmap, calculateProgress } = require('../services/roadmapGenerator');
+const { sendToUser } = require('../utils/sseManager');
 
 // Create roadmap from comparison or manual input
 const createRoadmap = asyncHandler(async (req, res) => {
   const { targetRole, missingSkills, jobTitle, comparisonId } = req.body;
   const userId = req.user.id;
+  const operationId = `roadmap_generate_${userId}_${Date.now()}`;
 
   let skills = missingSkills || [];
   let title = jobTitle || targetRole;
@@ -30,10 +32,26 @@ const createRoadmap = asyncHandler(async (req, res) => {
     throw AppError.badRequest('NO_MISSING_SKILLS', 'No skills to learn');
   }
 
-  // Generate roadmap steps (async — fetches real resources from curated map / Gemini AI)
+  // Step 1: Generating roadmap
+  sendToUser(userId, 'progress', {
+    operationId,
+    operation: 'roadmap_generate',
+    step: 'generating',
+    progress: 30,
+    message: `Building roadmap for "${title}"…`,
+  });
+
   const roadmapSteps = await generateRoadmap(skills, title);
 
-  // Create roadmap
+  // Step 2: Saving
+  sendToUser(userId, 'progress', {
+    operationId,
+    operation: 'roadmap_generate',
+    step: 'saving',
+    progress: 85,
+    message: 'Saving your roadmap…',
+  });
+
   const roadmap = await Roadmap.create({
     user: userId,
     targetRole: title,
@@ -42,6 +60,27 @@ const createRoadmap = asyncHandler(async (req, res) => {
     jobSkills: jobSkillsList,
     resumeSkills: resumeSkillsList,
     jobTitle: title
+  });
+
+  // Step 3: Complete
+  sendToUser(userId, 'progress', {
+    operationId,
+    operation: 'roadmap_generate',
+    step: 'complete',
+    progress: 100,
+    message: 'Roadmap created successfully!',
+    roadmapId: roadmap._id,
+  });
+
+  // Push a fresh notification card for this roadmap
+  sendToUser(userId, 'notification', {
+    id: `roadmap_${roadmap._id}`,
+    icon: '🗺️',
+    title: `Roadmap: ${roadmap.targetRole}`,
+    body: `${roadmapSteps.length} skill${roadmapSteps.length !== 1 ? 's' : ''} to learn. Start your journey!`,
+    link: '/my-roadmap',
+    time: 'Just now',
+    createdAt: new Date(),
   });
 
   res.status(201).json(successResponse({

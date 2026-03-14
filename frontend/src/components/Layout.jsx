@@ -6,6 +6,8 @@ import {
   ArrowLeft, RefreshCw, Check, X, ChevronDown, ChevronRight,
 } from 'lucide-react';
 import api from '../api/api';
+import { useSSE } from '../context/SSEContext';
+import ProgressToast from './ProgressToast';
 
 // ── Profile Edit Modal ───────────────────────────────────────────────────────
 function ProfileModal({ onClose, onSave }) {
@@ -419,10 +421,11 @@ const ROLE_NAV = {
 };
 
 // ── Notification system ─────────────────────────────────────────────────────
-const POLL_INTERVAL_MS = 30_000; // refresh every 30 seconds
+const POLL_INTERVAL_MS = 5 * 60_000; // fallback refresh every 5 minutes (SSE handles real-time)
 
 function NotificationDropdown({ userRole }) {
   const STORAGE_KEY = `notif_read_${userRole}`;
+  const { liveNotifications } = useSSE();
 
   const [open,          setOpen]          = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -434,7 +437,7 @@ function NotificationDropdown({ userRole }) {
   });
   const ref = useRef(null);
 
-  // Fetch from backend
+  // Fetch full notification list from backend
   const fetchNotifications = useCallback(async () => {
     try {
       const { data } = await api.get('/api/notifications');
@@ -447,12 +450,24 @@ function NotificationDropdown({ userRole }) {
     }
   }, []);
 
-  // Initial fetch + poll every 30 s
+  // Initial fetch + 5-minute fallback poll
   useEffect(() => {
     fetchNotifications();
     const timer = setInterval(fetchNotifications, POLL_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [fetchNotifications]);
+
+  // Merge SSE-pushed live notifications (real-time) into the local list
+  useEffect(() => {
+    if (liveNotifications.length === 0) return;
+    setNotifications((prev) => {
+      const merged = [
+        ...liveNotifications,
+        ...prev.filter((n) => !liveNotifications.find((ln) => ln.id === n.id)),
+      ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      return merged;
+    });
+  }, [liveNotifications]);
 
   // Re-sync readIds whenever STORAGE_KEY changes (userRole arrives after null on mount)
   useEffect(() => {
@@ -639,7 +654,7 @@ function NotificationDropdown({ userRole }) {
           {/* Refresh timestamp */}
           {!loading && !error && notifications.length > 0 && (
             <div style={{ padding: '8px 16px', textAlign: 'right', color: 'rgba(255,255,255,0.18)', fontSize: 10, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-              Auto-refreshes every 30s
+              Live via SSE · 5-min backup refresh
             </div>
           )}
         </div>
@@ -960,6 +975,9 @@ export default function Layout({ children }) {
           onCancel={() => setLogoutModalOpen(false)}
         />
       )}
+
+      {/* Real-time operation progress toasts (driven by SSE) */}
+      <ProgressToast />
     </div>
   );
 }

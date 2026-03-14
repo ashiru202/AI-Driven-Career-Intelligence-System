@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { SSEProvider } from "./context/SSEContext";
 import WelcomePage from "./pages/WelcomePage";
 import Ping from "./pages/Ping";
 import Login from "./pages/Login";
@@ -29,7 +30,8 @@ import VerifyEmail from "./pages/VerifyEmail";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <SSEProvider>
+      <BrowserRouter>
       <Routes>
         <Route path="/" element={<WelcomePage />} />
         <Route path="/ping" element={<Ping />} />
@@ -227,5 +229,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+    </SSEProvider>
   );
 }
