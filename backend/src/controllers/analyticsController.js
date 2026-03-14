@@ -153,7 +153,7 @@ exports.getMyResumes = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   const resumes = await Resume.find({ user: userId })
-    .select("-extractedText -cloudinaryPublicId")
+    .select("-extractedText -filePath")
     .sort({ createdAt: -1 });
 
   res.json({

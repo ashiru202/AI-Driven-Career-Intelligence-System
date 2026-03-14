@@ -10,15 +10,9 @@ const resumeSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  // Cloudinary secure URL for downloading / previewing the file
-  fileUrl: {
+  filePath: {
     type: String,
-    default: ''
-  },
-  // Cloudinary public_id needed to delete the asset via the API
-  cloudinaryPublicId: {
-    type: String,
-    default: ''
+    required: true
   },
   fileSize: {
     type: Number,

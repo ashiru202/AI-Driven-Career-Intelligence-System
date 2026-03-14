@@ -1,9 +1,26 @@
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
 
-// Use memoryStorage so the file buffer is available for text extraction
-// and direct Cloudinary upload without writing to local disk.
-const storage = multer.memoryStorage();
+// FIXED upload folder path (no process.cwd confusion)
+// BACKEND/uploads/resumes
+const uploadDir = path.resolve(__dirname, "..", "..", "uploads", "resumes");
+fs.mkdirSync(uploadDir, { recursive: true });
+
+console.log("✅ Resume upload directory:", uploadDir);
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    const base = path
+      .basename(file.originalname || "resume", ext)
+      .replace(/[^a-zA-Z0-9._-]/g, "_")
+      .slice(0, 80);
+
+    cb(null, `${Date.now()}_${base}${ext || ""}`);
+  },
+});
 
 function fileFilter(req, file, cb) {
   const ext = path.extname(file.originalname || "").toLowerCase();

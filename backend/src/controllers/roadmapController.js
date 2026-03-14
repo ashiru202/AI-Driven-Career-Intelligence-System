@@ -1,8 +1,9 @@
 const Roadmap = require("../models/Roadmap");
 const skillGapAnalysis = require("../services/skillGapService");
 const generateRoadmap = require("../services/roadmapGenerator");
+const fs = require("fs");
 const axios = require("axios");
-const { extractTextFromBuffer } = require("../services/resumeTextExtractor");
+const { extractTextFromResume } = require("../services/resumeTextExtractor");
 const { computeSkillGap } = require("../services/skillGapService");
 const { getRecommendations } = require("../services/recommendationService");
 
@@ -238,10 +239,12 @@ exports.analyzeResume = async (req, res) => {
 
     const { targetRole = "" } = req.body;
 
-    // 1) Extract text from uploaded file buffer (memoryStorage — no disk path)
-    const resumeText = await extractTextFromBuffer(req.file.buffer, req.file.mimetype, req.file.originalname);
+    // 1) Extract text from uploaded file
+    const resumeText = await extractTextFromResume(req.file.path, req.file.mimetype);
 
     if (!resumeText || resumeText.length < 50) {
+      // delete uploaded file
+      try { fs.unlinkSync(req.file.path); } catch (e) {}
       return res.status(400).json({
         success: false,
         message: "Could not extract enough text from resume. Try a clearer PDF/DOCX.",
@@ -265,7 +268,8 @@ exports.analyzeResume = async (req, res) => {
     // jobSkills / missingSkills / steps will be added later
     
 
-    // 4) file is in memory (memoryStorage) — no disk cleanup needed
+    // 4) delete raw file (privacy-first)
+    try { fs.unlinkSync(req.file.path); } catch (e) {}
 
   return res.json({
   success: true,
@@ -277,7 +281,10 @@ exports.analyzeResume = async (req, res) => {
 
 
   } catch (err) {
-    // file is in memory (memoryStorage) — no disk cleanup needed
+    // delete file if exists
+    if (req.file?.path) {
+      try { fs.unlinkSync(req.file.path); } catch (e) {}
+    }
 
     const msg =
       err.response?.data?.detail ||
