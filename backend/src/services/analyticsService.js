@@ -130,7 +130,7 @@ async function getUserInsights(userId, roadmapId = null, resumeId = null) {
       reasons.push(`Your resume is missing ${missingHighDemand.length} high-demand skill(s) employers want`);
       prioritySkills.push(...missingHighDemand);
     } else if (topDemandSkills.length > 0) {
-      reasons.push("Your resume already covers most in-demand skills — great position!");
+      reasons.push("Your resume already covers most in-demand skills - great position!");
       actions.push("Start applying to roles that match your skill set");
     }
   }
@@ -159,7 +159,7 @@ async function getUserInsights(userId, roadmapId = null, resumeId = null) {
       if (missingSkills.length > 5) {
         reasons.push(`You have ${missingSkills.length} total skill gaps to close`);
       } else if (missingSkills.length > 0) {
-        reasons.push(`You have ${missingSkills.length} skill gap(s) — almost there!`);
+        reasons.push(`You have ${missingSkills.length} skill gap(s) - almost there!`);
       }
 
       const otherMissing = missingSkills.filter(

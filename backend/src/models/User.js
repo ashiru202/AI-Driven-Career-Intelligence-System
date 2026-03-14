@@ -9,7 +9,14 @@ const userSchema = new mongoose.Schema({
     enum: ["USER", "STAFF", "ADMIN"],
     default: "USER",
   },
-  active:   { type: Boolean, default: true },
+  active:              { type: Boolean, default: true },
+  // Email verification
+  emailVerified:           { type: Boolean, default: false },
+  emailVerificationToken:  { type: String },
+  emailVerificationExpires:{ type: Date },
+  // Password reset
+  passwordResetToken:      { type: String },
+  passwordResetExpires:    { type: Date },
   // Profile fields
   phone:    { type: String, default: '' },
   bio:      { type: String, default: '' },

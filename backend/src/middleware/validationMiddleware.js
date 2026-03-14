@@ -119,6 +119,33 @@ const schemas = {
       missingSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional(),
       resumeSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional()
     })
+  }),
+
+  forgotPassword: z.object({
+    body: z.object({
+      email: z.string()
+        .email('Invalid email address')
+        .max(254, 'Email too long')
+        .toLowerCase()
+    })
+  }),
+
+  resetPassword: z.object({
+    body: z.object({
+      token: z.string().min(1, 'Token is required'),
+      password: z.string()
+        .min(6, 'Password must be at least 6 characters')
+        .max(128, 'Password must be at most 128 characters')
+    })
+  }),
+
+  resendVerification: z.object({
+    body: z.object({
+      email: z.string()
+        .email('Invalid email address')
+        .max(254, 'Email too long')
+        .toLowerCase()
+    })
   })
 };
 

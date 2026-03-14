@@ -23,6 +23,9 @@ import StaffManagement from "./pages/StaffManagement";
 import AdminReport from "./pages/AdminReport";
 import JobPostings from "./pages/JobPostings";
 import SkillsInDemand from "./pages/SkillsInDemand";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail";
 
 export default function App() {
   return (
@@ -32,6 +35,9 @@ export default function App() {
         <Route path="/ping" element={<Ping />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/health" element={<Health />} />
 
         <Route

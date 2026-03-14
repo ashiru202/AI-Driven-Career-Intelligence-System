@@ -22,7 +22,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const isAuthEndpoint = error.config?.url?.includes("/auth/login") || error.config?.url?.includes("/auth/register");
+    const isAuthEndpoint =
+      error.config?.url?.includes("/auth/login") ||
+      error.config?.url?.includes("/auth/register") ||
+      error.config?.url?.includes("/auth/forgot-password") ||
+      error.config?.url?.includes("/auth/reset-password") ||
+      error.config?.url?.includes("/auth/verify-email") ||
+      error.config?.url?.includes("/auth/resend-verification");
     if (error.response && error.response.status === 401 && !isAuthEndpoint) {
       // Clear local storage and redirect to login (only for non-auth endpoints)
       localStorage.removeItem("token");

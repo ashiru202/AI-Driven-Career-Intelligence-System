@@ -1,51 +1,56 @@
+const crypto = require('crypto');
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { successResponse, errorResponse } = require("../utils/responseHelper");
+const { successResponse } = require("../utils/responseHelper");
 const AppError = require("../utils/AppError");
 const { asyncHandler } = require("../middleware/errorMiddleware");
+const { sendVerificationEmail, sendPasswordResetEmail } = require("../utils/emailService");
 
+// Helpers
+function generateRawToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function hashToken(raw) {
+  return crypto.createHash('sha256').update(raw).digest('hex');
+}
+
+// POST /api/auth/register
 exports.register = asyncHandler(async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password } = req.body;
 
-  // Check if user already exists
   const exists = await User.findOne({ email });
   if (exists) {
     throw AppError.conflict('User with this email already exists');
   }
 
-  // Hash the password
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  // Create the user in MongoDB
+  // Generate email verification token
+  const rawToken = generateRawToken();
+  const hashedVerificationToken = hashToken(rawToken);
+  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
   const user = await User.create({
     name,
     email,
     password: hashedPassword,
-    role: (role || "USER").toUpperCase()
+    role: 'USER',
+    emailVerified: false,
+    emailVerificationToken: hashedVerificationToken,
+    emailVerificationExpires: verificationExpires,
   });
 
-  // Generate token for immediate login
-  const token = jwt.sign(
-    { id: user._id, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+  await sendVerificationEmail(email, name, rawToken);
 
   res.status(201).json(successResponse(
-    { 
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
-    },
-    'User registered successfully'
+    { email: user.email },
+    'Registration successful! Please check your email to verify your account.'
   ));
 });
 
+// POST /api/auth/login
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -54,9 +59,12 @@ exports.login = asyncHandler(async (req, res) => {
     throw AppError.unauthorized('Invalid credentials');
   }
 
-  // Check if account is active
   if (!user.active) {
-    throw AppError.forbidden('Your account has been disabled', 'ACCOUNT_DISABLED');
+    throw new AppError(403, 'ACCOUNT_DISABLED', 'Your account has been disabled');
+  }
+
+  if (!user.emailVerified) {
+    throw new AppError(403, 'EMAIL_NOT_VERIFIED', 'Please verify your email before logging in');
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
@@ -72,12 +80,93 @@ exports.login = asyncHandler(async (req, res) => {
 
   res.json(successResponse({
     token,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role
-    }
+    user: { id: user._id, name: user.name, email: user.email, role: user.role }
   }));
 });
 
+// GET /api/auth/verify-email?token=...
+exports.verifyEmail = asyncHandler(async (req, res) => {
+  const { token } = req.query;
+  if (!token) throw AppError.badRequest('MISSING_TOKEN', 'Verification token is required');
+
+  const hashedToken = hashToken(token);
+
+  const user = await User.findOne({
+    emailVerificationToken: hashedToken,
+    emailVerificationExpires: { $gt: new Date() },
+  });
+
+  if (!user) {
+    throw new AppError(400, 'INVALID_TOKEN', 'Verification link is invalid or has expired');
+  }
+
+  user.emailVerified = true;
+  user.emailVerificationToken = undefined;
+  user.emailVerificationExpires = undefined;
+  await user.save();
+
+  res.json(successResponse(null, 'Email verified successfully! You can now log in.'));
+});
+
+// POST /api/auth/resend-verification
+exports.resendVerification = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  // Always respond with success to avoid exposing whether the email is registered
+  if (!user || user.emailVerified) {
+    return res.json(successResponse(null, 'If that email is registered and unverified, a new verification email has been sent.'));
+  }
+
+  const rawToken = generateRawToken();
+  user.emailVerificationToken = hashToken(rawToken);
+  user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  await user.save();
+
+  await sendVerificationEmail(email, user.name, rawToken);
+
+  res.json(successResponse(null, 'If that email is registered and unverified, a new verification email has been sent.'));
+});
+
+// POST /api/auth/forgot-password
+exports.forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  // Always respond the same way (security: don't reveal whether email exists)
+  if (user && user.emailVerified) {
+    const rawToken = generateRawToken();
+    user.passwordResetToken = hashToken(rawToken);
+    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    await user.save();
+    await sendPasswordResetEmail(email, user.name, rawToken);
+  }
+
+  res.json(successResponse(null, 'If that email is registered, a password reset link has been sent.'));
+});
+
+// POST /api/auth/reset-password
+exports.resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+  if (!token) throw AppError.badRequest('MISSING_TOKEN', 'Reset token is required');
+
+  const hashedToken = hashToken(token);
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: new Date() },
+  });
+
+  if (!user) {
+    throw new AppError(400, 'INVALID_TOKEN', 'Reset link is invalid or has expired');
+  }
+
+  user.password = await bcrypt.hash(password, 10);
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+  res.json(successResponse(null, 'Password reset successfully. You can now log in with your new password.'));
+});
