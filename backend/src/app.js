@@ -71,6 +71,7 @@ const newRoadmapRoutes  = require("./routes/newRoadmapRoutes");
 const analyticsRoutes       = require("./routes/analyticsRoutes");
 const reportRoutes          = require("./routes/reportRoutes");
 const notificationsRoutes   = require("./routes/notificationsRoutes");
+const jobApplicationRoutes  = require("./routes/jobApplicationRoutes");
 
 app.use("/api",            healthRoutes);
 
@@ -87,6 +88,7 @@ app.use("/api/roadmaps-new", newRoadmapRoutes);
 app.use("/api/analytics",  analyticsRoutes);
 app.use("/api/reports",        reportRoutes);
 app.use("/api/notifications",  notificationsRoutes);
+app.use("/api/job-applications", jobApplicationRoutes);
 app.use("/api/roadmap",        roadmapRoutes);
 app.use("/api/roadmaps",   roadmapRoutes);
 app.use("/api/admin",      adminRoutes);

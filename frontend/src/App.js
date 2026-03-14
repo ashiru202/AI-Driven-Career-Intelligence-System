@@ -24,6 +24,7 @@ import StaffManagement from "./pages/StaffManagement";
 import AdminReport from "./pages/AdminReport";
 import JobPostings from "./pages/JobPostings";
 import SkillsInDemand from "./pages/SkillsInDemand";
+import JobTracker from "./pages/JobTracker";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -124,6 +125,17 @@ export default function App() {
             <ProtectedRoute>
               <RoleRoute roles={["USER"]}>
                 <SkillsInDemand />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/job-tracker"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["USER"]}>
+                <JobTracker />
               </RoleRoute>
             </ProtectedRoute>
           }
