@@ -2,11 +2,9 @@ const Resume = require('../models/Resume');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const AppError = require('../utils/AppError');
 const { asyncHandler } = require('../middleware/errorMiddleware');
-const { extractTextFromFile } = require('../services/resumeTextExtractor');
+const { extractTextFromBuffer } = require('../services/resumeTextExtractor');
 const { extractSkillsWithAI } = require('../services/aiSkillExtractorService');
-const axios = require('axios');
-const fs = require('fs').promises;
-const path = require('path');
+const { uploadBuffer, deleteFile } = require('../config/cloudinary');
 
 // Upload and analyze resume
 const uploadResume = asyncHandler(async (req, res) => {
@@ -18,64 +16,68 @@ const uploadResume = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   // Validate file type
-  const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+  const allowedTypes = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ];
   if (!allowedTypes.includes(file.mimetype)) {
-    // Clean up uploaded file
-    await fs.unlink(file.path).catch(() => {});
     throw AppError.badRequest('INVALID_FILE_TYPE', 'Only PDF and DOCX files are allowed');
   }
 
   // Validate file size (5MB limit)
   const maxSize = 5 * 1024 * 1024; // 5MB
   if (file.size > maxSize) {
-    await fs.unlink(file.path).catch(() => {});
     throw AppError.badRequest('FILE_TOO_LARGE', 'File size must be less than 5MB');
   }
 
-  try {
-    // Step 1: Extract text from file
-    const extractedText = await extractTextFromFile(file.path);
+  // Step 1: Extract text from the in-memory buffer
+  const extractedText = await extractTextFromBuffer(file.buffer, file.mimetype, file.originalname);
 
-    if (!extractedText || extractedText.trim().length === 0) {
-      throw AppError.badRequest('EXTRACTION_FAILED', 'Could not extract text from file');
-    }
-
-    // Step 2: Extract skills using AI (Groq → keyword fallback)
-    const { skills: extractedSkills, source: extractionSource } = await extractSkillsWithAI(extractedText);
-    console.log(`[Resume] Skill extraction source: ${extractionSource}, count: ${extractedSkills.length}`);
-
-    // Step 3: Save resume data to database
-    const resume = await Resume.create({
-      user: userId,
-      fileName: file.originalname,
-      filePath: file.path,
-      fileSize: file.size,
-      fileType: file.mimetype,
-      extractedText: extractedText.substring(0, 10000), // Store first 10k chars
-      extractedSkills
-    });
-
-    res.status(201).json(successResponse({
-      resumeId: resume._id,
-      fileName: resume.fileName,
-      skills: resume.extractedSkills,
-      skillCount: resume.extractedSkills.length,
-      extractionSource   // 'groq' | 'keyword' | 'none'
-    }, 'Resume analyzed successfully'));
-
-  } catch (error) {
-    // Clean up file on error
-    await fs.unlink(file.path).catch(() => {});
-    throw error;
+  if (!extractedText || extractedText.trim().length === 0) {
+    throw AppError.badRequest('EXTRACTION_FAILED', 'Could not extract text from file');
   }
+
+  // Step 2: Upload buffer to Cloudinary (resource_type 'raw' for non-image files)
+  const cloudinaryResult = await uploadBuffer(file.buffer, {
+    resource_type: 'raw',
+    folder: 'resumes',
+    public_id: `${userId}_${Date.now()}`,
+    // Preserve original extension so the file is downloadable with the correct type
+    format: file.mimetype === 'application/pdf' ? 'pdf' : 'docx',
+  });
+
+  // Step 3: Extract skills using AI (Groq → keyword fallback)
+  const { skills: extractedSkills, source: extractionSource } = await extractSkillsWithAI(extractedText);
+  console.log(`[Resume] Skill extraction source: ${extractionSource}, count: ${extractedSkills.length}`);
+
+  // Step 4: Save resume metadata to database
+  const resume = await Resume.create({
+    user: userId,
+    fileName: file.originalname,
+    fileUrl: cloudinaryResult.secure_url,
+    cloudinaryPublicId: cloudinaryResult.public_id,
+    fileSize: file.size,
+    fileType: file.mimetype,
+    extractedText: extractedText.substring(0, 10000), // Store first 10k chars
+    extractedSkills,
+  });
+
+  res.status(201).json(successResponse({
+    resumeId: resume._id,
+    fileName: resume.fileName,
+    fileUrl: resume.fileUrl,
+    skills: resume.extractedSkills,
+    skillCount: resume.extractedSkills.length,
+    extractionSource, // 'groq' | 'keyword' | 'none'
+  }, 'Resume analyzed successfully'));
 });
 
 // Get user's resumes
 const getUserResumes = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  
+
   const resumes = await Resume.find({ user: userId })
-    .select('-extractedText -filePath')
+    .select('-extractedText -cloudinaryPublicId')
     .sort({ createdAt: -1 });
 
   res.json(successResponse({ resumes }));
@@ -87,7 +89,7 @@ const getResumeDetails = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   const resume = await Resume.findOne({ _id: id, user: userId });
-  
+
   if (!resume) {
     throw AppError.notFound('Resume not found');
   }
@@ -95,41 +97,30 @@ const getResumeDetails = asyncHandler(async (req, res) => {
   res.json(successResponse({
     resumeId: resume._id,
     fileName: resume.fileName,
+    fileUrl: resume.fileUrl,
     fileSize: resume.fileSize,
     skills: resume.extractedSkills,
-    createdAt: resume.createdAt
+    createdAt: resume.createdAt,
   }));
 });
 
-// Serve / download a resume file
+// Download / preview a resume — redirect to the Cloudinary URL
 const downloadResume = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
 
-  // Query all fields (filePath is needed to serve the file)
   const resume = await Resume.findOne({ _id: id, user: userId });
 
   if (!resume) {
     throw AppError.notFound('Resume not found');
   }
 
-  const isPdf = resume.fileType === 'application/pdf';
+  if (!resume.fileUrl) {
+    throw AppError.notFound('File URL not available for this resume');
+  }
 
-  res.setHeader('Content-Type', resume.fileType);
-  // inline → browser preview (PDF); attachment → force-download (DOCX)
-  res.setHeader(
-    'Content-Disposition',
-    `${isPdf ? 'inline' : 'attachment'}; filename="${resume.fileName}"`
-  );
-
-  res.sendFile(path.resolve(resume.filePath), (err) => {
-    if (err) {
-      console.error('File send error:', err);
-      if (!res.headersSent) {
-        res.status(404).json({ ok: false, message: 'File not found on disk' });
-      }
-    }
-  });
+  // Redirect the client to the Cloudinary URL (secure, CDN-served)
+  res.redirect(resume.fileUrl);
 });
 
 // Delete resume
@@ -138,13 +129,17 @@ const deleteResume = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   const resume = await Resume.findOne({ _id: id, user: userId });
-  
+
   if (!resume) {
     throw AppError.notFound('Resume not found');
   }
 
-  // Delete file from filesystem
-  await fs.unlink(resume.filePath).catch(() => {});
+  // Delete asset from Cloudinary
+  if (resume.cloudinaryPublicId) {
+    await deleteFile(resume.cloudinaryPublicId, 'raw').catch((err) => {
+      console.error('[Resume] Cloudinary delete error:', err.message);
+    });
+  }
 
   // Delete from database
   await Resume.deleteOne({ _id: id });
@@ -157,5 +152,5 @@ module.exports = {
   getUserResumes,
   getResumeDetails,
   downloadResume,
-  deleteResume
+  deleteResume,
 };

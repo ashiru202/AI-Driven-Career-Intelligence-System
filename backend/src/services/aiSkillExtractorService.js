@@ -16,7 +16,7 @@ const SYSTEM_PROMPT = `You are an expert skill extraction AI for career analysis
 Extract ALL technical and professional skills from the given text.
 Include: programming languages, frameworks, tools, cloud platforms, databases,
 methodologies (Agile, Scrum), and soft skills if clearly stated.
-Return ONLY a valid JSON array of skill name strings — no explanation, no markdown, no extra text.
+Return ONLY a valid JSON array of skill name strings - no explanation, no markdown, no extra text.
 Example output: ["Python", "React", "AWS", "Machine Learning", "Agile"]`;
 
 /**

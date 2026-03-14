@@ -178,7 +178,7 @@ async function getAdminNotifications() {
     id: 'admin_comparisons',
     icon: '🎯',
     title: `${newComparisons} job comparisons this week`,
-    body: `${lowMatchComps} had a match score below 40% — skill gaps may need addressing.`,
+    body: `${lowMatchComps} had a match score below 40% - skill gaps may need addressing.`,
     link: '/admin-report',
     time: 'Live',
     createdAt: new Date(),

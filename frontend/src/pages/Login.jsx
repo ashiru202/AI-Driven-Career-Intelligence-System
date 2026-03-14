@@ -118,7 +118,7 @@ export default function Login() {
                 Please verify your email before logging in. Check your inbox for the verification link.
               </p>
               {resendSent ? (
-                <p style={{ color: '#86efac', fontSize: 12 }}>Verification email resent — check your inbox.</p>
+                <p style={{ color: '#86efac', fontSize: 12 }}>Verification email resent - check your inbox.</p>
               ) : (
                 <button
                   type="button" onClick={resendVerification}

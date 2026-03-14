@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import api from "../api/api";
 import { CheckCircle, XCircle } from "lucide-react";
@@ -12,8 +12,12 @@ export default function VerifyEmail() {
 
   const [status, setStatus] = useState("verifying"); // verifying | success | error
   const [message, setMessage] = useState("");
+  const called = useRef(false); // guard against React 18 StrictMode double-invocation
 
   useEffect(() => {
+    if (called.current) return;
+    called.current = true;
+
     if (!token) {
       setStatus("error");
       setMessage("No verification token found in the link.");
@@ -103,7 +107,7 @@ function ResendSection() {
     }
   };
 
-  if (sent) return <p style={{ color: '#86efac', fontSize: 13 }}>Verification email sent — check your inbox.</p>;
+  if (sent) return <p style={{ color: '#86efac', fontSize: 13 }}>Verification email sent - check your inbox.</p>;
 
   return show ? (
     <form onSubmit={resend} style={{ display: 'flex', gap: 8 }}>

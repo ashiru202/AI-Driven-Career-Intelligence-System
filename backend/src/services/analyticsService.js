@@ -264,7 +264,7 @@ async function getCVCompleteness(userId, resumeId = null) {
     score += weights.skills;
   } else {
     missingSections.push("Skills");
-    suggestions.push("List technical and soft skills clearly — these are auto-extracted by the system");
+    suggestions.push("List technical and soft skills clearly - these are auto-extracted by the system");
   }
 
   if (sectionDetected.projects) {
@@ -303,7 +303,7 @@ async function getCVCompleteness(userId, resumeId = null) {
     if (total > 0 && completed < total) {
       suggestions.push(`Continue your learning roadmap (${completed}/${total} skills completed)`);
     } else if (total > 0 && completed === total) {
-      suggestions.push("All roadmap skills completed — compare with a new job role!");
+      suggestions.push("All roadmap skills completed - compare with a new job role!");
     }
   } else {
     suggestions.push("Compare your resume with a job description to discover skill gaps");
@@ -443,7 +443,7 @@ Respond ONLY with a valid JSON array, no other text. Example format:
     if (!sectionDetected.certifications) fallback.push("Add relevant certifications (AWS, Google, Coursera, etc.) to boost credibility.");
     if (wordCount < 300) fallback.push(`Your CV is only ~${wordCount} words. Expand each role with 3–5 bullet points describing responsibilities and achievements.`);
     fallback.push("Use action verbs (Led, Built, Improved, Reduced) to start each bullet point for stronger impact.");
-    fallback.push("Quantify your achievements — replace vague statements with numbers: 'Reduced load time by 40%' instead of 'Improved performance'.");
+    fallback.push("Quantify your achievements - replace vague statements with numbers: 'Reduced load time by 40%' instead of 'Improved performance'.");
 
     return {
       suggestions: fallback.slice(0, 6),

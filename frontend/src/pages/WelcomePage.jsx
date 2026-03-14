@@ -399,7 +399,7 @@ function FeatureCard({ Icon, title, desc, color }) {
    HOW IT WORKS
 ════════════════════════════════════════════ */
 const steps = [
-  { step: "01", title: "Create Your Account", desc: "Register in seconds. No credit card required. Pick your role — job seeker, staff, or admin.", Icon: User },
+  { step: "01", title: "Create Your Account", desc: "Register in seconds. No credit card required. Pick your role - job seeker, staff, or admin.", Icon: User },
   { step: "02", title: "Upload Your Resume", desc: "Upload your resume in PDF or DOCX format. Our AI instantly extracts your skills and experience.", Icon: Upload },
   { step: "03", title: "Compare With Job Descriptions", desc: "Paste a job description to get your match score, common skills, and a full list of what's missing.", Icon: Search },
   { step: "04", title: "Follow Your Roadmap", desc: "Your personalised learning roadmap is generated automatically. Mark steps as complete and track your growth.", Icon: Rocket },
@@ -448,8 +448,8 @@ function AboutUs() {
   const pillars = [
     { Icon: GraduationCap, title: "Academic Roots", desc: "Built as a research project combining NLP, machine learning, and software engineering to solve real-world career challenges." },
     { Icon: Globe, title: "Global + Local Focus", desc: "Designed for both local Sri Lankan job markets and international career pathways, with relevant skill benchmarks." },
-    { Icon: Bot, title: "AI at the Core", desc: "Our Python NLP microservice (spaCy) powers all skill extraction, normalisation, and matching — no generic keyword lists." },
-    { Icon: Unlock, title: "Open & Transparent", desc: "We show you exactly why you match or don't match a role — no black-box scores, full explainability." },
+    { Icon: Bot, title: "AI at the Core", desc: "Our Python NLP microservice (spaCy) powers all skill extraction, normalisation, and matching - no generic keyword lists." },
+    { Icon: Unlock, title: "Open & Transparent", desc: "We show you exactly why you match or don't match a role - no black-box scores, full explainability." },
   ];
 
   return (
@@ -470,7 +470,7 @@ function AboutUs() {
                 AptitudeX was born from a frustration shared by thousands of graduates and job seekers: existing platforms tell you <em>what</em> jobs are available, but not <em>why</em> you aren't getting them.
               </p>
               <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, lineHeight: 1.75, marginBottom: 28 }}>
-                We set out to build something different — an intelligent system that analyses your current skills in real-time, maps them against actual job requirements, and gives you a clear, actionable learning path forward. No fluff, no guessing, no wasted time.
+                We set out to build something different - an intelligent system that analyses your current skills in real-time, maps them against actual job requirements, and gives you a clear, actionable learning path forward. No fluff, no guessing, no wasted time.
               </p>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 {["MERN Stack", "FastAPI + spaCy", "RBAC", "JWT Auth", "Real-time NLP"].map(tag => (

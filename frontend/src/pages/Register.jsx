@@ -99,7 +99,7 @@ export default function Register() {
               <button
                 onClick={async () => {
                   try { await api.post("/api/auth/resend-verification", { email: registeredEmail }); } catch {}
-                  alert("Verification email resent — check your inbox.");
+                  alert("Verification email resent - check your inbox.");
                 }}
                 style={{ background: 'none', border: 'none', color: '#a5b4fc', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: 12 }}
               >

@@ -1,10 +1,9 @@
-const fs = require("fs");
 const path = require("path");
 const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
 
-function detectType(filePath, mimeType) {
-  const ext = path.extname(filePath || "").toLowerCase();
+function detectType(fileNameOrPath, mimeType) {
+  const ext = path.extname(fileNameOrPath || "").toLowerCase();
 
   if (mimeType === "application/pdf" || ext === ".pdf") return "pdf";
   if (
@@ -19,17 +18,18 @@ function detectType(filePath, mimeType) {
   return "unknown";
 }
 
-async function extractTextFromResume(filePath, mimeType) {
-  if (!filePath) throw new Error("Resume file path is missing.");
-
-  let buffer;
-  try {
-    buffer = await fs.promises.readFile(filePath);
-  } catch (e) {
-    throw new Error(`Unable to read uploaded file: ${e.message}`);
+/**
+ * Extract text from a Buffer (used with multer memoryStorage + Cloudinary).
+ * @param {Buffer} buffer - Raw file bytes
+ * @param {string} mimeType - File MIME type
+ * @param {string} originalName - Original filename (used for extension detection)
+ */
+async function extractTextFromBuffer(buffer, mimeType, originalName = "") {
+  if (!buffer || !Buffer.isBuffer(buffer)) {
+    throw new Error("File buffer is missing or invalid.");
   }
 
-  const type = detectType(filePath, mimeType);
+  const type = detectType(originalName, mimeType);
 
   try {
     if (type === "pdf") {
@@ -64,8 +64,9 @@ async function extractTextFromResume(filePath, mimeType) {
   }
 }
 
-// Export with both names for compatibility
-module.exports = { 
-  extractTextFromResume,
-  extractTextFromFile: extractTextFromResume 
+// Export with all names for compatibility
+module.exports = {
+  extractTextFromBuffer,
+  extractTextFromResume: extractTextFromBuffer,
+  extractTextFromFile: extractTextFromBuffer,
 };
