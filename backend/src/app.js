@@ -5,6 +5,7 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const cookieParser = require("cookie-parser");
 const { errorHandler } = require("./middleware/errorMiddleware");
 const { authLimiter, generalLimiter, uploadLimiter } = require("./middleware/rateLimitMiddleware");
 
@@ -17,8 +18,12 @@ app.use(helmet());
 app.use(cors({
   origin: process.env.CORS_ORIGIN || "http://localhost:3000",
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true  // required for cross-origin httpOnly cookies
 }));
+
+// ── Cookie parser ─────────────────────────────────────────────────────────────
+app.use(cookieParser());
 
 // ── Body parsers (with size limits to prevent payload attacks) ────────────────
 app.use(express.json({ limit: "50kb" }));

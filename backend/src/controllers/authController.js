@@ -78,8 +78,15 @@ exports.login = asyncHandler(async (req, res) => {
     { expiresIn: "7d" }
   );
 
+  // Set JWT as an httpOnly cookie — JS cannot read this, eliminating XSS token theft
+  res.cookie("jwt", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",  // HTTPS only in production
+    sameSite: "strict",                             // blocks cross-site request forgery
+    maxAge: 7 * 24 * 60 * 60 * 1000,               // 7 days in ms
+  });
+
   res.json(successResponse({
-    token,
     user: { id: user._id, name: user.name, email: user.email, role: user.role }
   }));
 });
@@ -169,4 +176,14 @@ exports.resetPassword = asyncHandler(async (req, res) => {
   await user.save();
 
   res.json(successResponse(null, 'Password reset successfully. You can now log in with your new password.'));
+});
+
+// POST /api/auth/logout
+exports.logout = asyncHandler(async (req, res) => {
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+  res.json(successResponse(null, 'Logged out successfully.'));
 });

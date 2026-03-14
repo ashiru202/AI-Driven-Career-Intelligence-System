@@ -659,9 +659,9 @@ export default function WelcomePage() {
   }, []);
 
   // Redirect already-authenticated users to their dashboard
-  const token = localStorage.getItem("token");
+  const user  = localStorage.getItem("user");
   const role  = localStorage.getItem("role");
-  if (token && role) {
+  if (user && role) {
     if (role === "ADMIN") return <Navigate to="/admin" replace />;
     if (role === "STAFF") return <Navigate to="/staff" replace />;
     return <Navigate to="/dashboard" replace />;

@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   register,
   login,
+  logout,
   verifyEmail,
   resendVerification,
   forgotPassword,
@@ -12,6 +13,7 @@ const { validate, schemas } = require("../middleware/validationMiddleware");
 
 router.post("/register",             validate(schemas.register),             register);
 router.post("/login",                validate(schemas.login),                login);
+router.post("/logout",                                                        logout);
 router.get( "/verify-email",                                                 verifyEmail);
 router.post("/resend-verification",  validate(schemas.resendVerification),   resendVerification);
 router.post("/forgot-password",      validate(schemas.forgotPassword),       forgotPassword);

@@ -8,9 +8,17 @@ const requireAuth = async (req, res, next) => {
   try {
     let token = null;
 
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      token = authHeader.split(" ")[1];
+    // Primary: httpOnly cookie (browser clients)
+    if (req.cookies && req.cookies.jwt) {
+      token = req.cookies.jwt;
+    }
+
+    // Fallback: Authorization header (API clients, automated tests)
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.split(" ")[1];
+      }
     }
 
     if (!token) {

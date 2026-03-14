@@ -101,9 +101,8 @@ export default function StaffDashboard() {
 
   const downloadPDF = async () => {
     try {
-      const token = localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/api/reports/user/${selectedUser._id}/pdf`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",  // send httpOnly JWT cookie
       });
       if (!res.ok) throw new Error("PDF failed");
       const blob = await res.blob();

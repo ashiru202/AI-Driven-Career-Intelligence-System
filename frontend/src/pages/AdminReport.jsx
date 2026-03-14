@@ -49,11 +49,10 @@ export default function AdminReport() {
 
   const downloadPDF = async () => {
     try {
-      const token = localStorage.getItem("token");
       const res = await fetch(
         `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/reports/summary/pdf`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",  // send httpOnly JWT cookie
         }
       );
       if (!res.ok) throw new Error("PDF generation failed");

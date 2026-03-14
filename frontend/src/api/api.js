@@ -2,21 +2,8 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "http://localhost:5000",
+  withCredentials: true,  // send httpOnly JWT cookie on every request
 });
-
-// Request interceptor - attach token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 // Response interceptor - handle 401 errors
 api.interceptors.response.use(
@@ -30,9 +17,9 @@ api.interceptors.response.use(
       error.config?.url?.includes("/auth/verify-email") ||
       error.config?.url?.includes("/auth/resend-verification");
     if (error.response && error.response.status === 401 && !isAuthEndpoint) {
-      // Clear local storage and redirect to login (only for non-auth endpoints)
-      localStorage.removeItem("token");
+      // Clear non-sensitive display data and redirect to login
       localStorage.removeItem("user");
+      localStorage.removeItem("role");
       window.location.href = "/login";
     }
     return Promise.reject(error);

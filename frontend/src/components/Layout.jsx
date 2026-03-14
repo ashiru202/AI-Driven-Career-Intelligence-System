@@ -662,8 +662,11 @@ function SidebarContent({ location, navigate, userRole, userName, setSidebarOpen
     : '?';
 
   const logout = () => {
-    localStorage.clear();
-    navigate('/login');
+    api.post('/api/auth/logout').finally(() => {
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+      navigate('/login');
+    });
   };
 
   return (
@@ -806,8 +809,11 @@ export default function Layout({ children }) {
   }, [isHomePage]);
 
   const handleLogoutConfirm = () => {
-    localStorage.clear();
-    navigate('/login');
+    api.post('/api/auth/logout').finally(() => {
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+      navigate('/login');
+    });
   };
 
   return (

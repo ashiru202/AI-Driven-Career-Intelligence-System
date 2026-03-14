@@ -23,7 +23,7 @@ export default function Login() {
       const res = await api.post("/api/auth/login", { email, password });
 
       if (res.data.ok && res.data.data) {
-        localStorage.setItem("token", res.data.data.token);
+        // JWT is in an httpOnly cookie set by the server — do not store it in JS
         localStorage.setItem("user", JSON.stringify(res.data.data.user));
         localStorage.setItem("role", res.data.data.user.role);
 
