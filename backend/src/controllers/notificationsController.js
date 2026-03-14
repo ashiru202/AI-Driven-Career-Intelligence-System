@@ -33,7 +33,7 @@ async function getUserNotifications(userId) {
   if (resumes.length === 0) {
     notifications.push({
       id: 'no_resume',
-      icon: '📄',
+      icon: 'FileText',
       title: 'No resume uploaded yet',
       body: 'Upload your resume to unlock AI-powered career insights and skill analysis.',
       link: '/resume-analyze',
@@ -45,7 +45,7 @@ async function getUserNotifications(userId) {
       const skillCount = r.extractedSkills?.length || 0;
       notifications.push({
         id: makeId('resume', r),
-        icon: '📄',
+        icon: 'FileText',
         title: `Resume analysed: ${r.fileName}`,
         body: skillCount > 0
           ? `${skillCount} skill${skillCount > 1 ? 's' : ''} detected. View your full analysis.`
@@ -62,7 +62,7 @@ async function getUserNotifications(userId) {
   if (roadmaps.length === 0) {
     notifications.push({
       id: 'no_roadmap',
-      icon: '🗺️',
+      icon: 'Map',
       title: 'Generate your AI Roadmap',
       body: 'Create a personalised learning path to close your skill gaps for any job role.',
       link: '/my-roadmap',
@@ -75,7 +75,7 @@ async function getUserNotifications(userId) {
       const total     = rm.skillsToLearn?.length || 0;
       notifications.push({
         id: makeId('roadmap', rm),
-        icon: '🗺️',
+        icon: 'Map',
         title: `Roadmap: ${rm.targetRole}`,
         body: total > 0
           ? `${completed}/${total} skills completed · ${rm.matchScore || 0}% match score.`
@@ -92,7 +92,7 @@ async function getUserNotifications(userId) {
   if (comparisons.length === 0) {
     notifications.push({
       id: 'no_comparison',
-      icon: '🎯',
+      icon: 'Target',
       title: 'Compare a Job Description',
       body: 'Paste any job posting and instantly see how well your skills match.',
       link: '/compare-job',
@@ -101,13 +101,13 @@ async function getUserNotifications(userId) {
     });
   } else {
     comparisons.forEach((c) => {
-      const score = c.matchScore || 0;
-      const emoji = score >= 75 ? '🟢' : score >= 50 ? '🟡' : '🔴';
+      const score  = c.matchScore || 0;
+      const level  = score >= 75 ? 'Strong' : score >= 50 ? 'Partial' : 'Low';
       notifications.push({
         id: makeId('comparison', c),
-        icon: '🎯',
+        icon: 'Target',
         title: `Job match: ${c.jobTitle}`,
-        body: `${emoji} ${score}% match · ${c.missingSkills?.length || 0} skill gap${c.missingSkills?.length !== 1 ? 's' : ''} found.`,
+        body: `${level} match · ${score}% · ${c.missingSkills?.length || 0} skill gap${c.missingSkills?.length !== 1 ? 's' : ''} found.`,
         link: '/compare-job',
         time: timeAgo(c.createdAt),
         createdAt: c.createdAt,
@@ -144,7 +144,7 @@ async function getAdminNotifications() {
 
   notifications.push({
     id: 'admin_users',
-    icon: '👥',
+    icon: 'Users',
     title: `${newUsers} new user${newUsers !== 1 ? 's' : ''} this week`,
     body: `Platform has ${totalUsers} total job seekers. ${newUsers} joined in the last 7 days.`,
     link: '/users',
@@ -154,7 +154,7 @@ async function getAdminNotifications() {
 
   notifications.push({
     id: 'admin_resumes',
-    icon: '📄',
+    icon: 'FileText',
     title: `${newResumes} resume${newResumes !== 1 ? 's' : ''} uploaded today`,
     body: newResumes > 0
       ? 'Users are actively uploading resumes. Review platform activity.'
@@ -166,7 +166,7 @@ async function getAdminNotifications() {
 
   notifications.push({
     id: 'admin_roadmaps',
-    icon: '🗺️',
+    icon: 'Map',
     title: `${newRoadmaps} roadmap${newRoadmaps !== 1 ? 's' : ''} created this week`,
     body: 'Users are generating AI career roadmaps. Review in All Roadmaps.',
     link: '/all-roadmaps',
@@ -176,7 +176,7 @@ async function getAdminNotifications() {
 
   notifications.push({
     id: 'admin_comparisons',
-    icon: '🎯',
+    icon: 'Target',
     title: `${newComparisons} job comparisons this week`,
     body: `${lowMatchComps} had a match score below 40% - skill gaps may need addressing.`,
     link: '/admin-report',
@@ -201,7 +201,7 @@ async function getStaffNotifications() {
 
   notifications.push({
     id: 'staff_users',
-    icon: '📋',
+    icon: 'ClipboardList',
     title: `${totalUsers} user report${totalUsers !== 1 ? 's' : ''} available`,
     body: 'Review job seeker profiles, resumes and career progress.',
     link: '/staff',
@@ -211,7 +211,7 @@ async function getStaffNotifications() {
 
   notifications.push({
     id: 'staff_roadmaps',
-    icon: '🗺️',
+    icon: 'Map',
     title: `${newRoadmaps} new roadmap${newRoadmaps !== 1 ? 's' : ''} this week`,
     body: 'Users have generated AI career roadmaps. Review them now.',
     link: '/all-roadmaps',
@@ -221,7 +221,7 @@ async function getStaffNotifications() {
 
   notifications.push({
     id: 'staff_comparisons',
-    icon: '🎯',
+    icon: 'Target',
     title: `${lowMatchComps} low-match job comparison${lowMatchComps !== 1 ? 's' : ''} this week`,
     body: `${totalComparisons} total comparisons · ${lowMatchComps} users may need career coaching.`,
     link: '/all-roadmaps',

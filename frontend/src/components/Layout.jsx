@@ -423,6 +423,15 @@ const ROLE_NAV = {
 // ── Notification system ─────────────────────────────────────────────────────
 const POLL_INTERVAL_MS = 5 * 60_000; // fallback refresh every 5 minutes (SSE handles real-time)
 
+// Maps the icon string sent by the backend to a Lucide component
+const NOTIF_ICONS = {
+  FileText,
+  Map,
+  Target,
+  Users,
+  ClipboardList,
+};
+
 function NotificationDropdown({ userRole }) {
   const STORAGE_KEY = `notif_read_${userRole}`;
   const { liveNotifications } = useSSE();
@@ -611,6 +620,7 @@ function NotificationDropdown({ userRole }) {
           {/* List */}
           {!error && notifications.map(n => {
             const isRead = readIds.has(n.id);
+            const NotifIcon = NOTIF_ICONS[n.icon] || FileText;
             return (
               <Link
                 key={n.id}
@@ -630,8 +640,9 @@ function NotificationDropdown({ userRole }) {
                   width: 36, height: 36, borderRadius: 10, flexShrink: 0,
                   background: 'rgba(99,102,241,0.15)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 17,
-                }}>{n.icon}</div>
+                }}>
+                  <NotifIcon size={17} style={{ color: '#a5b4fc' }} />
+                </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ color: isRead ? 'rgba(255,255,255,0.65)' : '#fff', fontWeight: isRead ? 500 : 700, fontSize: 13 }}>{n.title}</span>

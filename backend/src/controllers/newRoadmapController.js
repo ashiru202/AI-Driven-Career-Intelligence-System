@@ -75,7 +75,7 @@ const createRoadmap = asyncHandler(async (req, res) => {
   // Push a fresh notification card for this roadmap
   sendToUser(userId, 'notification', {
     id: `roadmap_${roadmap._id}`,
-    icon: '🗺️',
+    icon: 'Map',
     title: `Roadmap: ${roadmap.targetRole}`,
     body: `${roadmapSteps.length} skill${roadmapSteps.length !== 1 ? 's' : ''} to learn. Start your journey!`,
     link: '/my-roadmap',

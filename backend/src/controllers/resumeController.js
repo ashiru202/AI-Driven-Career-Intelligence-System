@@ -90,7 +90,7 @@ const uploadResume = asyncHandler(async (req, res) => {
     // Push a fresh notification card for this resume
     sendToUser(userId, 'notification', {
       id: `resume_${resume._id}`,
-      icon: '📄',
+      icon: 'FileText',
       title: `Resume analysed: ${resume.fileName}`,
       body: extractedSkills.length > 0
         ? `${extractedSkills.length} skill${extractedSkills.length > 1 ? 's' : ''} detected. View your full analysis.`
