@@ -1,0 +1,83 @@
+services:
+  # ── MongoDB ──────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── NLP Microservice (Python / FastAPI) ───────────────────────────────────────
+  # NOTE: The first build downloads the all-MiniLM-L6-v2 transformer model
+  # (~90 MB). Subsequent starts use the cached volume and are nearly instant.
+  nlp-service:
+    build:
+      context: ./nlp-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Cache the downloaded HuggingFace model so it is not re-downloaded on
+      # every container restart
+      - huggingface_cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      # Allow extra time on first start for the model to download and load
+      start_period: 120s
+
+  # ── Backend API (Node.js / Express) ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    ports:
+      - "5001:5000"
+    # Load API keys (GROQ_API_KEY, GEMINI_API_KEY, SMTP_*, etc.) from the local
+    # backend/.env file.  Copy backend/.env.example → backend/.env and fill in
+    # your keys before running docker compose up.
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      # These override any matching keys in backend/.env so services reach each
+      # other through the Docker Compose internal network rather than localhost
+      NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/career-intelligence
+      NLP_SERVICE_URL: http://nlp-service:8000
+      CORS_ORIGIN: http://localhost:3000
+      CLIENT_URL: http://localhost:3000
+    volumes:
+      # Persist uploaded resume files across container restarts
+      - backend_uploads:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+      nlp-service:
+        condition: service_healthy
+
+  # ── Frontend (React → nginx) ──────────────────────────────────────────────────
+  # The React build bakes in the API base URL at compile time.  The default
+  # value in frontend/src/api/api.js is http://localhost:5000, which correctly
+  # reaches the backend container because port 5000 is exposed to the host.
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+# ── Named volumes ─────────────────────────────────────────────────────────────
+volumes:
+  mongo_data:
+  huggingface_cache:
+  backend_uploads:
