@@ -41,6 +41,12 @@ router.get("/my-resumes", analyticsController.getMyResumes);
 // GET /api/analytics/cv-ai-suggestions?resumeId=... - AI-powered CV suggestions (Gemini)
 router.get("/cv-ai-suggestions", analyticsController.getCVAISuggestions);
 
+// GET /api/analytics/skill-growth - Skill count growth over resume uploads
+router.get("/skill-growth", analyticsController.getSkillGrowth);
+
+// GET /api/analytics/comparison-history-chart - Match score history for charting
+router.get("/comparison-history-chart", analyticsController.getComparisonHistoryChart);
+
 // GET /api/analytics/job-postings?skills=react,nodejs&country=us - Live job postings (Adzuna)
 router.get("/job-postings", analyticsController.getJobPostings);
 

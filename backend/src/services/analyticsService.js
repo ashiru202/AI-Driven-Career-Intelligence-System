@@ -556,6 +556,61 @@ async function getJobPostings(skills = [], country = "us") {
 }
 
 /**
+ * Get skill growth timeline across a user's resume uploads
+ * @param {string} userId - User ID
+ * @returns {Object} { dataPoints: [{date, fileName, skillCount, newSkills}] }
+ */
+async function getSkillGrowthTimeline(userId) {
+  const resumes = await Resume.find({ user: userId })
+    .select("fileName extractedSkills createdAt")
+    .sort({ createdAt: 1 });
+
+  const dataPoints = [];
+  let previousSkills = new Set();
+
+  for (const resume of resumes) {
+    const skills = (resume.extractedSkills || []).map((s) => s.toLowerCase());
+    const currentSkills = new Set(skills);
+    const newSkills = skills.filter((s) => !previousSkills.has(s));
+
+    dataPoints.push({
+      date: resume.createdAt,
+      fileName: resume.fileName,
+      skillCount: skills.length,
+      newSkills,
+      newSkillCount: newSkills.length,
+    });
+
+    previousSkills = currentSkills;
+  }
+
+  return { dataPoints };
+}
+
+/**
+ * Get comparison match score history for a user (for charting)
+ * @param {string} userId - User ID
+ * @param {number} limit - Max data points to return
+ * @returns {Object} { dataPoints: [{date, jobTitle, matchScore, commonCount, missingCount}] }
+ */
+async function getComparisonHistoryChart(userId, limit = 20) {
+  const comparisons = await Comparison.find({ user: userId })
+    .select("jobTitle matchScore commonSkills missingSkills createdAt")
+    .sort({ createdAt: 1 })
+    .limit(limit);
+
+  const dataPoints = comparisons.map((c) => ({
+    date: c.createdAt,
+    jobTitle: c.jobTitle || "Untitled",
+    matchScore: c.matchScore || 0,
+    commonCount: (c.commonSkills || []).length,
+    missingCount: (c.missingSkills || []).length,
+  }));
+
+  return { dataPoints };
+}
+
+/**
  * Generate comprehensive report data for a user
  * Used for report generation (Phase 10)
  * @param {string} userId - User ID
@@ -662,4 +717,6 @@ module.exports = {
   getJobPostings,
   generateUserReport,
   getPlatformSummaryReport,
+  getSkillGrowthTimeline,
+  getComparisonHistoryChart,
 };

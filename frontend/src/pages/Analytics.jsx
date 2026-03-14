@@ -14,7 +14,12 @@ import {
   FileText, FileEdit, Check, Circle, FolderOpen,
   ClipboardList, Lightbulb, Sparkles, AlertTriangle,
   RefreshCw, Target, Rocket, CheckCircle2, ArrowRight, ExternalLink,
+  TrendingUp, BarChart2,
 } from "lucide-react";
+import {
+  AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ReferenceLine, ResponsiveContainer, Dot,
+} from "recharts";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -165,6 +170,24 @@ function SectionCheck({ label, detected }) {
   );
 }
 
+function ComparisonHistorySinglePoint({ point }) {
+  const color = point.matchScore >= 70 ? '#4ade80' : point.matchScore >= 40 ? '#fbbf24' : '#f87171';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <span style={{ fontSize: 32, fontWeight: 800, color }}>{point.matchScore}%</span>
+      <div>
+        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>{point.jobTitle}</p>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{new Date(point.date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</p>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
+          <span style={{ color: '#4ade80' }}>✓ {point.commonCount} matched</span>
+          <span style={{ margin: '0 8px', color: 'rgba(255,255,255,0.2)' }}>·</span>
+          <span style={{ color: '#f87171' }}>✗ {point.missingCount} missing</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function Analytics() {
@@ -175,6 +198,9 @@ export default function Analytics() {
   const [insights, setInsights] = useState(null);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+
+  const [skillGrowth, setSkillGrowth] = useState(null);
+  const [comparisonHistory, setComparisonHistory] = useState(null);
 
   const [pageLoading, setPageLoading] = useState(true);
   const [resumeLoading, setResumeLoading] = useState(false);
@@ -205,9 +231,15 @@ export default function Analytics() {
     const init = async () => {
       try {
         setPageLoading(true);
-        const resumesRes = await api.get("/api/analytics/my-resumes");
+        const [resumesRes, growthRes, historyRes] = await Promise.all([
+          api.get("/api/analytics/my-resumes"),
+          api.get("/api/analytics/skill-growth"),
+          api.get("/api/analytics/comparison-history-chart"),
+        ]);
         const fetchedResumes = resumesRes.data.data?.resumes || [];
         setResumes(fetchedResumes);
+        setSkillGrowth(growthRes.data.data);
+        setComparisonHistory(historyRes.data.data);
         if (fetchedResumes.length > 0) {
           await loadResumeAnalytics(fetchedResumes[0]);
         }
@@ -564,6 +596,168 @@ export default function Analytics() {
             )}
 
           </>
+        )}
+
+        {/* ── Skill Growth Over Time ── */}
+        {skillGrowth && skillGrowth.dataPoints.length > 0 && (
+          <section>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <TrendingUp size={18} style={{ color: '#a78bfa' }} /> Skill Growth Over Time
+            </h3>
+            <Card className="border-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2"><TrendingUp size={18} /> Skills Across Resume Versions</CardTitle>
+                <CardDescription>How your extracted skill count grew with each resume upload</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {skillGrowth.dataPoints.length === 1 ? (
+                  <div style={{ textAlign: 'center', padding: '24px 0', color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
+                    Upload more resume versions to see your skill growth trend.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={240}>
+                    <AreaChart data={skillGrowth.dataPoints.map((p) => ({
+                      name: new Date(p.date).toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+                      skills: p.skillCount,
+                      newSkills: p.newSkillCount,
+                      fileName: p.fileName,
+                      fullDate: new Date(p.date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
+                    }))} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="skillGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.35} />
+                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" />
+                      <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.45)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill: 'rgba(255,255,255,0.45)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                      <Tooltip
+                        contentStyle={{ background: '#1e1b4b', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 10, fontSize: 12 }}
+                        labelStyle={{ color: '#c4b5fd', fontWeight: 700, marginBottom: 4 }}
+                        formatter={(value, name, props) => {
+                          if (name === "skills") return [`${value} skills`, "Total Skills"];
+                          if (name === "newSkills") return [`+${value} new`, "New Skills Added"];
+                          return [value, name];
+                        }}
+                        labelFormatter={(label, payload) => payload?.[0]?.payload?.fileName || label}
+                      />
+                      <Area type="monotone" dataKey="skills" stroke="#8b5cf6" strokeWidth={2.5} fill="url(#skillGradient)" dot={{ r: 4, fill: '#8b5cf6', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#c4b5fd' }} name="skills" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+                {/* New skills gained table */}
+                {skillGrowth.dataPoints.length > 1 && (
+                  <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {skillGrowth.dataPoints.map((p, i) => (
+                      i > 0 && p.newSkillCount > 0 ? (
+                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 12 }}>
+                          <span style={{ color: 'rgba(255,255,255,0.35)', flexShrink: 0, minWidth: 80 }}>
+                            {new Date(p.date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                          </span>
+                          <span style={{ color: '#86efac', fontWeight: 600, flexShrink: 0 }}>+{p.newSkillCount}</span>
+                          <span style={{ color: 'rgba(255,255,255,0.55)' }}>{p.newSkills.slice(0, 6).join(", ")}{p.newSkills.length > 6 ? ` +${p.newSkills.length - 6} more` : ""}</span>
+                        </div>
+                      ) : null
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        {/* ── Comparison History Chart ── */}
+        {comparisonHistory && comparisonHistory.dataPoints.length > 0 && (
+          <section>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.85)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <BarChart2 size={18} style={{ color: '#34d399' }} /> Comparison History
+            </h3>
+            <Card className="border-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2"><BarChart2 size={18} /> Match Score Over Time</CardTitle>
+                <CardDescription>How your job match scores have changed across comparisons</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {comparisonHistory.dataPoints.length === 1 ? (
+                  <div style={{ padding: '12px 0 0' }}>
+                    <ComparisonHistorySinglePoint point={comparisonHistory.dataPoints[0]} />
+                    <p style={{ marginTop: 12, color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>Run more comparisons to see your score trend over time.</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={comparisonHistory.dataPoints.map((p, i) => ({
+                      index: i + 1,
+                      score: p.matchScore,
+                      jobTitle: p.jobTitle,
+                      date: new Date(p.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                      common: p.commonCount,
+                      missing: p.missingCount,
+                    }))} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" />
+                      <XAxis dataKey="index" tick={{ fill: 'rgba(255,255,255,0.45)', fontSize: 11 }} axisLine={false} tickLine={false} label={{ value: 'Comparison #', position: 'insideBottom', offset: -2, fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} />
+                      <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.45)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                      <Tooltip
+                        contentStyle={{ background: '#052e16', border: '1px solid rgba(52,211,153,0.4)', borderRadius: 10, fontSize: 12 }}
+                        labelStyle={{ color: '#6ee7b7', fontWeight: 700, marginBottom: 4 }}
+                        formatter={(value, name, props) => [`${value}%`, "Match Score"]}
+                        labelFormatter={(label, payload) => {
+                          const p = payload?.[0]?.payload;
+                          return p ? `${p.jobTitle} · ${p.date}` : `Comparison #${label}`;
+                        }}
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null;
+                          const p = payload[0].payload;
+                          const color = p.score >= 70 ? '#4ade80' : p.score >= 40 ? '#fbbf24' : '#f87171';
+                          return (
+                            <div style={{ background: '#0f172a', border: `1px solid ${color}55`, borderRadius: 10, padding: '10px 14px', fontSize: 12, minWidth: 180 }}>
+                              <p style={{ color: '#94a3b8', marginBottom: 4, fontSize: 11 }}>{p.date}</p>
+                              <p style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>{p.jobTitle}</p>
+                              <p style={{ color, fontWeight: 800, fontSize: 18, marginBottom: 4 }}>{p.score}%</p>
+                              <div style={{ display: 'flex', gap: 12 }}>
+                                <span style={{ color: '#4ade80' }}>✓ {p.common} matched</span>
+                                <span style={{ color: '#f87171' }}>✗ {p.missing} missing</span>
+                              </div>
+                            </div>
+                          );
+                        }}
+                      />
+                      <ReferenceLine y={70} stroke="rgba(74,222,128,0.4)" strokeDasharray="4 3" label={{ value: 'Strong (70%)', position: 'right', fill: 'rgba(74,222,128,0.55)', fontSize: 10 }} />
+                      <ReferenceLine y={40} stroke="rgba(251,191,36,0.3)" strokeDasharray="4 3" label={{ value: 'Fair (40%)', position: 'right', fill: 'rgba(251,191,36,0.4)', fontSize: 10 }} />
+                      <Line
+                        type="monotone"
+                        dataKey="score"
+                        stroke="#34d399"
+                        strokeWidth={2.5}
+                        dot={(props) => {
+                          const { cx, cy, payload } = props;
+                          const c = payload.score >= 70 ? '#4ade80' : payload.score >= 40 ? '#fbbf24' : '#f87171';
+                          return <circle key={`dot-${payload.index}`} cx={cx} cy={cy} r={5} fill={c} stroke="#0f172a" strokeWidth={2} />;
+                        }}
+                        activeDot={{ r: 7, fill: '#34d399', stroke: '#0f172a', strokeWidth: 2 }}
+                        name="score"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+                {/* Score summary pills */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
+                  {comparisonHistory.dataPoints.map((p, i) => {
+                    const color = p.matchScore >= 70 ? { bg: 'rgba(74,222,128,0.12)', text: '#4ade80', border: 'rgba(74,222,128,0.3)' }
+                      : p.matchScore >= 40 ? { bg: 'rgba(251,191,36,0.12)', text: '#fbbf24', border: 'rgba(251,191,36,0.3)' }
+                      : { bg: 'rgba(248,113,113,0.12)', text: '#f87171', border: 'rgba(248,113,113,0.3)' };
+                    return (
+                      <div key={i} title={`${p.jobTitle} — ${new Date(p.date).toLocaleDateString()}`}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, background: color.bg, border: `1px solid ${color.border}`, borderRadius: 100, padding: '4px 12px', fontSize: 11, cursor: 'default' }}>
+                        <span style={{ color: color.text, fontWeight: 700 }}>{p.matchScore}%</span>
+                        <span style={{ color: 'rgba(255,255,255,0.5)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.jobTitle}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
         )}
 
       </div>

@@ -184,6 +184,27 @@ exports.getJobPostings = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @route   GET /api/analytics/skill-growth
+ * @desc    Get skill count over time across the user's resume uploads
+ * @access  Private
+ */
+exports.getSkillGrowth = asyncHandler(async (req, res) => {
+  const result = await analyticsService.getSkillGrowthTimeline(req.user.id);
+  res.json({ ok: true, data: result, message: "Skill growth timeline retrieved successfully" });
+});
+
+/**
+ * @route   GET /api/analytics/comparison-history-chart
+ * @desc    Get match score history for the current user (for charting)
+ * @access  Private
+ */
+exports.getComparisonHistoryChart = asyncHandler(async (req, res) => {
+  const limit = parseInt(req.query.limit) || 20;
+  const result = await analyticsService.getComparisonHistoryChart(req.user.id, limit);
+  res.json({ ok: true, data: result, message: "Comparison history chart data retrieved successfully" });
+});
+
+/**
  * @route   GET /api/analytics/user-report/:userId?
  * @desc    Generate comprehensive analytics report for a user
  * @access  Private (USER can see own, STAFF/ADMIN can see any)
