@@ -231,15 +231,9 @@ export default function Analytics() {
     const init = async () => {
       try {
         setPageLoading(true);
-        const [resumesRes, growthRes, historyRes] = await Promise.all([
-          api.get("/api/analytics/my-resumes"),
-          api.get("/api/analytics/skill-growth"),
-          api.get("/api/analytics/comparison-history-chart"),
-        ]);
+        const resumesRes = await api.get("/api/analytics/my-resumes");
         const fetchedResumes = resumesRes.data.data?.resumes || [];
         setResumes(fetchedResumes);
-        setSkillGrowth(growthRes.data.data);
-        setComparisonHistory(historyRes.data.data);
         if (fetchedResumes.length > 0) {
           await loadResumeAnalytics(fetchedResumes[0]);
         }
@@ -253,6 +247,14 @@ export default function Analytics() {
       } finally {
         setPageLoading(false);
       }
+
+      // Chart data fetched independently so a 404/500 here never blanks the page
+      api.get("/api/analytics/skill-growth")
+        .then((r) => setSkillGrowth(r.data.data))
+        .catch((e) => console.error("skill-growth:", e));
+      api.get("/api/analytics/comparison-history-chart")
+        .then((r) => setComparisonHistory(r.data.data))
+        .catch((e) => console.error("comparison-history-chart:", e));
     };
     init();
   }, [loadResumeAnalytics]);
