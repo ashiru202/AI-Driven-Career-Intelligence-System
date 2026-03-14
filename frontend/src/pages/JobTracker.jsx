@@ -7,12 +7,14 @@ import {
 } from 'lucide-react';
 
 // ── Stage configuration ───────────────────────────────────────────────────────
+const STAGE_STYLE = { color: '#818cf8', bg: 'rgba(99,102,241,0.1)', border: 'rgba(99,102,241,0.3)' };
+
 const STAGES = [
-  { key: 'saved',     label: 'Saved',     color: '#6366f1', bg: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.35)' },
-  { key: 'applied',   label: 'Applied',   color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)', border: 'rgba(14,165,233,0.35)' },
-  { key: 'interview', label: 'Interview', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.35)' },
-  { key: 'offer',     label: 'Offer',     color: '#22c55e', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.35)' },
-  { key: 'rejected',  label: 'Rejected',  color: '#ef4444', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.35)' },
+  { key: 'saved',     label: 'Saved',     ...STAGE_STYLE },
+  { key: 'applied',   label: 'Applied',   ...STAGE_STYLE },
+  { key: 'interview', label: 'Interview', ...STAGE_STYLE },
+  { key: 'offer',     label: 'Offer',     ...STAGE_STYLE },
+  { key: 'rejected',  label: 'Rejected',  ...STAGE_STYLE },
 ];
 
 const EMPTY_FORM = {
@@ -96,7 +98,7 @@ function AppCard({ app, stages, onEdit, onDelete, onMove }) {
           </span>
         )}
         {app.interviewDate && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '2px 8px', borderRadius: 20 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#818cf8', background: 'rgba(99,102,241,0.1)', padding: '2px 8px', borderRadius: 20 }}>
             <Calendar size={10} />Interview {fmt(app.interviewDate)}
           </span>
         )}
@@ -298,32 +300,23 @@ export default function JobTracker() {
 
   return (
     <Layout>
-      <div style={{ padding: '24px 28px', minHeight: '100vh', background: 'linear-gradient(135deg,rgba(6,6,20,0.98),rgba(10,10,35,0.98))' }}>
+      <div>
 
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        <div className="flex flex-wrap gap-4 items-center justify-between mb-7">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 12, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(99,102,241,0.4)' }}>
-                <Briefcase size={18} color="#fff" />
-              </div>
-              <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: -0.4 }}>Job Tracker</h1>
-            </div>
-            <p style={{ margin: '6px 0 0 48px', fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
-              Track your applications across every stage — {apps.length} total
+            <h2 className="text-3xl font-bold text-white">Job Tracker</h2>
+            <p className="text-slate-400 text-sm mt-0.5">
+              {apps.length === 0
+                ? 'Track your job applications across every stage'
+                : `${apps.length} application${apps.length !== 1 ? 's' : ''} tracked`}
             </p>
           </div>
-          <button onClick={() => setModal({ mode: 'add', data: null })} style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            padding: '10px 18px', borderRadius: 12, cursor: 'pointer',
-            background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-            border: '1px solid rgba(99,102,241,0.5)', color: '#fff', fontSize: 14, fontWeight: 700,
-            boxShadow: '0 6px 20px rgba(99,102,241,0.4)', transition: 'all 0.18s',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(99,102,241,0.55)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(99,102,241,0.4)'; }}
+          <button
+            onClick={() => setModal({ mode: 'add', data: null })}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors shadow-lg shadow-indigo-900/30"
           >
-            <Plus size={16} /> Add Application
+            <Plus size={15} /> Add Application
           </button>
         </div>
 
@@ -371,7 +364,7 @@ export default function JobTracker() {
 
                   {/* Cards */}
                   {stageApps.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '20px 8px', color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>
+                    <div style={{ textAlign: 'center', padding: '20px 8px', color: '#fff', fontSize: 12 }}>
                       No applications
                     </div>
                   ) : (
@@ -388,15 +381,9 @@ export default function JobTracker() {
                   )}
 
                   {/* Quick add button at bottom of each column */}
-                  <button onClick={() => setModal({ mode: 'add', data: { ...EMPTY_FORM, status: stage.key } })} style={{
-                    width: '100%', padding: '8px', marginTop: 6, borderRadius: 10, cursor: 'pointer',
-                    background: 'transparent', border: `1px dashed ${stage.border}`,
-                    color: 'rgba(255,255,255,0.25)', fontSize: 12, fontWeight: 600,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                    transition: 'all 0.18s',
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.background = stage.bg; e.currentTarget.style.color = stage.color; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.25)'; }}
+                  <button
+                    onClick={() => setModal({ mode: 'add', data: { ...EMPTY_FORM, status: stage.key } })}
+                    className="w-full mt-1.5 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors"
                   >
                     <Plus size={13} /> Add here
                   </button>
