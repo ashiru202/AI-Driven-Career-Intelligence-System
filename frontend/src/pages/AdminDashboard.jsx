@@ -141,7 +141,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Links */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Link to="/staff-management">
             <Card className="hover:shadow-md transition-shadow cursor-pointer border-purple-200">
               <CardContent className="pt-4">
@@ -163,6 +163,14 @@ export default function AdminDashboard() {
               <CardContent className="pt-4">
                 <p className="font-semibold text-green-700">Platform Report</p>
                 <p className="text-sm text-gray-500 mt-1">View and export full report</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/admin/audit-logs">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer border-indigo-200">
+              <CardContent className="pt-4">
+                <p className="font-semibold text-indigo-700">Audit Log</p>
+                <p className="text-sm text-gray-500 mt-1">Review all admin activity</p>
               </CardContent>
             </Card>
           </Link>

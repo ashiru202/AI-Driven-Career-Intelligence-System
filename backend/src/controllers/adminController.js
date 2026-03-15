@@ -5,6 +5,9 @@ const AppError = require("../utils/AppError");
 const { asyncHandler } = require("../middleware/errorMiddleware");
 const Comparison = require("../models/Comparison");
 const analyticsService = require("../services/analyticsService");
+const AuditLog = require("../models/AuditLog");
+const { logActivity } = require("../services/auditLogService");
+const { parsePagination, paginationMeta } = require("../utils/pagination");
 
 // Admin can create staff accounts
 const createStaff = asyncHandler(async (req, res) => {
@@ -26,6 +29,8 @@ const createStaff = asyncHandler(async (req, res) => {
     password: hashedPassword,
     role: "STAFF"
   });
+
+  logActivity(req, "CREATE_STAFF", { type: "User", id: staff._id, email: staff.email, name: staff.name });
 
   res.status(201).json(successResponse(
     {
@@ -94,6 +99,11 @@ const toggleUserStatus = asyncHandler(async (req, res) => {
 
   user.active = active;
   await user.save();
+
+  logActivity(req, "TOGGLE_USER_STATUS",
+    { type: "User", id: user._id, email: user.email, name: user.name },
+    { active }
+  );
 
   res.json(successResponse(
     {
@@ -167,13 +177,41 @@ const deleteUser = asyncHandler(async (req, res) => {
 
   await User.findByIdAndDelete(userId);
 
+  logActivity(req, "DELETE_USER",
+    { type: "User", id: user._id, email: user.email, name: user.name },
+    { role: user.role }
+  );
+
   res.json(successResponse(null, `Account for ${user.name} has been permanently deleted`));
 });
 
-module.exports = { 
-  createStaff, 
-  listUsers, 
-  toggleUserStatus, 
+// Get paginated audit logs with optional filters
+const getAuditLogs = asyncHandler(async (req, res) => {
+  const { action, actorEmail, from, to } = req.query;
+  const { page, limit, skip } = parsePagination(req.query);
+
+  const filter = {};
+  if (action) filter.action = action.toUpperCase();
+  if (actorEmail) filter.actorEmail = { $regex: actorEmail, $options: "i" };
+  if (from || to) {
+    filter.createdAt = {};
+    if (from) filter.createdAt.$gte = new Date(from);
+    if (to)   filter.createdAt.$lte = new Date(to);
+  }
+
+  const [logs, total] = await Promise.all([
+    AuditLog.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    AuditLog.countDocuments(filter),
+  ]);
+
+  res.json(successResponse({ logs, pagination: paginationMeta(total, page, limit) }));
+});
+
+module.exports = {
+  createStaff,
+  listUsers,
+  toggleUserStatus,
   getAdminStats,
-  deleteUser
+  deleteUser,
+  getAuditLogs,
 };

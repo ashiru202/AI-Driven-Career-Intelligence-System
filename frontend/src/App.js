@@ -22,6 +22,7 @@ import Analytics from "./pages/Analytics";
 import MyResumes from "./pages/MyResumes";
 import StaffManagement from "./pages/StaffManagement";
 import AdminReport from "./pages/AdminReport";
+import AuditLog from "./pages/AuditLog";
 import JobPostings from "./pages/JobPostings";
 import SkillsInDemand from "./pages/SkillsInDemand";
 import JobTracker from "./pages/JobTracker";
@@ -229,6 +230,18 @@ export default function App() {
             <ProtectedRoute>
               <RoleRoute roles={["ADMIN"]}>
                 <StaffDashboard />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Audit Log — ADMIN only */}
+        <Route
+          path="/admin/audit-logs"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["ADMIN"]}>
+                <AuditLog />
               </RoleRoute>
             </ProtectedRoute>
           }
