@@ -5,6 +5,7 @@ import api from "../api/api";
 import {
   FileText, File, Eye, Trash2, Upload,
   Briefcase, Tag, Calendar, ChevronDown, ChevronUp, AlertCircle, Loader2,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 function FileIcon({ name }) {
@@ -146,16 +147,19 @@ export default function MyResumes() {
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => { fetchResumes(); }, []);
+  useEffect(() => { fetchResumes(page); }, [page]);
 
-  const fetchResumes = async () => {
+  const fetchResumes = async (p = 1) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get("/api/resumes");
+      const response = await api.get("/api/resumes", { params: { page: p, limit: 6 } });
       setResumes(response.data.data?.resumes || []);
+      setPagination(response.data.data?.pagination || null);
     } catch (err) {
       setError(err.response?.data?.error?.message || "Failed to load resumes");
     } finally {
@@ -167,7 +171,13 @@ export default function MyResumes() {
     if (!window.confirm("Are you sure you want to delete this resume?")) return;
     try {
       await api.delete(`/api/resumes/${id}`);
-      setResumes(prev => prev.filter((r) => r._id !== id));
+      // If we deleted the last item on a non-first page, go back
+      const newCount = resumes.length - 1;
+      if (newCount === 0 && page > 1) {
+        setPage(p => p - 1);
+      } else {
+        fetchResumes(page);
+      }
     } catch (err) {
       alert(err.response?.data?.error?.message || "Failed to delete resume");
     }
@@ -218,9 +228,9 @@ export default function MyResumes() {
           <div>
             <h2 className="text-3xl font-bold text-white">My Resumes</h2>
             <p className="text-slate-400 text-sm mt-0.5">
-              {resumes.length === 0
+              {(pagination?.total ?? resumes.length) === 0
                 ? "No resumes uploaded yet"
-                : `${resumes.length} resume${resumes.length !== 1 ? "s" : ""} on file`}
+                : `${pagination?.total ?? resumes.length} resume${(pagination?.total ?? resumes.length) !== 1 ? "s" : ""} on file`}
             </p>
           </div>
           <button
@@ -262,17 +272,43 @@ export default function MyResumes() {
 
         {/* Resume grid */}
         {resumes.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {resumes.map((resume) => (
-              <ResumeCard
-                key={resume._id}
-                resume={resume}
-                onDelete={handleDelete}
-                onView={handleView}
-                onCompare={handleCompare}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {resumes.map((resume) => (
+                <ResumeCard
+                  key={resume._id}
+                  resume={resume}
+                  onDelete={handleDelete}
+                  onView={handleView}
+                  onCompare={handleCompare}
+                />
+              ))}
+            </div>
+
+            {/* Pagination controls */}
+            {pagination && pagination.pages > 1 && (
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={() => setPage(p => p - 1)}
+                  disabled={page === 1}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft size={15} /> Prev
+                </button>
+                <span className="text-sm text-slate-400">
+                  Page <span className="text-white font-semibold">{page}</span> of{" "}
+                  <span className="text-white font-semibold">{pagination.pages}</span>
+                </span>
+                <button
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={page === pagination.pages}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next <ChevronRight size={15} />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </Layout>

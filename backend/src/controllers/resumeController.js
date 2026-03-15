@@ -2,6 +2,7 @@ const Resume = require('../models/Resume');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const AppError = require('../utils/AppError');
 const { asyncHandler } = require('../middleware/errorMiddleware');
+const { parsePagination, paginationMeta } = require('../utils/pagination');
 const { extractTextFromFile } = require('../services/resumeTextExtractor');
 const { extractSkillsWithAI } = require('../services/aiSkillExtractorService');
 const { sendToUser } = require('../utils/sseManager');
@@ -125,12 +126,16 @@ const uploadResume = asyncHandler(async (req, res) => {
 // Get user's resumes
 const getUserResumes = asyncHandler(async (req, res) => {
   const userId = req.user.id;
+  const { page, limit, skip } = parsePagination(req.query, 6);
 
+  const total = await Resume.countDocuments({ user: userId });
   const resumes = await Resume.find({ user: userId })
     .select('-extractedText -filePath')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
 
-  res.json(successResponse({ resumes }));
+  res.json(successResponse({ resumes, pagination: paginationMeta(total, page, limit) }));
 });
 
 // Get specific resume details

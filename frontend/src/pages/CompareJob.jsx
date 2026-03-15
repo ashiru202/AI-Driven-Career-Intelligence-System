@@ -7,7 +7,7 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input, Label } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
-import { FileText } from "lucide-react";
+import { FileText, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function CompareJob() {
   const navigate = useNavigate();
@@ -18,18 +18,20 @@ export default function CompareJob() {
   const [error, setError] = useState("");
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPagination, setHistoryPagination] = useState(null);
   const [selectedHistory, setSelectedHistory] = useState(null);
   const [resumes, setResumes] = useState([]);
   const [selectedResumeId, setSelectedResumeId] = useState("");
 
   useEffect(() => {
-    fetchHistory();
+    fetchHistory(historyPage);
     fetchResumes();
-  }, []);
+  }, [historyPage]);
 
   const fetchResumes = async () => {
     try {
-      const res = await api.get("/api/resumes");
+      const res = await api.get("/api/resumes", { params: { limit: 100 } });
       if (res.data.ok && res.data.data) {
         const list = res.data.data.resumes || [];
         setResumes(list);
@@ -41,12 +43,13 @@ export default function CompareJob() {
     }
   };
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (p = 1) => {
     try {
       setHistoryLoading(true);
-      const res = await api.get("/api/comparisons");
+      const res = await api.get("/api/comparisons", { params: { page: p } });
       if (res.data.ok && res.data.data) {
         setHistory(res.data.data.comparisons || []);
+        setHistoryPagination(res.data.data.pagination || null);
       }
     } catch (e) {
       console.error("Failed to load comparison history:", e);
@@ -82,7 +85,8 @@ export default function CompareJob() {
       if (res.data.ok && res.data.data) {
         setResult(res.data.data);
         setSelectedHistory(null);
-        fetchHistory();
+        setHistoryPage(1);
+        fetchHistory(1);
         fetchResumes(); // refresh resume list
       }
     } catch (e) {
@@ -238,46 +242,74 @@ export default function CompareJob() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {history.map((item) => (
-                <Card
-                  key={item._id}
-                  className="cursor-pointer hover:shadow-md transition-shadow border-2 border-transparent hover:border-blue-300"
-                  onClick={() => viewHistoryItem(item._id)}
-                >
-                  <CardContent className="pt-4 space-y-2">
-                    <p className="font-semibold truncate" style={{color:'#fff'}}>{item.jobTitle}</p>
-                    <div className={`text-2xl font-bold ${getMatchColor(item.matchScore)}`}>
-                      {item.matchScore}%
-                    </div>
-                    <p className="text-xs" style={{color:'rgba(255,255,255,0.5)'}}>
-                      {item.commonSkills?.length || 0} matched · {item.missingSkills?.length || 0} missing
-                    </p>
-                    {item.resumeFileName ? (
-                      <div
-                        className="flex items-center gap-1 text-xs rounded px-2 py-1 truncate"
-                        style={{background:'rgba(99,102,241,0.15)', color:'#a5b4fc', border:'1px solid rgba(99,102,241,0.3)'}}
-                        title={item.resumeFileName}
-                      >
-                        <FileText size={14} />
-                        <span className="truncate">{item.resumeFileName}</span>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {history.map((item) => (
+                  <Card
+                    key={item._id}
+                    className="cursor-pointer hover:shadow-md transition-shadow border-2 border-transparent hover:border-blue-300"
+                    onClick={() => viewHistoryItem(item._id)}
+                  >
+                    <CardContent className="pt-4 space-y-2">
+                      <p className="font-semibold truncate" style={{color:'#fff'}}>{item.jobTitle}</p>
+                      <div className={`text-2xl font-bold ${getMatchColor(item.matchScore)}`}>
+                        {item.matchScore}%
                       </div>
-                    ) : (
-                      <div
-                        className="flex items-center gap-1 text-xs rounded px-2 py-1"
-                        style={{background:'rgba(255,255,255,0.08)', color:'rgba(255,255,255,0.55)', border:'1px solid rgba(255,255,255,0.15)'}}
-                      >
-                        <FileText size={14} />
-                        <span>Resume not recorded (old entry)</span>
-                      </div>
-                    )}
-                    <p className="text-xs" style={{color:'rgba(255,255,255,0.35)'}}>
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <p className="text-xs" style={{color:'rgba(255,255,255,0.5)'}}>
+                        {item.commonSkills?.length || 0} matched · {item.missingSkills?.length || 0} missing
+                      </p>
+                      {item.resumeFileName ? (
+                        <div
+                          className="flex items-center gap-1 text-xs rounded px-2 py-1 truncate"
+                          style={{background:'rgba(99,102,241,0.15)', color:'#a5b4fc', border:'1px solid rgba(99,102,241,0.3)'}}
+                          title={item.resumeFileName}
+                        >
+                          <FileText size={14} />
+                          <span className="truncate">{item.resumeFileName}</span>
+                        </div>
+                      ) : (
+                        <div
+                          className="flex items-center gap-1 text-xs rounded px-2 py-1"
+                          style={{background:'rgba(255,255,255,0.08)', color:'rgba(255,255,255,0.55)', border:'1px solid rgba(255,255,255,0.15)'}}
+                        >
+                          <FileText size={14} />
+                          <span>Resume not recorded (old entry)</span>
+                        </div>
+                      )}
+                      <p className="text-xs" style={{color:'rgba(255,255,255,0.35)'}}>
+                        {new Date(item.createdAt).toLocaleDateString()}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Pagination controls */}
+              {historyPagination && historyPagination.pages > 1 && (
+                <div className="flex items-center justify-center gap-3 mt-4">
+                  <button
+                    onClick={() => setHistoryPage(p => p - 1)}
+                    disabled={historyPage === 1}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    style={{background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.13)', color:'rgba(255,255,255,0.8)'}}
+                  >
+                    <ChevronLeft size={15} /> Prev
+                  </button>
+                  <span className="text-sm" style={{color:'rgba(255,255,255,0.5)'}}>
+                    Page <span style={{color:'#fff', fontWeight:600}}>{historyPage}</span> of{" "}
+                    <span style={{color:'#fff', fontWeight:600}}>{historyPagination.pages}</span>
+                  </span>
+                  <button
+                    onClick={() => setHistoryPage(p => p + 1)}
+                    disabled={historyPage === historyPagination.pages}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    style={{background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.13)', color:'rgba(255,255,255,0.8)'}}
+                  >
+                    Next <ChevronRight size={15} />
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 

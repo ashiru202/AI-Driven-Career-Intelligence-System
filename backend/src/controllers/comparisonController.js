@@ -3,6 +3,7 @@ const Resume = require('../models/Resume');
 const { successResponse } = require('../utils/responseHelper');
 const AppError = require('../utils/AppError');
 const { asyncHandler } = require('../middleware/errorMiddleware');
+const { parsePagination, paginationMeta } = require('../utils/pagination');
 const { normalizeSkillList, compareSkills } = require('../utils/skillNormalizer');
 const { extractSkillsWithAI } = require('../services/aiSkillExtractorService');
 const axios = require('axios');
@@ -103,26 +104,16 @@ const compareJob = asyncHandler(async (req, res) => {
 // Get user's comparison history
 const getComparisons = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { limit = 10, page = 1 } = req.query;
+  const { page, limit, skip } = parsePagination(req.query, 9);
 
-  const skip = (parseInt(page) - 1) * parseInt(limit);
   const total = await Comparison.countDocuments({ user: userId });
-
   const comparisons = await Comparison.find({ user: userId })
     .select('jobTitle matchScore commonSkills missingSkills resumeFileName createdAt')
     .sort({ createdAt: -1 })
     .skip(skip)
-    .limit(parseInt(limit));
+    .limit(limit);
 
-  res.json(successResponse({
-    comparisons,
-    pagination: {
-      total,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      pages: Math.ceil(total / parseInt(limit))
-    }
-  }));
+  res.json(successResponse({ comparisons, pagination: paginationMeta(total, page, limit) }));
 });
 
 // Get specific comparison details
