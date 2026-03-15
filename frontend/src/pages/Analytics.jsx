@@ -697,7 +697,7 @@ export default function Analytics() {
                       missing: p.missingCount,
                     }))} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" />
-                      <XAxis dataKey="index" tick={{ fill: 'rgba(255,255,255,0.45)', fontSize: 11 }} axisLine={false} tickLine={false} label={{ value: 'Comparison #', position: 'insideBottom', offset: -2, fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} />
+                      <XAxis dataKey="index" tick={{ fill: 'rgba(255,255,255,0.45)', fontSize: 11 }} axisLine={false} tickLine={false} />
                       <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.45)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
                       <Tooltip
                         contentStyle={{ background: '#052e16', border: '1px solid rgba(52,211,153,0.4)', borderRadius: 10, fontSize: 12 }}
