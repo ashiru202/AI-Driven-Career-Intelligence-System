@@ -2,8 +2,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
+import asyncio
 import re
 import logging
+
+from fastapi import Header, Depends
+from config import INTERNAL_TOKEN
 
 logger = logging.getLogger(__name__)
 
@@ -299,6 +303,118 @@ async def semantic_match(input_data: SemanticMatchInput):
         ],
         modelUsed="keyword-fallback"
     )
+
+
+# ── Internal token security ────────────────────────────────────────────────────
+
+def verify_internal_token(x_internal_token: str = Header(...)):
+    if x_internal_token != INTERNAL_TOKEN:
+        raise HTTPException(status_code=401, detail="Invalid internal token")
+
+
+# ── Internal admin endpoints (/internal/*) ────────────────────────────────────
+
+@app.post("/internal/trigger-scrape")
+async def trigger_scrape(token: None = Depends(verify_internal_token)):
+    """
+    Run the full scrape + process cycle.
+    Protected by X-Internal-Token header.
+    """
+    def _run():
+        from scrapers.orchestrator import run_scrape
+        from processor import process_unprocessed_jobs
+        scrape_result  = run_scrape()
+        process_result = process_unprocessed_jobs()
+        return {"scrape": scrape_result, "process": process_result}
+
+    result = await asyncio.to_thread(_run)
+    return {"ok": True, **result}
+
+
+@app.post("/internal/trigger-forecast")
+async def trigger_forecast(token: None = Depends(verify_internal_token)):
+    """
+    Refresh all skill forecasts.
+    Protected by X-Internal-Token header.
+    """
+    def _run():
+        from forecaster import refresh_all_forecasts
+        return refresh_all_forecasts()
+
+    result = await asyncio.to_thread(_run)
+    return {"ok": True, "forecast": result}
+
+
+@app.get("/internal/scrape-status")
+async def scrape_status(token: None = Depends(verify_internal_token)):
+    """
+    Return live DB counts and last scrape/forecast timestamps.
+    Protected by X-Internal-Token header.
+    """
+    def _query():
+        from db import get_db
+        from datetime import timezone
+        db = get_db()
+
+        last_job = db["job_postings"].find_one(
+            {}, {"scrapedAt": 1}, sort=[("scrapedAt", -1)]
+        )
+        last_forecast = db["skill_forecasts"].find_one(
+            {}, {"generatedAt": 1}, sort=[("generatedAt", -1)]
+        )
+        return {
+            "jobs_in_db":       db["job_postings"].count_documents({}),
+            "snapshots_in_db":  db["skill_snapshots"].count_documents({}),
+            "forecasts_in_db":  db["skill_forecasts"].count_documents({}),
+            "last_scraped_at":  last_job["scrapedAt"].isoformat() if last_job else None,
+            "last_forecast_at": last_forecast["generatedAt"].isoformat() if last_forecast else None,
+        }
+
+    result = await asyncio.to_thread(_query)
+    return {"ok": True, **result}
+
+
+# ── Public trend read endpoints (/trends/*) ───────────────────────────────────
+
+@app.get("/trends/rising")
+async def get_rising_skills(limit: int = 10, market_scope: str = "combined"):
+    """Top rising skills sorted by trendSlope DESC."""
+    def _query():
+        from db import get_db
+        db = get_db()
+        return list(
+            db["skill_forecasts"]
+            .find({"trendDirection": "rising"}, {"_id": 0})
+            .sort("trendSlope", -1)
+            .limit(min(limit, 50))
+        )
+
+    skills = await asyncio.to_thread(_query)
+    return {"ok": True, "skills": skills}
+
+
+@app.get("/trends/forecast/{skill}")
+async def get_skill_forecast(skill: str, market_scope: str = "combined"):
+    """Full forecast + historical snapshots for a single skill."""
+    def _query():
+        from db import get_db
+        from forecaster import generate_forecast
+        db = get_db()
+
+        skill_lower = skill.lower().strip()
+        forecast = db["skill_forecasts"].find_one({"skill": skill_lower}, {"_id": 0})
+        if forecast is None:
+            forecast = generate_forecast(skill_lower, market_scope=market_scope)
+
+        history = list(
+            db["skill_snapshots"]
+            .find({"skill": skill_lower, "marketScope": market_scope}, {"_id": 0})
+            .sort("periodStart", 1)
+        )
+        return {"forecast": forecast, "history": history}
+
+    result = await asyncio.to_thread(_query)
+    return {"ok": True, **result}
 
 
 if __name__ == "__main__":
