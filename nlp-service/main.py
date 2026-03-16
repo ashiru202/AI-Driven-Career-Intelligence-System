@@ -7,9 +7,50 @@ import re
 import logging
 
 from fastapi import Header, Depends
-from config import INTERNAL_TOKEN
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from config import INTERNAL_TOKEN, SCRAPE_INTERVAL_HOURS
 
 logger = logging.getLogger(__name__)
+
+# ── APScheduler ────────────────────────────────────────────────────────────────
+
+scheduler = AsyncIOScheduler()
+
+
+async def run_daily_pipeline():
+    """
+    Full pipeline: scrape → process → aggregate → forecast.
+    Runs in a thread so synchronous DB/ML code doesn't block the event loop.
+    """
+    def _pipeline():
+        from scrapers.orchestrator import run_scrape
+        from processor import process_unprocessed_jobs
+        from aggregator import aggregate_weekly_snapshots
+        from forecaster import refresh_all_forecasts
+
+        scrape_result    = run_scrape()
+        process_result   = process_unprocessed_jobs()
+        aggregate_result = aggregate_weekly_snapshots()
+        forecast_result  = refresh_all_forecasts()
+        return {
+            "scrape":    scrape_result,
+            "process":   process_result,
+            "aggregate": aggregate_result,
+            "forecast":  forecast_result,
+        }
+
+    try:
+        summary = await asyncio.to_thread(_pipeline)
+        logger.info(
+            "Daily pipeline complete — scrape=%s process=%s aggregate=%s forecast=%s",
+            summary["scrape"],
+            summary["process"],
+            summary["aggregate"],
+            summary["forecast"],
+        )
+    except Exception as exc:
+        logger.error("Daily pipeline failed: %s", exc, exc_info=True)
 
 # ── sentence-transformers (loaded lazily on first request) ──────────────────
 _semantic_model = None
@@ -38,6 +79,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def start_scheduler():
+    scheduler.add_job(
+        run_daily_pipeline,
+        IntervalTrigger(hours=SCRAPE_INTERVAL_HOURS),
+        id="daily_pipeline",
+        replace_existing=True,
+    )
+    scheduler.start()
+    logger.info("Scheduler started — pipeline will run every %sh.", SCRAPE_INTERVAL_HOURS)
 
 class TextInput(BaseModel):
     text: str

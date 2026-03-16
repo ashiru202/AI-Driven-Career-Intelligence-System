@@ -26,6 +26,19 @@ services:
       # Cache the downloaded HuggingFace model so it is not re-downloaded on
       # every container restart
       - huggingface_cache:/root/.cache/huggingface
+    env_file:
+      - path: ./nlp-service/.env
+        required: false
+    environment:
+      MONGO_URI: mongodb://mongo:27017/career-intelligence
+      ADZUNA_APP_ID: ${ADZUNA_APP_ID:-}
+      ADZUNA_APP_KEY: ${ADZUNA_APP_KEY:-}
+      REMOTIVE_ENABLED: "true"
+      TOPJOBS_ENABLED: "true"
+      XPRESSJOBS_ENABLED: "true"
+      SCRAPE_INTERVAL_HOURS: "24"
+      MAX_JOBS_PER_RUN: "200"
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-changeme}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -55,6 +68,7 @@ services:
       NLP_SERVICE_URL: http://nlp-service:8000
       CORS_ORIGIN: http://localhost:3000
       CLIENT_URL: http://localhost:3000
+      NLP_INTERNAL_TOKEN: ${INTERNAL_TOKEN:-changeme}
     volumes:
       # Persist uploaded resume files across container restarts
       - backend_uploads:/app/uploads
