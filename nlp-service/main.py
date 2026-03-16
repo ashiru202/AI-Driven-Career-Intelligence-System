@@ -133,7 +133,27 @@ SKILL_PATTERNS = {
     'git', 'github', 'gitlab', 'bitbucket', 'jira', 'confluence', 'slack', 'agile',
     'scrum', 'kanban', 'rest', 'restful', 'api', 'graphql', 'websocket', 'microservices',
     'oauth', 'jwt', 'ci/cd', 'tdd', 'bdd', 'unit testing', 'jest', 'mocha', 'pytest',
-    'selenium', 'cypress'
+    'selenium', 'cypress',
+
+    # ERP & Enterprise Systems (common in Sri Lankan enterprise job ads)
+    'sap', 'sap s/4hana', 'sap hana', 'sap fiori', 'sap erp',
+    'sap mm', 'sap sd', 'sap fico', 'sap hr', 'abap',
+    'odoo', 'epicor', 'ifs', 'netsuite',
+    'ms dynamics', 'microsoft dynamics', 'dynamics 365', 'dynamics crm',
+    'dynamics nav', 'dynamics ax', 'peoplesoft', 'oracle ebs',
+
+    # BFSI Platforms (widely used in Sri Lankan banking & finance sector)
+    'temenos', 't24', 'finacle', 'flexcube', 'oracle flexcube',
+
+    # Business Intelligence & Reporting
+    'power bi', 'tableau', 'crystal reports', 'ssrs', 'ssis',
+    'cognos', 'qlik', 'qlikview', 'qlik sense', 'looker', 'metabase',
+
+    # Project Management Frameworks & IT Certifications
+    'prince2', 'pmp', 'togaf', 'itil', 'cobit', 'cisa',
+
+    # SaaS & Enterprise Productivity
+    'sharepoint', 'salesforce', 'servicenow', 'zoho', 'hubspot',
 }
 
 def extract_skills_from_text(text: str) -> List[str]:
@@ -219,6 +239,60 @@ def extract_skills_from_text(text: str) -> List[str]:
         'machine learning': 'Machine Learning',
         'ai': 'Artificial Intelligence',
         'artificial intelligence': 'Artificial Intelligence',
+        # ERP & Enterprise Systems
+        'sap': 'SAP',
+        'sap s/4hana': 'SAP S/4HANA',
+        'sap hana': 'SAP HANA',
+        'sap fiori': 'SAP Fiori',
+        'sap erp': 'SAP ERP',
+        'sap mm': 'SAP MM',
+        'sap sd': 'SAP SD',
+        'sap fico': 'SAP FICO',
+        'sap hr': 'SAP HR',
+        'abap': 'ABAP',
+        'odoo': 'Odoo',
+        'epicor': 'Epicor',
+        'ifs': 'IFS Applications',
+        'netsuite': 'NetSuite',
+        'ms dynamics': 'Microsoft Dynamics',
+        'microsoft dynamics': 'Microsoft Dynamics',
+        'dynamics 365': 'Dynamics 365',
+        'dynamics crm': 'Dynamics CRM',
+        'dynamics nav': 'Dynamics NAV',
+        'dynamics ax': 'Dynamics AX',
+        'peoplesoft': 'PeopleSoft',
+        'oracle ebs': 'Oracle EBS',
+        # BFSI Platforms
+        'temenos': 'Temenos',
+        't24': 'Temenos T24',
+        'finacle': 'Finacle',
+        'flexcube': 'Oracle FLEXCUBE',
+        'oracle flexcube': 'Oracle FLEXCUBE',
+        # Business Intelligence & Reporting
+        'power bi': 'Power BI',
+        'tableau': 'Tableau',
+        'crystal reports': 'Crystal Reports',
+        'ssrs': 'SSRS',
+        'ssis': 'SSIS',
+        'cognos': 'IBM Cognos',
+        'qlik': 'Qlik',
+        'qlikview': 'QlikView',
+        'qlik sense': 'Qlik Sense',
+        'looker': 'Looker',
+        'metabase': 'Metabase',
+        # PM Frameworks & Certifications
+        'prince2': 'PRINCE2',
+        'pmp': 'PMP',
+        'togaf': 'TOGAF',
+        'itil': 'ITIL',
+        'cobit': 'COBIT',
+        'cisa': 'CISA',
+        # SaaS & Enterprise Productivity
+        'sharepoint': 'SharePoint',
+        'salesforce': 'Salesforce',
+        'servicenow': 'ServiceNow',
+        'zoho': 'Zoho',
+        'hubspot': 'HubSpot',
     }
     
     normalized_skills = []
