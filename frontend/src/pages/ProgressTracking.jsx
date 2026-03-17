@@ -1,13 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
 import api from "../api/api";
 import {
   CheckCircle2,
@@ -15,64 +8,100 @@ import {
   Layers,
   Map,
   ArrowRight,
-  TrendingUp,
   Loader2,
-  Circle,
-  PlayCircle,
+  Trophy,
+  Lock,
+  TrendingUp,
+  Zap,
+  Target,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function pct(n, total) {
-  if (!total) return 0;
-  return Math.round((n / total) * 100);
+const SKILL_PCT = { COMPLETED: 100, IN_PROGRESS: 50, PENDING: 0 };
+
+const STATUS_COLOR = {
+  COMPLETED:   { bar: "#4ade80", text: "#4ade80", bg: "rgba(74,222,128,0.15)",  label: "Completed" },
+  IN_PROGRESS: { bar: "#fbbf24", text: "#fbbf24", bg: "rgba(251,191,36,0.15)",  label: "In Progress" },
+  PENDING:     { bar: "#475569", text: "#94a3b8", bg: "rgba(71,85,105,0.15)",   label: "Pending" },
+};
+
+function scoreLabel(p) {
+  if (p >= 70) return { text: "#4ade80", label: "On Track" };
+  if (p >= 35) return { text: "#fbbf24", label: "In Progress" };
+  return { text: "#818cf8", label: "Getting Started" };
 }
 
-function progressColor(p) {
-  if (p >= 70) return { stroke: "#4ade80", text: "text-green-400", bar: "#4ade80", label: "On Track" };
-  if (p >= 35) return { stroke: "#fbbf24", text: "text-yellow-400", bar: "#fbbf24", label: "In Progress" };
-  return { stroke: "#6366f1", text: "text-indigo-400", bar: "#6366f1", label: "Getting Started" };
-}
+// ─── Stat Card ────────────────────────────────────────────────────────────────
 
-// ─── Overall Ring ─────────────────────────────────────────────────────────────
-
-function OverallRing({ progress }) {
-  const r = 52;
-  const circumference = 2 * Math.PI * r;
-  const offset = circumference - (progress / 100) * circumference;
-  const col = progressColor(progress);
-
+function StatCard({ icon: Icon, iconColor, iconBg, label, value, sub, subColor = "#4ade80" }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-      <div style={{ position: "relative", width: 144, height: 144 }}>
-        <svg width="144" height="144" style={{ transform: "rotate(-90deg)" }} viewBox="0 0 144 144">
-          <circle cx="72" cy="72" r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="12" />
-          <circle
-            cx="72" cy="72" r={r}
-            fill="none"
-            stroke={col.stroke}
-            strokeWidth="12"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            style={{ transition: "stroke-dashoffset 0.8s ease" }}
-          />
-        </svg>
+    <div style={{
+      borderRadius: 16,
+      border: "1px solid rgba(255,255,255,0.08)",
+      background: "rgba(255,255,255,0.04)",
+      padding: "20px 22px",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 12,
+      backdropFilter: "blur(8px)",
+    }}>
+      <div>
+        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginBottom: 6 }}>{label}</p>
+        <p style={{ fontSize: 26, fontWeight: 800, color: "#fff", lineHeight: 1.1, marginBottom: 6 }}>{value}</p>
+        <p style={{ fontSize: 12, color: subColor, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+          <TrendingUp size={11} style={{ display: "inline" }} /> {sub}
+        </p>
+      </div>
+      <div style={{
+        width: 50, height: 50, borderRadius: 14,
+        background: iconBg,
+        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+      }}>
+        <Icon size={24} color={iconColor} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Skill Progress Row ───────────────────────────────────────────────────────
+
+function SkillRow({ skill, status, pct }) {
+  const col = STATUS_COLOR[status] || STATUS_COLOR.PENDING;
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>{skill}</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: col.text }}>{pct}%</span>
+      </div>
+      <div style={{ width: "100%", background: "rgba(255,255,255,0.06)", borderRadius: 99, height: 7 }}>
         <div style={{
-          position: "absolute", inset: 0,
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        }}>
-          <span className={`text-3xl font-extrabold ${col.text}`}>{progress}%</span>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>overall</span>
-        </div>
+          width: `${pct}%`,
+          height: 7,
+          borderRadius: 99,
+          background: col.bar,
+          transition: "width 0.7s ease",
+        }} />
       </div>
       <span style={{
-        fontSize: 12, fontWeight: 700, letterSpacing: "0.04em",
-        color: col.stroke,
-        background: `${col.stroke}18`,
-        border: `1px solid ${col.stroke}40`,
-        borderRadius: 99, padding: "3px 12px",
+        fontSize: 10, fontWeight: 600, marginTop: 3, display: "inline-block",
+        color: col.text,
+        background: col.bg,
+        borderRadius: 99,
+        padding: "1px 8px",
       }}>
         {col.label}
       </span>
@@ -80,194 +109,144 @@ function OverallRing({ progress }) {
   );
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
+// ─── Milestone Card ───────────────────────────────────────────────────────────
 
-function StatCard({ icon: Icon, label, value, color }) {
+function MilestoneCard({ title, description, achieved }) {
   return (
     <div style={{
       borderRadius: 16,
-      border: `1px solid ${color}30`,
-      background: `${color}0f`,
-      padding: "18px 20px",
-      display: "flex", alignItems: "center", gap: 14,
+      border: achieved
+        ? "1px solid rgba(251,191,36,0.35)"
+        : "1px solid rgba(255,255,255,0.07)",
+      background: achieved
+        ? "linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.06))"
+        : "rgba(255,255,255,0.03)",
+      padding: "20px 22px",
+      display: "flex",
+      alignItems: "flex-start",
+      gap: 14,
     }}>
       <div style={{
-        width: 42, height: 42, borderRadius: 11,
-        background: `${color}20`,
-        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+        width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+        background: achieved ? "rgba(251,191,36,0.2)" : "rgba(255,255,255,0.06)",
+        display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        <Icon size={20} color={color} />
+        {achieved
+          ? <Trophy size={22} color="#fbbf24" />
+          : <Lock size={20} color="rgba(255,255,255,0.25)" />}
       </div>
       <div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.1 }}>{value}</div>
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>{label}</div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Roadmap Progress Card ────────────────────────────────────────────────────
-
-function RoadmapCard({ roadmap }) {
-  const col = progressColor(roadmap.progress);
-  return (
-    <div style={{
-      borderRadius: 16,
-      border: "1px solid rgba(255,255,255,0.08)",
-      background: "rgba(255,255,255,0.04)",
-      padding: "18px 20px",
-      display: "flex", flexDirection: "column", gap: 12,
-    }}>
-      {/* Title row */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <p style={{ fontWeight: 700, fontSize: 15, color: "#fff", margin: 0 }}>{roadmap.targetRole}</p>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 3 }}>
-            {new Date(roadmap.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
-          </p>
-        </div>
-        <span style={{
-          fontSize: 13, fontWeight: 800, color: col.stroke,
-          background: `${col.stroke}18`,
-          border: `1px solid ${col.stroke}40`,
-          borderRadius: 99, padding: "3px 10px",
+        <p style={{
+          fontSize: 14, fontWeight: 700, marginBottom: 4,
+          color: achieved ? "#fde68a" : "rgba(255,255,255,0.45)",
         }}>
-          {roadmap.progress}%
-        </span>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ width: "100%", background: "rgba(255,255,255,0.07)", borderRadius: 99, height: 6 }}>
-        <div style={{
-          width: `${roadmap.progress}%`,
-          height: 6, borderRadius: 99,
-          background: col.bar,
-          transition: "width 0.7s ease",
-        }} />
-      </div>
-
-      {/* Skill counts */}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <Chip color="#4ade80" label={`${roadmap.completedSkills} done`} />
-        <Chip color="#fbbf24" label={`${roadmap.inProgressSkills} in progress`} />
-        <Chip color="#94a3b8" label={`${roadmap.pendingSkills} pending`} />
-        {roadmap.estimatedWeeksRemaining > 0 && (
-          <Chip color="#a78bfa" label={`~${roadmap.estimatedWeeksRemaining}w left`} />
+          {title}
+        </p>
+        <p style={{ fontSize: 12, color: achieved ? "rgba(253,230,138,0.65)" : "rgba(255,255,255,0.28)" }}>
+          {description}
+        </p>
+        {achieved && (
+          <span style={{
+            marginTop: 8, display: "inline-flex", alignItems: "center", gap: 4,
+            fontSize: 11, fontWeight: 700, color: "#fbbf24",
+            background: "rgba(251,191,36,0.15)",
+            border: "1px solid rgba(251,191,36,0.3)",
+            borderRadius: 99, padding: "2px 10px",
+          }}>
+            <CheckCircle2 size={11} /> Achieved
+          </span>
         )}
       </div>
-
-      {/* Link */}
-      <Link to="/my-roadmap" style={{ textDecoration: "none" }}>
-        <button style={{
-          fontSize: 12, fontWeight: 600, color: "#a5b4fc",
-          background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.28)",
-          borderRadius: 8, padding: "6px 14px",
-          cursor: "pointer", transition: "background 0.15s",
-          display: "flex", alignItems: "center", gap: 5,
-        }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(99,102,241,0.22)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "rgba(99,102,241,0.12)"; }}
-        >
-          View roadmap <ArrowRight size={12} />
-        </button>
-      </Link>
     </div>
   );
 }
 
-function Chip({ color, label }) {
-  return (
-    <span style={{
-      fontSize: 11, fontWeight: 600,
-      color, background: `${color}18`,
-      border: `1px solid ${color}35`,
-      borderRadius: 99, padding: "2px 9px",
-    }}>
-      {label}
-    </span>
-  );
-}
+// ─── Custom Recharts Tooltip ──────────────────────────────────────────────────
 
-// ─── Recently Completed ───────────────────────────────────────────────────────
-
-function CompletedSkillRow({ item, index }) {
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
   return (
     <div style={{
-      display: "flex", alignItems: "center", gap: 12,
-      padding: "10px 0",
-      borderBottom: index !== undefined ? "1px solid rgba(255,255,255,0.05)" : "none",
+      background: "#0f172a",
+      border: "1px solid rgba(99,102,241,0.35)",
+      borderRadius: 10, padding: "10px 14px", fontSize: 12,
     }}>
-      <div style={{
-        width: 32, height: 32, borderRadius: "50%",
-        background: "rgba(74,222,128,0.15)",
-        border: "1px solid rgba(74,222,128,0.3)",
-        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-      }}>
-        <CheckCircle2 size={15} color="#4ade80" />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontWeight: 600, fontSize: 13, color: "rgba(255,255,255,0.85)", margin: 0 }}>{item.skill}</p>
-        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{item.roadmapTitle}</p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Status Distribution Bar ──────────────────────────────────────────────────
-
-function DistributionBar({ completed, inProgress, pending }) {
-  const total = completed + inProgress + pending;
-  if (!total) return null;
-  const cPct = pct(completed, total);
-  const iPct = pct(inProgress, total);
-  const pPct = 100 - cPct - iPct;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", borderRadius: 99, overflow: "hidden", height: 10 }}>
-        {cPct > 0 && <div style={{ width: `${cPct}%`, background: "#4ade80", transition: "width 0.7s" }} />}
-        {iPct > 0 && <div style={{ width: `${iPct}%`, background: "#fbbf24", transition: "width 0.7s" }} />}
-        {pPct > 0 && <div style={{ width: `${pPct}%`, background: "rgba(100,116,139,0.5)", transition: "width 0.7s" }} />}
-      </div>
-      <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-        <LegendItem color="#4ade80" label="Completed" pct={cPct} />
-        <LegendItem color="#fbbf24" label="In Progress" pct={iPct} />
-        <LegendItem color="#64748b" label="Pending" pct={pPct} />
-      </div>
-    </div>
-  );
-}
-
-function LegendItem({ color, label, pct: p }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <div style={{ width: 10, height: 10, borderRadius: 3, background: color, flexShrink: 0 }} />
-      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{label}</span>
-      <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)" }}>{p}%</span>
+      <p style={{ color: "#a5b4fc", fontWeight: 700, marginBottom: 6 }}>{label}</p>
+      {payload.map(p => (
+        <p key={p.dataKey} style={{ color: p.fill, marginBottom: 2 }}>
+          {p.name}: <strong>{p.value}</strong>
+        </p>
+      ))}
     </div>
   );
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+const MILESTONES = [
+  {
+    key: "first_skill",
+    title: "First Skill Completed",
+    description: "Complete your first skill on any roadmap.",
+    check: s => s.completedSkills >= 1,
+  },
+  {
+    key: "five_skills",
+    title: "5 Skills Completed",
+    description: "Complete 5 skills across all your roadmaps.",
+    check: s => s.completedSkills >= 5,
+  },
+  {
+    key: "half_complete",
+    title: "50% Roadmap Complete",
+    description: "Reach 50% overall progress across all roadmaps.",
+    check: s => s.overallProgress >= 50,
+  },
+  {
+    key: "all_mastered",
+    title: "All Skills Mastered",
+    description: "Complete every skill on all your roadmaps.",
+    check: s => s.totalSkills > 0 && s.completedSkills === s.totalSkills,
+  },
+];
+
 export default function ProgressTracking() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  useEffect(() => {
-    api.get("/api/roadmaps-new/summary")
-      .then(r => setSummary(r.data.data))
-      .catch(err => setError(err.response?.data?.error?.message || "Failed to load progress"))
-      .finally(() => setLoading(false));
+  const fetchSummary = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
+
+    try {
+      const res = await api.get("/api/roadmaps-new/summary");
+      setSummary(res.data.data);
+      setLastUpdated(new Date());
+      setError(null);
+    } catch (err) {
+      setError(err.response?.data?.error?.message || "Failed to load progress");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  // Initial load + 30-second polling for real-time updates
+  useEffect(() => {
+    fetchSummary(false);
+    const interval = setInterval(() => fetchSummary(true), 30_000);
+    return () => clearInterval(interval);
+  }, [fetchSummary]);
 
   if (loading) {
     return (
       <Layout>
-        <div className="flex flex-col items-center justify-center h-64 gap-3">
-          <Loader2 size={28} className="animate-spin text-indigo-400" />
-          <p className="text-slate-400 text-sm">Loading your progress…</p>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 256, gap: 12 }}>
+          <Loader2 size={28} style={{ color: "#818cf8", animation: "spin 1s linear infinite" }} />
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 14 }}>Loading your progress…</p>
         </div>
       </Layout>
     );
@@ -276,140 +255,229 @@ export default function ProgressTracking() {
   if (error) {
     return (
       <Layout>
-        <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-5">
-          <p className="text-red-400 font-semibold">Failed to load progress</p>
-          <p className="text-red-400/70 text-sm mt-1">{error}</p>
-          <Button className="mt-4" onClick={() => window.location.reload()}>Retry</Button>
+        <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 14, padding: 20 }}>
+          <p style={{ color: "#f87171", fontWeight: 700 }}>Failed to load progress</p>
+          <p style={{ color: "rgba(248,113,113,0.7)", fontSize: 13, marginTop: 4 }}>{error}</p>
+          <Button style={{ marginTop: 16 }} onClick={() => fetchSummary(false)}>Retry</Button>
         </div>
       </Layout>
     );
   }
 
   const hasRoadmaps = summary && summary.totalRoadmaps > 0;
+  const sc = summary ? scoreLabel(summary.overallProgress) : {};
+
+  // Chart data: per-roadmap stacked bar
+  const chartData = (summary?.roadmaps || []).map(r => ({
+    name: r.targetRole.length > 18 ? r.targetRole.slice(0, 16) + "…" : r.targetRole,
+    Completed: r.completedSkills,
+    "In Progress": r.inProgressSkills,
+    Pending: r.pendingSkills,
+  }));
+
+  // Skill progress: sort — COMPLETED → IN_PROGRESS → PENDING
+  const skillOrder = { COMPLETED: 0, IN_PROGRESS: 1, PENDING: 2 };
+  const sortedSkills = (summary?.allSkills || [])
+    .slice()
+    .sort((a, b) => skillOrder[a.status] - skillOrder[b.status])
+    .slice(0, 12);
 
   return (
     <Layout>
-      <div className="space-y-8">
+      <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
 
-        {/* ── Header ── */}
-        <div>
-          <h2 className="text-3xl font-bold text-white">Progress Tracking</h2>
-          <p className="text-slate-400 mt-1 text-sm">
-            A snapshot of your learning journey across all roadmaps.
-          </p>
+        {/* ── Header ─────────────────────────────────────────────────── */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <h2 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: 0 }}>Progress Tracking</h2>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
+              Monitor your learning journey and celebrate milestones.
+            </p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {lastUpdated && (
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
+                Updated {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+            <button
+              onClick={() => fetchSummary(true)}
+              disabled={refreshing}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                fontSize: 12, fontWeight: 600, color: "#a5b4fc",
+                background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)",
+                borderRadius: 8, padding: "6px 14px", cursor: "pointer",
+                opacity: refreshing ? 0.6 : 1,
+              }}
+            >
+              <RefreshCw size={12} style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
+              {refreshing ? "Refreshing…" : "Refresh"}
+            </button>
+          </div>
         </div>
 
         {!hasRoadmaps ? (
           /* ── Empty state ── */
           <div style={{
-            border: "2px dashed rgba(255,255,255,0.1)",
-            borderRadius: 20,
-            padding: "64px 32px",
-            textAlign: "center",
+            border: "2px dashed rgba(255,255,255,0.1)", borderRadius: 20,
+            padding: "64px 32px", textAlign: "center",
           }}>
-            <Map size={44} style={{ color: "rgba(255,255,255,0.2)", margin: "0 auto 16px" }} />
-            <p style={{ color: "rgba(255,255,255,0.65)", fontWeight: 700, fontSize: 17 }}>
-              No roadmaps yet
-            </p>
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, marginTop: 6 }}>
-              Compare a job and generate your first roadmap to start tracking progress.
+            <Map size={48} style={{ color: "rgba(255,255,255,0.15)", margin: "0 auto 16px" }} />
+            <p style={{ color: "rgba(255,255,255,0.6)", fontWeight: 700, fontSize: 18 }}>No roadmaps yet</p>
+            <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, marginTop: 6 }}>
+              Compare a job and generate your first roadmap to start tracking.
             </p>
             <Link to="/compare-job" style={{ textDecoration: "none" }}>
-              <Button className="mt-6">
-                Compare a Job <ArrowRight size={14} className="inline ml-1" />
+              <Button style={{ marginTop: 20 }}>
+                Compare a Job <ArrowRight size={14} style={{ display: "inline", marginLeft: 4 }} />
               </Button>
             </Link>
           </div>
         ) : (
           <>
-            {/* ── Hero: ring + stats ── */}
-            <Card className="border-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp size={18} /> Overall Progress
-                </CardTitle>
-                <CardDescription>
-                  Across {summary.totalRoadmaps} roadmap{summary.totalRoadmaps !== 1 ? "s" : ""} ·{" "}
-                  {summary.totalSkills} total skill{summary.totalSkills !== 1 ? "s" : ""}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 32, alignItems: "center" }}>
-                  <OverallRing progress={summary.overallProgress} />
-                  <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 12 }}>
-                    <DistributionBar
-                      completed={summary.completedSkills}
-                      inProgress={summary.inProgressSkills}
-                      pending={summary.pendingSkills}
-                    />
-                    {summary.estimatedWeeksRemaining > 0 && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-                        <Clock size={14} color="#a78bfa" />
-                        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
-                          Est.{" "}
-                          <span style={{ color: "#c4b5fd", fontWeight: 700 }}>
-                            {summary.estimatedWeeksRemaining} week{summary.estimatedWeeksRemaining !== 1 ? "s" : ""}
-                          </span>{" "}
-                          remaining across all roadmaps
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* ── Stat Cards ── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={Layers}       label="Total Skills"    value={summary.totalSkills}       color="#6366f1" />
-              <StatCard icon={CheckCircle2} label="Completed"       value={summary.completedSkills}   color="#4ade80" />
-              <StatCard icon={PlayCircle}   label="In Progress"     value={summary.inProgressSkills}  color="#fbbf24" />
-              <StatCard icon={Circle}       label="Pending"         value={summary.pendingSkills}     color="#64748b" />
+            {/* ── Stat Cards ─────────────────────────────────────────── */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+              <StatCard
+                icon={CheckCircle2}
+                iconColor="#4ade80"
+                iconBg="rgba(74,222,128,0.18)"
+                label="Skills Completed"
+                value={`${summary.completedSkills}/${summary.totalSkills}`}
+                sub={`${summary.overallProgress}% complete`}
+                subColor="#4ade80"
+              />
+              <StatCard
+                icon={Clock}
+                iconColor="#60a5fa"
+                iconBg="rgba(96,165,250,0.18)"
+                label="Est. Hours Invested"
+                value={`${summary.estimatedHoursInvested}h`}
+                sub={`~${summary.estimatedWeeksRemaining}w remaining`}
+                subColor="#60a5fa"
+              />
+              <StatCard
+                icon={Zap}
+                iconColor="#f59e0b"
+                iconBg="rgba(245,158,11,0.18)"
+                label="Active Roadmaps"
+                value={summary.activeRoadmaps}
+                sub={`${summary.totalRoadmaps} total`}
+                subColor="#f59e0b"
+              />
+              <StatCard
+                icon={Target}
+                iconColor={sc.text}
+                iconBg={`${sc.text}28`}
+                label="Overall Score"
+                value={`${summary.overallProgress}%`}
+                sub={sc.label}
+                subColor={sc.text}
+              />
             </div>
 
-            {/* ── Per-Roadmap Breakdown ── */}
-            <section>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: "rgba(255,255,255,0.85)", marginBottom: 14 }}>
-                Roadmap Breakdown
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {summary.roadmaps.map(r => (
-                  <RoadmapCard key={r.id} roadmap={r} />
+            {/* ── Chart + Skill Progress ──────────────────────────────── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+
+              {/* Left: Roadmap Activity Chart */}
+              <div style={{
+                borderRadius: 18, border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.03)", padding: "22px 20px",
+              }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 4 }}>Roadmap Activity</p>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>
+                  Skills breakdown per roadmap
+                </p>
+                {chartData.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "40px 0", color: "rgba(255,255,255,0.25)", fontSize: 13 }}>
+                    No roadmap data
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={chartData} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip content={<ChartTooltip />} />
+                      <Legend
+                        wrapperStyle={{ fontSize: 11, color: "rgba(255,255,255,0.5)", paddingTop: 8 }}
+                      />
+                      <Bar dataKey="Completed"   fill="#4ade80" stackId="a" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="In Progress" fill="#fbbf24" stackId="a" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="Pending"     fill="#334155" stackId="a" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+
+              {/* Right: Skill Progress */}
+              <div style={{
+                borderRadius: 18, border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.03)", padding: "22px 20px",
+                overflowY: "auto", maxHeight: 340,
+              }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 4 }}>Skill Progress</p>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 18 }}>
+                  {summary.totalSkills} skill{summary.totalSkills !== 1 ? "s" : ""} across all roadmaps
+                </p>
+                {sortedSkills.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "30px 0", color: "rgba(255,255,255,0.25)", fontSize: 13 }}>
+                    No skills yet
+                  </div>
+                ) : (
+                  sortedSkills.map(s => (
+                    <SkillRow
+                      key={`${s.roadmapId}-${s.skill}`}
+                      skill={s.skill}
+                      status={s.status}
+                      pct={SKILL_PCT[s.status] ?? 0}
+                    />
+                  ))
+                )}
+                {summary.allSkills.length > 12 && (
+                  <Link to="/my-roadmap" style={{ textDecoration: "none" }}>
+                    <p style={{ fontSize: 12, color: "#a5b4fc", marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                      <Layers size={12} /> View all {summary.allSkills.length} skills on My Roadmaps
+                    </p>
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {/* ── Milestones ─────────────────────────────────────────── */}
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                <Trophy size={18} style={{ color: "#fbbf24" }} />
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>Milestones</h3>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+                {MILESTONES.map(m => (
+                  <MilestoneCard
+                    key={m.key}
+                    title={m.title}
+                    description={m.description}
+                    achieved={m.check(summary)}
+                  />
                 ))}
               </div>
-            </section>
+            </div>
 
-            {/* ── Recently Completed Skills ── */}
-            {summary.recentlyCompleted.length > 0 && (
-              <section>
-                <Card className="border-2">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2">
-                      <CheckCircle2 size={18} className="text-green-400" />
-                      Completed Skills
-                    </CardTitle>
-                    <CardDescription>
-                      {summary.recentlyCompleted.length} skill{summary.recentlyCompleted.length !== 1 ? "s" : ""} marked as done
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div>
-                      {summary.recentlyCompleted.map((item, i) => (
-                        <CompletedSkillRow
-                          key={`${item.roadmapId}-${item.skill}`}
-                          item={item}
-                          index={i < summary.recentlyCompleted.length - 1 ? i : undefined}
-                        />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </section>
-            )}
           </>
         )}
-
       </div>
+
+      {/* Spin keyframe injected via style tag */}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </Layout>
   );
 }

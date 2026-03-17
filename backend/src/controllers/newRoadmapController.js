@@ -203,14 +203,15 @@ const getProgressSummary = asyncHandler(async (req, res) => {
 
   const roadmaps = await Roadmap.find({ user: userId })
     .sort({ createdAt: -1 })
-    .select('targetRole jobTitle skillsToLearn createdAt');
+    .select('targetRole jobTitle skillsToLearn createdAt updatedAt');
 
   let totalSkills = 0;
   let completedSkills = 0;
   let inProgressSkills = 0;
   let pendingSkills = 0;
   let totalEstWeeks = 0;
-  const recentlyCompleted = [];
+  let estimatedHoursInvested = 0;
+  const allSkills = [];
 
   const roadmapSummaries = roadmaps.map(roadmap => {
     const skills = roadmap.skillsToLearn || [];
@@ -229,21 +230,29 @@ const getProgressSummary = asyncHandler(async (req, res) => {
     pendingSkills += pending;
     totalEstWeeks += weeksRemaining;
 
-    skills
-      .filter(s => s.status === 'COMPLETED')
-      .forEach(s => {
-        recentlyCompleted.push({
-          skill: s.skill,
-          roadmapTitle: roadmap.targetRole,
-          roadmapId: roadmap._id,
-        });
+    // Estimate hours: completed skills earn full weeks × 5h; in-progress earn half
+    skills.forEach(s => {
+      const weeks = s.estimateWeeks || 1;
+      if (s.status === 'COMPLETED') estimatedHoursInvested += weeks * 5;
+      else if (s.status === 'IN_PROGRESS') estimatedHoursInvested += weeks * 2.5;
+    });
+
+    skills.forEach(s => {
+      allSkills.push({
+        skill: s.skill,
+        status: s.status,
+        estimateWeeks: s.estimateWeeks || 1,
+        roadmapTitle: roadmap.targetRole,
+        roadmapId: roadmap._id,
       });
+    });
 
     return {
       id: roadmap._id,
       targetRole: roadmap.targetRole,
       jobTitle: roadmap.jobTitle,
       createdAt: roadmap.createdAt,
+      updatedAt: roadmap.updatedAt,
       totalSkills: total,
       completedSkills: completed,
       inProgressSkills: inProgress,
@@ -257,16 +266,22 @@ const getProgressSummary = asyncHandler(async (req, res) => {
     ? Math.round((completedSkills / totalSkills) * 100)
     : 0;
 
+  const activeRoadmaps = roadmapSummaries.filter(
+    r => r.progress > 0 && r.progress < 100
+  ).length;
+
   res.json(successResponse({
     totalRoadmaps: roadmaps.length,
+    activeRoadmaps,
     totalSkills,
     completedSkills,
     inProgressSkills,
     pendingSkills,
     overallProgress,
     estimatedWeeksRemaining: totalEstWeeks,
+    estimatedHoursInvested: Math.round(estimatedHoursInvested * 10) / 10,
     roadmaps: roadmapSummaries,
-    recentlyCompleted: recentlyCompleted.slice(0, 20),
+    allSkills,
   }));
 });
 
