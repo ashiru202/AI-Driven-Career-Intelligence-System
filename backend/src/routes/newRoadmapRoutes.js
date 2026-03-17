@@ -5,6 +5,7 @@ const { validate, schemas } = require('../middleware/validationMiddleware');
 const {
   createRoadmap,
   getUserRoadmaps,
+  getProgressSummary,
   getRoadmapDetails,
   updateSkillStatus,
   refreshResources,
@@ -19,6 +20,9 @@ router.post('/', validate(schemas.createRoadmap), createRoadmap);
 
 // Get user's roadmaps
 router.get('/', getUserRoadmaps);
+
+// Progress summary (must be before /:id to avoid param clash)
+router.get('/summary', getProgressSummary);
 
 // Get specific roadmap details
 router.get('/:id', getRoadmapDetails);

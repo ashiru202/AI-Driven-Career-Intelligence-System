@@ -4,7 +4,7 @@ import {
   Zap, Users, UserCheck, BarChart2, ClipboardList, Map, Home, FileText,
   Folder, Target, TrendingUp, Briefcase, Flame, LogOut, HeartPulse,
   ArrowLeft, RefreshCw, Check, X, ChevronDown, ChevronRight, ClipboardCheck,
-  ShieldCheck,
+  ShieldCheck, ListChecks,
 } from 'lucide-react';
 import api from '../api/api';
 import { useSSE } from '../context/SSEContext';
@@ -420,6 +420,7 @@ const ROLE_NAV = {
     { path: '/job-postings',       label: 'Job Postings',       Icon: Briefcase },
     { path: '/skills-in-demand',   label: 'Skills in Demand',   Icon: Flame },
     { path: '/job-tracker',        label: 'Job Tracker',        Icon: ClipboardCheck },
+    { path: '/progress',           label: 'Progress Tracking',  Icon: ListChecks },
   ],
 };
 
