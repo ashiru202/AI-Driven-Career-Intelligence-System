@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Zap, Users, UserCheck, BarChart2, ClipboardList, Map, Home, FileText,
   Folder, Target, TrendingUp, Briefcase, Flame, LogOut, HeartPulse,
-  ArrowLeft, RefreshCw, Check, X, ChevronDown, ChevronRight, ClipboardCheck,
+  ArrowLeft, RefreshCw, Check, X, ChevronDown, ChevronRight,
   ShieldCheck, ListChecks, Activity,
 } from 'lucide-react';
 import api from '../api/api';
@@ -347,7 +347,6 @@ function LogoutConfirmModal({ onConfirm, onCancel }) {
           border: '1px solid rgba(239,68,68,0.3)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 20px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}><LogOut size={26} /></div>
 
         <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 800, margin: '0 0 8px', letterSpacing: -0.3 }}>
@@ -420,7 +419,6 @@ const ROLE_NAV = {
     { path: '/trends',             label: 'Industry Trends',    Icon: Activity },
     { path: '/job-postings',       label: 'Job Postings',       Icon: Briefcase },
     { path: '/skills-in-demand',   label: 'Skills in Demand',   Icon: Flame },
-    { path: '/job-tracker',        label: 'Job Tracker',        Icon: ClipboardCheck },
     { path: '/progress',           label: 'Progress Tracking',  Icon: ListChecks },
   ],
 };

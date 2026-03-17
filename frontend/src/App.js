@@ -25,7 +25,6 @@ import AdminReport from "./pages/AdminReport";
 import AuditLog from "./pages/AuditLog";
 import JobPostings from "./pages/JobPostings";
 import SkillsInDemand from "./pages/SkillsInDemand";
-import JobTracker from "./pages/JobTracker";
 import ProgressTracking from "./pages/ProgressTracking";
 import TrendsPage from "./pages/TrendsPage";
 import ForgotPassword from "./pages/ForgotPassword";

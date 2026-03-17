@@ -1,85 +1,29 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Layout from "../components/Layout";
 import api from "../api/api";
-import { Trophy, Hash, Briefcase, TrendingUp, AlertTriangle, BarChart2 } from "lucide-react";
+import { Trophy, Hash, Briefcase, TrendingUp, AlertTriangle, BarChart2, RefreshCw } from "lucide-react";
 
-// ─── Bar style per rank ───────────────────────────────────────────────────────
-const RANK_STYLE = [
-  { bar: "rgba(234,179,8,0.82)",   count: "#fde047", track: "rgba(234,179,8,0.08)"   },
-  { bar: "rgba(180,196,214,0.65)", count: "#cbd5e1", track: "rgba(148,163,184,0.07)" },
-  { bar: "rgba(194,140,90,0.7)",   count: "#d4a06a", track: "rgba(180,120,70,0.07)"  },
-];
-function indigoBar(rank) {
-  const a = Math.max(0.42, 0.88 - (rank - 4) * 0.04).toFixed(2);
-  return `rgba(99,102,241,${a})`;
-}
-
-// ─── Horizontal bar chart ─────────────────────────────────────────────────────
-function HBarChart({ skills }) {
-  const maxCount = skills[0]?.count || 1;
-  const gridPcts = [25, 50, 75];
+// ─── Simple Progress Bar ──────────────────────────────────────────────────────
+function ProgressBar({ pct, isFirstRender }) {
   return (
-    <div>
+    <div style={{
+      width: "100%",
+      background: "rgba(255,255,255,0.06)",
+      borderRadius: 9999,
+      height: 8,
+      overflow: "hidden",
+    }}>
+      <div style={{
+        height: 8,
+        borderRadius: 9999,
+        background: "linear-gradient(90deg, #6366f1, #8b5cf6)",
+        width: `${Math.min(pct, 100)}%`,
+        animation: isFirstRender ? "growBar 0.9s cubic-bezier(0.22,1,0.36,1) both" : "none",
+        transition: isFirstRender ? "none" : "width 0.5s cubic-bezier(0.22,1,0.36,1)",
+      }} />
       <style>{`
         @keyframes growBar { from { width: 0% } }
-        .hbar-row:hover .hbar-track { background: rgba(255,255,255,0.055) !important; }
       `}</style>
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        {skills.map((item, idx) => {
-          const rank = idx + 1;
-          const rs   = idx < 3 ? RANK_STYLE[idx] : null;
-          const barColor   = rs ? rs.bar   : indigoBar(rank);
-          const countColor = rs ? rs.count : "rgba(165,180,252,0.7)";
-          const pct = Math.max(2, Math.round((item.count / maxCount) * 100));
-          const isTop = rank === 1;
-          return (
-            <div
-              key={idx}
-              className="hbar-row"
-              style={{
-                display: "flex", alignItems: "center", gap: 12,
-                padding: "8px 0",
-                borderBottom: idx < skills.length - 1 ? "1px solid rgba(255,255,255,0.035)" : "none",
-              }}
-            >
-              {/* Label */}
-              <div style={{ width: 170, display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                {rs ? (
-                  <span style={{ width: 22, display: 'flex', justifyContent: 'center', color: rs.count }}><Trophy size={16} /></span>
-                ) : (
-                  <span style={{ width: 22, textAlign: "center", fontSize: 11, fontWeight: 600, color: "rgba(165,180,252,0.45)" }}>{rank}</span>
-                )}
-                <span style={{ fontSize: 13, fontWeight: isTop ? 700 : 500, color: isTop ? "#e0e7ff" : "rgba(241,245,249,0.72)", textTransform: "capitalize", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={item.skill}>
-                  {item.skill}
-                </span>
-              </div>
-              {/* Track */}
-              <div
-                className="hbar-track"
-                style={{ flex: 1, position: "relative", height: 32, borderRadius: 8, background: rs?.track ?? "rgba(255,255,255,0.04)", overflow: "hidden", transition: "background 0.2s" }}
-              >
-                {gridPcts.map(g => (
-                  <div key={g} style={{ position: "absolute", left: `${g}%`, top: 0, bottom: 0, width: 1, background: "rgba(255,255,255,0.07)", pointerEvents: "none" }} />
-                ))}
-                <div style={{ position: "absolute", left: 0, top: 4, bottom: 4, width: `${pct}%`, borderRadius: 6, background: `linear-gradient(90deg, ${barColor}, ${barColor.replace(/[\d.]+\)$/, "0.45)")})`, boxShadow: isTop ? `0 0 12px ${barColor.replace(/[\d.]+\)$/, "0.3)")}` : "none", animation: "growBar 0.9s cubic-bezier(0.22,1,0.36,1) both" }} />
-                {pct > 18 && (
-                  <span style={{ position: "absolute", left: `${pct - 2}%`, transform: "translateX(-100%)", top: "50%", marginTop: -9, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.65)", paddingRight: 6, pointerEvents: "none" }}>
-                    {item.count}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {/* X-axis */}
-      <div style={{ display: "flex", marginTop: 10, paddingLeft: 182, paddingRight: 76 }}>
-        {[0, 25, 50, 75, 100].map((g, i) => (
-          <div key={g} style={{ flex: i === 0 ? 0 : 1, fontSize: 10, color: "rgba(255,255,255,0.22)", textAlign: i === 0 ? "left" : i === 4 ? "right" : "center", transform: i > 0 && i < 4 ? "translateX(-50%)" : "none" }}>
-            {Math.round((maxCount * g) / 100)}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -130,41 +74,101 @@ function StatCard({ Icon, label, value, color }) {
 export default function SkillsInDemand() {
   const [skillDemand, setSkillDemand] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const isFirstRender = useRef(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get("/api/analytics/skill-demand");
-        setSkillDemand(res.data.data);
-      } catch (err) {
-        setError(
-          err.response?.data?.error?.message ||
-            "Failed to load skill demand data."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
+
+    try {
+      const res = await api.get("/api/analytics/skill-demand");
+      setSkillDemand(res.data.data);
+      setLastUpdated(new Date());
+      setError(null);
+    } catch (err) {
+      setError(
+        err.response?.data?.error?.message ||
+          "Failed to load skill demand data."
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      if (isFirstRender.current) isFirstRender.current = false;
+    }
   }, []);
+
+  // Initial load + 30-second polling for real-time updates
+  useEffect(() => {
+    fetchData(false);
+    const interval = setInterval(() => fetchData(true), 30_000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const topSkills = skillDemand?.top || [];
   const maxCount = topSkills[0]?.count || 1;
   const totalJobs = topSkills.reduce((s, x) => s + x.count, 0);
 
+  // Time since last update
+  const timeSinceUpdate = lastUpdated
+    ? Math.floor((Date.now() - lastUpdated) / 1000)
+    : null;
+
   return (
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
         {/* ── Header ── */}
-        <div>
-          <h2 className="text-3xl font-bold text-white">Skills in Demand</h2>
-          <p className="text-slate-400 mt-1 text-sm">
-            Platform-wide insights into the most sought-after skills based on
-            job comparisons
-          </p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+          <div>
+            <h2 className="text-3xl font-bold text-white">Skills in Demand</h2>
+            <p className="text-slate-400 mt-1 text-sm">
+              Platform-wide insights into the most sought-after skills based on
+              job comparisons
+              {timeSinceUpdate !== null && (
+                <span style={{ marginLeft: 8, color: "rgba(255,255,255,0.3)", fontSize: 12 }}>
+                  • Updated {timeSinceUpdate < 5 ? "just now" : timeSinceUpdate < 60 ? `${timeSinceUpdate}s ago` : `${Math.floor(timeSinceUpdate / 60)}m ago`}
+                </span>
+              )}
+            </p>
+          </div>
+          {!loading && (
+            <button
+              onClick={() => fetchData(true)}
+              disabled={refreshing}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 18px",
+                borderRadius: 10,
+                background: refreshing ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.12)",
+                border: "1px solid rgba(99,102,241,0.3)",
+                color: "#a5b4fc",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: refreshing ? "not-allowed" : "pointer",
+                transition: "all 0.2s",
+                opacity: refreshing ? 0.6 : 1,
+              }}
+              onMouseEnter={(e) => {
+                if (!refreshing) {
+                  e.currentTarget.style.background = "rgba(99,102,241,0.2)";
+                  e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(99,102,241,0.12)";
+                e.currentTarget.style.borderColor = "rgba(99,102,241,0.3)";
+              }}
+            >
+              <RefreshCw size={14} style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
+          )}
         </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
         {/* ── Loading ── */}
         {loading && (
@@ -246,7 +250,7 @@ export default function SkillsInDemand() {
               />
             </div>
 
-            {/* ── Horizontal bar chart ── */}
+            {/* ── Top Skills Ranking ── */}
             <div
               style={{
                 borderRadius: 20,
@@ -263,7 +267,80 @@ export default function SkillsInDemand() {
                   Based on recurring skills across all job comparisons on the platform
                 </p>
               </div>
-              <HBarChart skills={topSkills} />
+
+              {/* Skills List */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {topSkills.map((item, idx) => {
+                  const rank = idx + 1;
+                  const pct = Math.round((item.count / maxCount) * 100);
+                  const isTop3 = rank <= 3;
+
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "12px 0",
+                        borderBottom: idx < topSkills.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                      }}
+                    >
+                      {/* Rank */}
+                      <div style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        background: isTop3 ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.04)",
+                        border: isTop3 ? "1.5px solid rgba(99,102,241,0.3)" : "1px solid rgba(255,255,255,0.08)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}>
+                        {isTop3 ? (
+                          <Trophy size={16} style={{ color: rank === 1 ? "#fbbf24" : rank === 2 ? "#cbd5e1" : "#d4a06a" }} />
+                        ) : (
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>
+                            {rank}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Skill Name & Bar */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span style={{
+                            fontSize: 14,
+                            fontWeight: rank === 1 ? 700 : 500,
+                            color: rank === 1 ? "#e0e7ff" : "rgba(241,245,249,0.85)",
+                            textTransform: "capitalize",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}>
+                            {item.skill}
+                          </span>
+                          <span style={{
+                            marginLeft: 12,
+                            flexShrink: 0,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            background: isTop3 ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.08)",
+                            border: isTop3 ? "1px solid rgba(99,102,241,0.3)" : "1px solid rgba(255,255,255,0.1)",
+                            color: isTop3 ? "#a5b4fc" : "rgba(255,255,255,0.5)",
+                            padding: "3px 10px",
+                            borderRadius: 9999,
+                          }}>
+                            {item.count}
+                          </span>
+                        </div>
+                        <ProgressBar pct={pct} isFirstRender={isFirstRender.current} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* ── Category breakdown (compact chips) ── */}

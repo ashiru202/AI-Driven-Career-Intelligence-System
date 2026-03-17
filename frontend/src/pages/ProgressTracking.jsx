@@ -167,14 +167,19 @@ function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: "#0f172a",
-      border: "1px solid rgba(99,102,241,0.35)",
-      borderRadius: 10, padding: "10px 14px", fontSize: 12,
+      background: "rgba(15,23,42,0.95)",
+      border: "1px solid rgba(99,102,241,0.4)",
+      borderRadius: 12,
+      padding: "12px 16px",
+      fontSize: 12,
+      boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+      backdropFilter: "blur(8px)",
     }}>
-      <p style={{ color: "#a5b4fc", fontWeight: 700, marginBottom: 6 }}>{label}</p>
+      <p style={{ color: "#e0e7ff", fontWeight: 700, marginBottom: 8, fontSize: 13 }}>{label}</p>
       {payload.map(p => (
-        <p key={p.dataKey} style={{ color: p.fill, marginBottom: 2 }}>
-          {p.name}: <strong>{p.value}</strong>
+        <p key={p.dataKey} style={{ color: "rgba(255,255,255,0.8)", marginBottom: 4, display: "flex", gap: 8 }}>
+          <span style={{ color: p.fill, fontWeight: 600 }}>●</span>
+          {p.name}: <strong style={{ color: p.fill, fontWeight: 700 }}>{p.value}</strong>
         </p>
       ))}
     </div>
@@ -289,7 +294,7 @@ export default function ProgressTracking() {
         {/* ── Header ─────────────────────────────────────────────────── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12 }}>
           <div>
-            <h2 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: 0 }}>Progress Tracking</h2>
+            <h2 style={{ fontSize: 30, fontWeight: 700, color: "#fff", margin: 0 }}>Progress Tracking</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
               Monitor your learning journey and celebrate milestones.
             </p>
@@ -408,7 +413,11 @@ export default function ProgressTracking() {
                         axisLine={false}
                         tickLine={false}
                       />
-                      <Tooltip content={<ChartTooltip />} />
+                      <Tooltip
+                        content={<ChartTooltip />}
+                        cursor={{ fill: "rgba(99,102,241,0.08)" }}
+                        wrapperStyle={{ outline: "none" }}
+                      />
                       <Legend
                         wrapperStyle={{ fontSize: 11, color: "rgba(255,255,255,0.5)", paddingTop: 8 }}
                       />
