@@ -6,6 +6,20 @@ pydantic==2.9.2
 sentence-transformers>=3.0.0
 torch>=2.0.0
 
+# Scraping & scheduling
+httpx>=0.27.0
+apscheduler>=3.10.4
+python-dateutil>=2.9.0
+pymongo>=4.8.0
+python-dotenv>=1.0.0
+beautifulsoup4>=4.12.0
+lxml>=5.2.0
+
+# ML / forecasting
+scikit-learn>=1.5.0
+numpy>=1.26.0
+pandas>=2.2.0
+# prophet>=1.1.5  # optional – add only if linear model is insufficient
+
 # Testing
 pytest>=8.0.0
-httpx>=0.27.0

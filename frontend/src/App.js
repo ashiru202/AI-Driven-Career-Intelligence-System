@@ -27,6 +27,7 @@ import JobPostings from "./pages/JobPostings";
 import SkillsInDemand from "./pages/SkillsInDemand";
 import JobTracker from "./pages/JobTracker";
 import ProgressTracking from "./pages/ProgressTracking";
+import TrendsPage from "./pages/TrendsPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -133,11 +134,11 @@ export default function App() {
         />
 
         <Route
-          path="/job-tracker"
+          path="/trends"
           element={
             <ProtectedRoute>
               <RoleRoute roles={["USER"]}>
-                <JobTracker />
+                <TrendsPage />
               </RoleRoute>
             </ProtectedRoute>
           }

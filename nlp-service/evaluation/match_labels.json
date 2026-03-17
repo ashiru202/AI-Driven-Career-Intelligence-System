@@ -1,0 +1,82 @@
+[
+  {
+    "comparisonId": "REPLACE_WITH_REAL_MONGO_ID_001",
+    "resumeSkills": ["React", "JavaScript", "CSS", "HTML", "Git"],
+    "jobSkills": ["React", "TypeScript", "Node.js", "REST API", "Git", "Docker"],
+    "systemMatchScore": 33,
+    "humanRating": 40,
+    "humanRatingBand": "fair",
+    "annotator": "annotator1",
+    "notes": "Candidate has React and Git — core skills match, but lacks TypeScript and Node.js"
+  },
+  {
+    "comparisonId": "REPLACE_WITH_REAL_MONGO_ID_002",
+    "resumeSkills": ["Python", "Django", "PostgreSQL", "REST API", "Docker", "Git", "Linux"],
+    "jobSkills": ["Python", "Flask", "PostgreSQL", "REST API", "Docker"],
+    "systemMatchScore": 80,
+    "humanRating": 75,
+    "humanRatingBand": "strong",
+    "annotator": "annotator1",
+    "notes": "Strong backend match; Django vs Flask is a reasonable substitution"
+  },
+  {
+    "comparisonId": "REPLACE_WITH_REAL_MONGO_ID_003",
+    "resumeSkills": ["Java", "Spring Boot", "MySQL", "AWS", "Kubernetes", "Docker"],
+    "jobSkills": ["Java", "Spring Boot", "MySQL", "AWS", "CI/CD", "Microservices"],
+    "systemMatchScore": 67,
+    "humanRating": 70,
+    "humanRatingBand": "strong",
+    "annotator": "annotator1",
+    "notes": "Good match; Kubernetes implies CI/CD familiarity"
+  },
+  {
+    "comparisonId": "REPLACE_WITH_REAL_MONGO_ID_004",
+    "resumeSkills": ["PHP", "Laravel", "MySQL", "HTML", "CSS", "jQuery"],
+    "jobSkills": ["React", "TypeScript", "Node.js", "MongoDB", "REST API"],
+    "systemMatchScore": 0,
+    "humanRating": 5,
+    "humanRatingBand": "poor",
+    "annotator": "annotator1",
+    "notes": "Fundamentally different stack; no meaningful skill overlap"
+  },
+  {
+    "comparisonId": "REPLACE_WITH_REAL_MONGO_ID_005",
+    "resumeSkills": ["Machine Learning", "Python", "TensorFlow", "Pandas", "NumPy", "Scikit-learn"],
+    "jobSkills": ["Machine Learning", "Python", "PyTorch", "NLP", "Docker"],
+    "systemMatchScore": 60,
+    "humanRating": 55,
+    "humanRatingBand": "fair",
+    "annotator": "annotator2",
+    "notes": "TensorFlow vs PyTorch gap is significant for NLP roles; otherwise solid"
+  },
+  {
+    "comparisonId": "REPLACE_WITH_REAL_MONGO_ID_006",
+    "resumeSkills": ["C#", "ASP.NET", "SQL Server", "Azure", "Entity Framework"],
+    "jobSkills": ["C#", "ASP.NET", "SQL Server", "Azure", "REST API"],
+    "systemMatchScore": 80,
+    "humanRating": 82,
+    "humanRatingBand": "strong",
+    "annotator": "annotator2",
+    "notes": "Near-perfect stack alignment"
+  },
+  {
+    "comparisonId": "REPLACE_WITH_REAL_MONGO_ID_007",
+    "resumeSkills": ["AWS", "Terraform", "Kubernetes", "Docker", "Python", "Bash"],
+    "jobSkills": ["AWS", "Terraform", "Ansible", "Docker", "CI/CD", "Linux"],
+    "systemMatchScore": 50,
+    "humanRating": 65,
+    "humanRatingBand": "strong",
+    "annotator": "annotator2",
+    "notes": "Kubernetes implies CI/CD; Bash implies Linux; system may undercount semantic matches"
+  },
+  {
+    "comparisonId": "REPLACE_WITH_REAL_MONGO_ID_008",
+    "resumeSkills": ["Excel", "Power BI", "SQL", "Python"],
+    "jobSkills": ["Power BI", "DAX", "SQL Server", "Azure", "Tableau"],
+    "systemMatchScore": 20,
+    "humanRating": 30,
+    "humanRatingBand": "poor",
+    "annotator": "annotator1",
+    "notes": "Some BI overlap but missing Azure and Tableau is a significant gap"
+  }
+]

@@ -13,7 +13,8 @@
     "test:compare": "jest --testPathPattern=compare --runInBand --forceExit",
     "test:roadmap": "jest --testPathPattern=roadmap --runInBand --forceExit",
     "test:analytics": "jest --testPathPattern=analytics --runInBand --forceExit",
-    "test:resume": "jest --testPathPattern=resume --runInBand --forceExit"
+    "test:resume": "jest --testPathPattern=resume --runInBand --forceExit",
+    "test:trends": "jest --testPathPatterns=trends --runInBand --forceExit"
   },
   "jest": {
     "testEnvironment": "node",

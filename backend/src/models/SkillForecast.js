@@ -33,4 +33,4 @@ skillForecastSchema.index({ skill: 1 }, { unique: true });
 skillForecastSchema.index({ trendDirection: 1, trendSlope: -1 });
 skillForecastSchema.index({ generatedAt: -1 });
 
-module.exports = mongoose.model("SkillForecast", skillForecastSchema);
+module.exports = mongoose.model("SkillForecast", skillForecastSchema, "skill_forecasts");
