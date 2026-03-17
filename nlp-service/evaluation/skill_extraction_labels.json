@@ -1,0 +1,62 @@
+[
+  {
+    "sourceId": "REPLACE_WITH_REAL_ID_001",
+    "source": "topjobs_lk",
+    "description": "We are looking for a Senior Software Engineer with at least 4 years of experience in Java and Spring Boot. The candidate should have strong knowledge of REST APIs, MySQL, and AWS deployment. Familiarity with Docker and CI/CD pipelines is a plus.",
+    "ground_truth_skills": ["Java", "Spring Boot", "REST API", "MySQL", "AWS", "Docker", "CI/CD"]
+  },
+  {
+    "sourceId": "REPLACE_WITH_REAL_ID_002",
+    "source": "topjobs_lk",
+    "description": "Seeking an experienced .NET Developer proficient in C#, ASP.NET MVC, and MS SQL Server. Knowledge of Azure cloud services and Entity Framework required. Experience with Agile/Scrum methodologies preferred.",
+    "ground_truth_skills": ["C#", "ASP.NET", "SQL Server", "Azure", "Entity Framework", "Agile", "Scrum"]
+  },
+  {
+    "sourceId": "REPLACE_WITH_REAL_ID_003",
+    "source": "xpressjobs_lk",
+    "description": "Software Engineer needed with strong Python skills and experience in Django or Flask. Should be comfortable with PostgreSQL, Redis, and basic Linux server administration. Knowledge of Celery for task queuing is advantageous.",
+    "ground_truth_skills": ["Python", "Django", "Flask", "PostgreSQL", "Redis", "Linux", "Celery"]
+  },
+  {
+    "sourceId": "REPLACE_WITH_REAL_ID_004",
+    "source": "xpressjobs_lk",
+    "description": "We need a React Developer who can build responsive web applications using React.js, Redux, and TypeScript. The role requires working with Node.js backend services and integrating REST APIs. Tailwind CSS experience is a bonus.",
+    "ground_truth_skills": ["React", "Redux", "TypeScript", "Node.js", "REST API", "Tailwind CSS"]
+  },
+  {
+    "sourceId": "REPLACE_WITH_REAL_ID_005",
+    "source": "adzuna",
+    "description": "Full Stack Engineer position open for candidates with hands-on experience in the MERN stack (MongoDB, Express.js, React, Node.js). AWS or GCP cloud experience required. Must have strong Git workflow and code review experience.",
+    "ground_truth_skills": ["MongoDB", "Express.js", "React", "Node.js", "AWS", "GCP", "Git"]
+  },
+  {
+    "sourceId": "REPLACE_WITH_REAL_ID_006",
+    "source": "adzuna",
+    "description": "Lead Data Engineer to design and maintain data pipelines. Required: Python, Apache Spark, Kafka, AWS S3, and Airflow. Should have experience with Databricks, dbt, and Tableau for data visualisation.",
+    "ground_truth_skills": ["Python", "Apache Spark", "Kafka", "AWS", "Airflow", "Databricks", "dbt", "Tableau"]
+  },
+  {
+    "sourceId": "REPLACE_WITH_REAL_ID_007",
+    "source": "remotive",
+    "description": "DevOps Engineer (Remote) to manage Kubernetes clusters on AWS EKS, build CI/CD pipelines with GitHub Actions, and manage infrastructure with Terraform. Datadog or Grafana monitoring experience preferred.",
+    "ground_truth_skills": ["Kubernetes", "AWS", "CI/CD", "GitHub Actions", "Terraform", "Datadog", "Grafana"]
+  },
+  {
+    "sourceId": "REPLACE_WITH_REAL_ID_008",
+    "source": "remotive",
+    "description": "ML Engineer to productionise NLP models using PyTorch and HuggingFace Transformers. FastAPI for serving, Docker for containerisation, and MLflow for experiment tracking. Strong Python skills essential.",
+    "ground_truth_skills": ["Machine Learning", "PyTorch", "HuggingFace", "FastAPI", "Docker", "MLflow", "Python"]
+  },
+  {
+    "sourceId": "REPLACE_WITH_REAL_ID_009",
+    "source": "topjobs_lk",
+    "description": "SAP Functional Consultant with minimum 3 years of experience in SAP S/4HANA. Must have expertise in MM, SD, and FICO modules. Knowledge of ABAP is an added advantage. Local LK banking clients preferred.",
+    "ground_truth_skills": ["SAP", "SAP S/4HANA", "SAP MM", "SAP SD", "SAP FICO", "ABAP"]
+  },
+  {
+    "sourceId": "REPLACE_WITH_REAL_ID_010",
+    "source": "xpressjobs_lk",
+    "description": "Business Intelligence Developer skilled in Power BI and SSRS to build dashboards for a leading Sri Lankan bank. Knowledge of SQL Server, T-SQL optimisation, and Crystal Reports required. Temenos T24 banking system exposure is an advantage.",
+    "ground_truth_skills": ["Power BI", "SSRS", "SQL Server", "T-SQL", "Crystal Reports", "Temenos T24"]
+  }
+]

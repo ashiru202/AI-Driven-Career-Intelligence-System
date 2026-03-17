@@ -4,7 +4,7 @@ export default function Ping() {
   const [msg, setMsg] = useState("Loading...");
 
   useEffect(() => {
-    fetch("http://localhost:5000/")
+    fetch("http://localhost:5001/")
       .then((r) => r.text())
       .then(setMsg)
       .catch(() => setMsg("Ping failed (CORS or server down)"));

@@ -72,6 +72,7 @@ const analyticsRoutes       = require("./routes/analyticsRoutes");
 const reportRoutes          = require("./routes/reportRoutes");
 const notificationsRoutes   = require("./routes/notificationsRoutes");
 const jobApplicationRoutes  = require("./routes/jobApplicationRoutes");
+const trendRoutes           = require("./routes/trendRoutes");
 
 app.use("/api",            healthRoutes);
 
@@ -89,6 +90,7 @@ app.use("/api/analytics",  analyticsRoutes);
 app.use("/api/reports",        reportRoutes);
 app.use("/api/notifications",  notificationsRoutes);
 app.use("/api/job-applications", jobApplicationRoutes);
+app.use("/api/trends",           trendRoutes);
 app.use("/api/roadmap",        roadmapRoutes);
 app.use("/api/roadmaps",   roadmapRoutes);
 app.use("/api/admin",      adminRoutes);
