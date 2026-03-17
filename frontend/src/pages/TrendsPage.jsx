@@ -28,12 +28,12 @@ function formatWeek(isoDate) {
 }
 
 function formatPct(val) {
-  if (val == null) return "—";
+  if (val == null) return "N/A";
   return `${(val * 100).toFixed(2)}%`;
 }
 
 function formatSlope(slope) {
-  if (slope == null) return "—";
+  if (slope == null) return "N/A";
   const pct = (slope * 100).toFixed(3);
   return slope >= 0 ? `+${pct}% /wk` : `${pct}% /wk`;
 }
@@ -69,7 +69,7 @@ function DirectionBadge({ direction }) {
   return (
     <span style={{ color: c.text, background: c.bg, border: `1px solid ${c.border}`,
       borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>
-      — Stable
+      Stable
     </span>
   );
 }
@@ -189,7 +189,7 @@ function StatCard({ label, value, sub, Icon, color }) {
         <Icon size={20} style={{ color }} />
       </div>
       <div>
-        <div style={{ color: "#e2e8f0", fontSize: 22, fontWeight: 700, lineHeight: 1 }}>{value ?? "—"}</div>
+        <div style={{ color: "#e2e8f0", fontSize: 22, fontWeight: 700, lineHeight: 1 }}>{value ?? "N/A"}</div>
         <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 3 }}>{label}</div>
         {sub && <div style={{ color: "#64748b", fontSize: 11, marginTop: 1 }}>{sub}</div>}
       </div>
@@ -314,7 +314,7 @@ function SkillsTable({ scope, onSelectSkill, selectedSkill }) {
                   </td>
                   <td style={{ padding: "9px 10px" }}>
                     <span style={{ color: delta == null ? "#64748b" : delta >= 0 ? "#4ade80" : "#f87171" }}>
-                      {delta == null ? "—" : `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%`}
+                      {delta == null ? "N/A" : `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%`}
                     </span>
                   </td>
                   <td style={{ padding: "9px 10px", color: "#94a3b8" }}>
@@ -323,7 +323,7 @@ function SkillsTable({ scope, onSelectSkill, selectedSkill }) {
                   <td style={{ padding: "9px 10px", color: "#94a3b8" }}>
                     {s.trendConfidence != null
                       ? `R²=${(s.trendConfidence).toFixed(2)}`
-                      : "—"}
+                      : "N/A"}
                   </td>
                   <td style={{ padding: "9px 10px" }}>
                     <DirectionBadge direction={s.trendDirection} />
@@ -494,7 +494,7 @@ export default function TrendsPage() {
 
   return (
     <Layout>
-      <div style={{ padding: "2rem", maxWidth: 1200, margin: "0 auto" }}>
+      <div>
 
         {/* ── Market Scope Toggle (Task 6.6) ───────────────────────────────── */}
         <div style={{ marginBottom: "1.5rem" }}>
@@ -521,7 +521,7 @@ export default function TrendsPage() {
             )}
           </div>
           <p style={{ color: "#64748b", margin: "6px 0 0", fontSize: 14 }}>
-            Live analysis of skill demand from thousands of job postings — including{" "}
+            Live analysis of skill demand from thousands of job postings  including{" "}
             {scope === "local-lk"
               ? "Sri Lankan job boards"
               : scope === "global"
@@ -536,7 +536,7 @@ export default function TrendsPage() {
             marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: 12 }}>
             <AlertTriangle size={18} style={{ color: "#fbbf24", flexShrink: 0 }} />
             <p style={{ color: "#d1a800", fontSize: 13, margin: 0 }}>
-              Trend analysis improves with more data — check back after{" "}
+              Trend analysis improves with more data check back after{" "}
               {4 - (summary?.weeksCovered || 0)} more week(s) of data collection.
             </p>
           </div>
@@ -612,7 +612,7 @@ export default function TrendsPage() {
                 {forecast && <DirectionBadge direction={forecast.trendDirection} />}
                 {forecast && (
                   <span style={{ color: "#64748b", fontSize: 12 }}>
-                    R²={forecast.trendConfidence?.toFixed(2) ?? "—"}  |  {formatSlope(forecast.trendSlope)}
+                    R²={forecast.trendConfidence?.toFixed(2) ?? "N/A"}  |  {formatSlope(forecast.trendSlope)}
                   </span>
                 )}
               </div>
@@ -651,7 +651,7 @@ export default function TrendsPage() {
             <div style={{ padding: "20px", background: "rgba(245,158,11,0.08)",
               borderRadius: 10, border: "1px solid rgba(245,158,11,0.2)", marginBottom: 12 }}>
               <p style={{ color: "#d1a800", fontSize: 13, margin: 0 }}>
-                Forecast is pending — not enough weekly data yet. Historical data shown below.
+                Forecast is pending not enough weekly data yet. Historical data shown below.
               </p>
             </div>
           )}
@@ -802,7 +802,7 @@ export default function TrendsPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <BarChart2 size={18} style={{ color: "#6366f1" }} />
             <h2 style={{ color: "#e2e8f0", fontSize: 16, fontWeight: 600, margin: 0 }}>
-              All Skills — Ranked by Trend
+              All Skills Ranked by Trend
             </h2>
             <span style={{ color: "#64748b", fontSize: 12, marginLeft: "auto" }}>
               Click a row to explore its chart
