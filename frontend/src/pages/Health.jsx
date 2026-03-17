@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/api';
 import { X, Circle, CheckCircle2 } from 'lucide-react';
 
 export default function Health() {
@@ -12,7 +12,7 @@ export default function Health() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get('http://localhost:5000/api/health');
+      const response = await api.get('/api/health');
       setHealthData(response.data);
     } catch (err) {
       if (err.response && err.response.data) {
