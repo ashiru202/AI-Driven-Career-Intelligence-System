@@ -390,16 +390,17 @@ export default function TrendsPage() {
 
   const loadMeta = useCallback(() => {
     setLoadingMeta(true);
-    Promise.all([
+    Promise.allSettled([
       getSnapshotSummary(),
       getRisingSkills(8, scope),
       getFallingSkills(8, scope),
       api.get("/api/analytics/my-resumes"),
     ])
       .then(([sumRes, rRes, fRes, resumeRes]) => {
-        const sum  = sumRes.data?.data      || {};
-        const r    = rRes.data?.data?.skills  || [];
-        const f    = fRes.data?.data?.skills  || [];
+        const sum = sumRes.status === "fulfilled" ? sumRes.value.data?.data || {} : {};
+        const r   = rRes.status  === "fulfilled" ? rRes.value.data?.data?.skills  || [] : [];
+        const f   = fRes.status  === "fulfilled" ? fRes.value.data?.data?.skills  || [] : [];
+
         setSummary(sum);
         setRising(r);
         setFalling(f);
@@ -409,23 +410,24 @@ export default function TrendsPage() {
           setSelectedSkill(r[0].skill);
         }
 
-        // Personal skills cross-reference
-        const resumes = resumeRes.data?.data?.resumes || resumeRes.data?.data || [];
-        const latest = Array.isArray(resumes) ? resumes[0] : null;
-        if (latest?.extractedSkills?.length) {
-          setHasPersonal(true);
-          const mySkills = latest.extractedSkills.map(s => s.toLowerCase().trim());
-          const matches = (list) => list.filter(item =>
-            mySkills.some(ms =>
-              ms.includes(item.skill.toLowerCase()) ||
-              item.skill.toLowerCase().includes(ms)
-            )
-          );
-          setMyRisingSkills(matches(r));
-          setMyFallingSkills(matches(f));
+        // Personal skills cross-reference (best-effort — skip if resumes unavailable)
+        if (resumeRes.status === "fulfilled") {
+          const resumes = resumeRes.value.data?.data?.resumes || resumeRes.value.data?.data || [];
+          const latest  = Array.isArray(resumes) ? resumes[0] : null;
+          if (latest?.extractedSkills?.length) {
+            setHasPersonal(true);
+            const mySkills = latest.extractedSkills.map(s => s.toLowerCase().trim());
+            const matches  = (list) => list.filter(item =>
+              mySkills.some(ms =>
+                ms.includes(item.skill.toLowerCase()) ||
+                item.skill.toLowerCase().includes(ms)
+              )
+            );
+            setMyRisingSkills(matches(r));
+            setMyFallingSkills(matches(f));
+          }
         }
       })
-      .catch(() => {})
       .finally(() => setLoadingMeta(false));
   }, [scope]); // eslint-disable-line react-hooks/exhaustive-deps
 
