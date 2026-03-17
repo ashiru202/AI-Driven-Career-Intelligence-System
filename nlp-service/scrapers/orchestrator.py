@@ -43,24 +43,21 @@ def run_scrape(max_jobs: int = MAX_JOBS_PER_RUN) -> dict:
     if REMOTIVE_ENABLED:
         from scrapers import remotive
         logger.info("Running Remotive scraper…")
-        remaining = max_jobs - totals["scraped"]
-        result = remotive.scrape(max_jobs=max(remaining, 0))
+        result = remotive.scrape(max_jobs=max_jobs)
         _merge(totals, "remotive", result)
 
     # ── TopJobs.lk ───────────────────────────────────────────────────────────
     if TOPJOBS_ENABLED:
         from scrapers import topjobs_lk
         logger.info("Running TopJobs.lk scraper…")
-        remaining = max_jobs - totals["scraped"]
-        result = topjobs_lk.scrape(max_jobs=max(remaining, 0))
+        result = topjobs_lk.scrape(max_jobs=max_jobs)
         _merge(totals, "topjobs_lk", result)
 
     # ── XpressJobs.lk ────────────────────────────────────────────────────────
     if XPRESSJOBS_ENABLED:
         from scrapers import xpressjobs_lk
         logger.info("Running XpressJobs.lk scraper…")
-        remaining = max_jobs - totals["scraped"]
-        result = xpressjobs_lk.scrape(max_jobs=max(remaining, 0))
+        result = xpressjobs_lk.scrape(max_jobs=max_jobs)
         _merge(totals, "xpressjobs_lk", result)
 
     logger.info(

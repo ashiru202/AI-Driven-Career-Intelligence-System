@@ -2,44 +2,54 @@
 TopJobs.lk scraper — Sri Lanka local market.
 
 Scrapes the public IT/Tech job listings from https://www.topjobs.lk/
-using httpx + BeautifulSoup4 HTML parsing. No public API exists.
+using httpx + BeautifulSoup4 on server-rendered HTML pages.
+
+Page structure (confirmed via live inspection):
+- Listing page: each job is an <a href="JavaScript:openSizeWindow('employer/...)"> link.
+  The link text contains the job title; a <h5> inside it carries the company name.
+- Detail page: accessible directly at the servlet URL without JavaScript.
+  Title is in <h3>, company in <h5>, location and closing date in plain text.
+  Full job description is not present in server-rendered HTML (requires JS).
 
 Ethics:
-- Respects robots.txt guidance (public listing pages only).
-- Adds 1–2 s sleep between page requests.
-- Stores only job description text, no applicant personal data.
-- Realistic User-Agent header identifying the application.
-- Limits to 10 pages per run.
+- Public listing pages only; no applicant personal data.
+- 1–1.5 s sleep between requests; realistic User-Agent.
+- Maximum 10 pages per run.
 """
 
 import hashlib
 import logging
+import re
 import time
 from datetime import datetime, timezone
 from typing import Optional
 
 import httpx
 from bs4 import BeautifulSoup
+from dateutil import parser as dateparser
 
 from config import MAX_JOBS_PER_RUN
 from db import get_db
 
 logger = logging.getLogger(__name__)
 
-_BASE_URL = "https://www.topjobs.lk/applicant/vacancy/searchVacancy.htm"
-_LIST_URL = "https://www.topjobs.lk/applicant/vacancy/SearchVacancyListUser.htm"
-_DETAIL_URL = "https://www.topjobs.lk/applicant/vacancy/ViewJobVacancyDetail.htm"
-_MAX_PAGES = 10
-_PAGE_SLEEP = 1.5  # seconds between requests
+_BASE       = "https://www.topjobs.lk"
+_LISTING_URL = f"{_BASE}/applicant/vacancy/searchVacancy.htm"
+_MAX_PAGES  = 10
+_PAGE_SLEEP = 1.5    # between listing pages
+_DETAIL_SLEEP = 0.6  # between detail fetches
 
 _HEADERS = {
     "User-Agent": (
-        "Mozilla/5.0 (compatible; CareerIntelligenceBot/1.0; "
-        "+https://github.com/your-org/ai-career-intelligence)"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
     ),
     "Accept-Language": "en-US,en;q=0.9",
 }
-_IT_CATEGORIES = ["Information Technology", "Software/QA", "Engineering"]
+
+# Category names as recognised by topjobs.lk search
+_IT_CATEGORIES = ["Information Technology", "Software/QA"]
 
 
 def scrape(max_jobs: int = MAX_JOBS_PER_RUN) -> dict:
@@ -54,154 +64,181 @@ def scrape(max_jobs: int = MAX_JOBS_PER_RUN) -> dict:
 
     scraped = inserted = skipped = 0
 
-    with httpx.Client(
-        timeout=30,
-        headers=_HEADERS,
-        follow_redirects=True,
-    ) as client:
-        for page_num in range(1, _MAX_PAGES + 1):
-            if scraped >= max_jobs:
-                break
-
-            listings = _fetch_listing_page(client, page_num)
-            if not listings:
-                logger.info("TopJobs.lk: no listings on page %d, stopping.", page_num)
-                break
-
-            for listing in listings:
+    with httpx.Client(timeout=30, headers=_HEADERS, follow_redirects=True) as client:
+        for category in _IT_CATEGORIES:
+            for page_num in range(1, _MAX_PAGES + 1):
                 if scraped >= max_jobs:
                     break
 
-                detail = _fetch_job_detail(client, listing)
-                if not detail or not detail.get("description"):
-                    continue
+                listings = _fetch_listing_page(client, category, page_num)
+                if not listings:
+                    logger.info(
+                        "TopJobs.lk: no listings (cat=%s page=%d), stopping.",
+                        category, page_num,
+                    )
+                    break
 
-                source_id = _make_source_id(
-                    detail["title"], detail["company"], detail.get("posted_raw", "")
-                )
+                for listing in listings:
+                    if scraped >= max_jobs:
+                        break
 
-                doc = {
-                    "title": detail["title"],
-                    "company": detail["company"],
-                    "location": detail.get("location", "Sri Lanka"),
-                    "description": detail["description"],
-                    "extractedSkills": [],
-                    "source": "topjobs_lk",
-                    "sourceId": source_id,
-                    "marketScope": "local-lk",
-                    "postedAt": detail.get("postedAt"),
-                    "scrapedAt": datetime.now(timezone.utc),
-                    "processed": False,
-                }
+                    source_id = listing["source_id"]
+                    if not source_id:
+                        continue
 
-                result = collection.update_one(
-                    {"sourceId": source_id, "source": "topjobs_lk"},
-                    {"$setOnInsert": doc},
-                    upsert=True,
-                )
-                scraped += 1
-                if result.upserted_id:
-                    inserted += 1
-                else:
-                    skipped += 1
+                    detail = _fetch_job_detail(client, listing["detail_url"])
 
-            time.sleep(_PAGE_SLEEP)
+                    # Use structured detail if available; fall back to listing values
+                    title    = detail.get("title")   or listing["title"]
+                    company  = detail.get("company") or listing["company"]
+                    location = detail.get("location") or "Sri Lanka"
 
-    logger.info("TopJobs.lk: scraped=%d inserted=%d skipped=%d", scraped, inserted, skipped)
+                    # Combine title + any detail summary for richer skill extraction
+                    summary  = detail.get("summary", "")
+                    description = f"{title}. {summary}".strip(". ") if summary else title
+
+                    if not description:
+                        continue
+
+                    doc = {
+                        "title": title,
+                        "company": company,
+                        "location": location,
+                        "description": description,
+                        "extractedSkills": [],
+                        "source": "topjobs_lk",
+                        "sourceId": source_id,
+                        "marketScope": "local-lk",
+                        "postedAt": detail.get("postedAt"),
+                        "scrapedAt": datetime.now(timezone.utc),
+                        "processed": False,
+                    }
+
+                    result = collection.update_one(
+                        {"sourceId": source_id, "source": "topjobs_lk"},
+                        {"$setOnInsert": doc},
+                        upsert=True,
+                    )
+                    scraped += 1
+                    if result.upserted_id:
+                        inserted += 1
+                    else:
+                        skipped += 1
+
+                time.sleep(_PAGE_SLEEP)
+
+    logger.info(
+        "TopJobs.lk: scraped=%d inserted=%d skipped=%d", scraped, inserted, skipped
+    )
     return {"scraped": scraped, "inserted": inserted, "skipped": skipped}
 
 
-def _fetch_listing_page(client: httpx.Client, page: int) -> list[dict]:
-    """Fetch a listing page and return a list of {title, company, detail_url} dicts."""
+# ---------------------------------------------------------------------------
+# Private helpers
+# ---------------------------------------------------------------------------
+
+def _fetch_listing_page(client: httpx.Client, category: str, page: int) -> list[dict]:
+    """
+    Fetch one listing page and return job stub dicts with:
+      { title, company, source_id, detail_url }
+    """
     try:
         resp = client.get(
-            _BASE_URL,
-            params={
-                "funct": "search",
-                "category": "Information Technology",
-                "page": page,
-            },
+            _LISTING_URL,
+            params={"funct": "search", "category": category, "page": page},
         )
         resp.raise_for_status()
     except httpx.HTTPError as exc:
-        logger.warning("TopJobs.lk listing page %d failed: %s", page, exc)
+        logger.warning("TopJobs.lk listing fetch failed (cat=%s p=%d): %s", category, page, exc)
         return []
 
     soup = BeautifulSoup(resp.text, "lxml")
     listings = []
 
-    # TopJobs renders each vacancy as a table row or div; adapt selectors to
-    # the actual site structure. These are common patterns across their layout.
-    for row in soup.select("table.vacancyTable tr, div.vacancy-item, li.job-item"):
-        title_tag = row.select_one("a.vacancyTitle, a.job-title, a[href*='ViewJobVacancyDetail']")
-        if not title_tag:
+    # Each job entry is an <a> whose href calls openSizeWindow(servletPath, ...)
+    for a_tag in soup.select('a[href*="openSizeWindow"]'):
+        href = a_tag.get("href", "")
+        servlet_match = re.search(r"openSizeWindow\('([^']+)'", href)
+        if not servlet_match:
             continue
-        company_tag = row.select_one("span.companyName, span.company, td.company")
-        listings.append(
-            {
-                "title": title_tag.get_text(strip=True),
-                "company": company_tag.get_text(strip=True) if company_tag else "",
-                "detail_url": _absolute(title_tag.get("href", "")),
-            }
-        )
+        servlet_path = servlet_match.group(1)  # e.g. "employer/JobAdvertismentServlet?..."
+
+        # Job code: unique numeric ID in the servlet URL (jc=XXXXXXXXXX)
+        jc_match = re.search(r"jc=(\d+)", servlet_path)
+        source_id = jc_match.group(1) if jc_match else None
+
+        # Company is inside an <h5> within the link
+        company_tag = a_tag.select_one("h5")
+        company = company_tag.get_text(strip=True) if company_tag else ""
+
+        # Title = all link text minus the company substring
+        raw_text = a_tag.get_text(separator=" ", strip=True)
+        title = raw_text.replace(company, "").strip()
+
+        listings.append({
+            "title": title,
+            "company": company,
+            "source_id": source_id,
+            "detail_url": f"{_BASE}/{servlet_path}",
+        })
 
     return listings
 
 
-def _fetch_job_detail(client: httpx.Client, listing: dict) -> Optional[dict]:
-    """Fetch a job detail page and extract description."""
-    url = listing.get("detail_url", "")
-    if not url:
-        return None
-
-    time.sleep(0.5)
+def _fetch_job_detail(client: httpx.Client, url: str) -> dict:
+    """
+    Fetch the job detail popup page (server-rendered).
+    Returns { title, company, location, summary, postedAt } — all optional.
+    Note: full description is not available without JavaScript rendering.
+    """
+    time.sleep(_DETAIL_SLEEP)
+    result: dict = {}
 
     try:
         resp = client.get(url)
         resp.raise_for_status()
     except httpx.HTTPError as exc:
-        logger.warning("TopJobs.lk detail fetch failed (%s): %s", url, exc)
-        return None
+        logger.debug("TopJobs.lk detail fetch failed (%s): %s", url, exc)
+        return result
 
     soup = BeautifulSoup(resp.text, "lxml")
 
-    description_tag = soup.select_one(
-        "div.jobDescription, div.vacancy-description, div#jobDescription, td.jobDescription"
-    )
-    desc = description_tag.get_text(separator=" ", strip=True) if description_tag else ""
+    title_tag   = soup.select_one("h3")
+    company_tag = soup.select_one("h5")
 
-    location_tag = soup.select_one("span.location, td.location, span.district")
-    location = location_tag.get_text(strip=True) if location_tag else "Sri Lanka"
+    if title_tag:
+        result["title"] = title_tag.get_text(strip=True)
+    if company_tag:
+        result["company"] = company_tag.get_text(strip=True)
 
-    posted_tag = soup.select_one("span.postedDate, td.postedDate, span.date-posted")
-    posted_raw = posted_tag.get_text(strip=True) if posted_tag else ""
-    posted_at = _parse_date_lk(posted_raw)
+    # Try to extract location from visible text near known keywords
+    page_text = soup.get_text(separator=" ")
+    location = _extract_field(page_text, "Location")
+    if location:
+        result["location"] = location
 
-    return {
-        "title": listing["title"],
-        "company": listing["company"],
-        "location": location,
-        "description": desc,
-        "posted_raw": posted_raw,
-        "postedAt": posted_at,
-    }
+    # Try to get closing / posted date
+    closing = _extract_field(page_text, r"Closing Date|Posted Date")
+    if closing:
+        result["postedAt"] = _parse_date(closing)
 
+    # Any plain-text summary (meta description or ld+json description)
+    meta_desc = soup.select_one('meta[name="description"]')
+    if meta_desc and meta_desc.get("content"):
+        content = meta_desc["content"].strip()
+        if len(content) > 20 and "refer" not in content.lower():
+            result["summary"] = content
 
-def _absolute(href: str) -> str:
-    if href.startswith("http"):
-        return href
-    if href.startswith("/"):
-        return "https://www.topjobs.lk" + href
-    return "https://www.topjobs.lk/" + href
-
-
-def _make_source_id(title: str, company: str, posted_raw: str) -> str:
-    raw = f"{title.lower().strip()}|{company.lower().strip()}|{posted_raw}"
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]
+    return result
 
 
-def _parse_date_lk(text: str) -> Optional[datetime]:
-    from dateutil import parser as dateparser
+def _extract_field(text: str, label_pattern: str) -> Optional[str]:
+    """Extract the value that follows a label in a block of plain text."""
+    m = re.search(rf"(?:{label_pattern})\s*[:\-]?\s*([^\n\r]{{3,80}})", text, re.IGNORECASE)
+    return m.group(1).strip() if m else None
+
+
+def _parse_date(text: str) -> Optional[datetime]:
     try:
         return dateparser.parse(text, dayfirst=True).replace(tzinfo=timezone.utc)
     except Exception:

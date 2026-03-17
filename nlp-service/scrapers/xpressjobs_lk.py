@@ -1,47 +1,58 @@
 """
-XpressJobs.lk scraper — Sri Lanka local market.
+XpressJobs.lk (xpress.jobs) scraper — Sri Lanka local market.
 
-Scrapes the public IT/Software/Engineering job listings from
-https://www.xpressjobs.lk/ using httpx + BeautifulSoup4.
+The site is a React SPA; HTML scraping is not viable. Instead we call
+the public JSON REST API it uses internally:
+
+  GET https://xpress.jobs/api/jobs/searchJobs
+      ?page=<n>&pageSize=50&keyword=&locations=
+      &sectors=30,139&jobTypes=&careerLevels=
+      &sortBy=SortedCreateDate+DESC&byCVLess=false&byWalkIn=false
+
+Sectors 30 and 139 cover IT/Software/Engineering roles.
 
 Ethics:
-- Public listing pages only; no applicant profile data.
-- 1–2 s sleep between requests; realistic User-Agent.
-- Maximum 10 pages per run.
+- Public JSON API only; no applicant profile data accessed.
+- 1 s sleep between pages; realistic User-Agent.
+- Respects X-RateLimit headers if present.
 """
 
-import hashlib
 import logging
 import time
 from datetime import datetime, timezone
 from typing import Optional
 
 import httpx
-from bs4 import BeautifulSoup
+from dateutil import parser as dateparser
 
 from config import MAX_JOBS_PER_RUN
 from db import get_db
 
 logger = logging.getLogger(__name__)
 
-_BASE_URL = "https://www.xpressjobs.lk/job-list/"
+_SEARCH_URL = "https://xpress.jobs/api/jobs/searchJobs"
+_PAGE_SIZE = 50
 _MAX_PAGES = 10
-_PAGE_SLEEP = 1.5
+_PAGE_SLEEP = 1.0
+
+# IT / Software / Engineering sector IDs on xpress.jobs
+_IT_SECTORS = "30,139"
 
 _HEADERS = {
     "User-Agent": (
-        "Mozilla/5.0 (compatible; CareerIntelligenceBot/1.0; "
-        "+https://github.com/your-org/ai-career-intelligence)"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
     ),
+    "Accept": "application/json, text/plain, */*",
+    "Referer": "https://xpress.jobs/jobs?Sectors=30%2C139",
     "Accept-Language": "en-US,en;q=0.9",
 }
-
-_IT_SLUGS = ["information-technology", "software-qa", "engineering"]
 
 
 def scrape(max_jobs: int = MAX_JOBS_PER_RUN) -> dict:
     """
-    Scrape IT job listings from XpressJobs.lk and upsert into job_postings.
+    Fetch IT job listings from the XpressJobs REST API and upsert into job_postings.
 
     Returns:
         { scraped, inserted, skipped }
@@ -51,150 +62,111 @@ def scrape(max_jobs: int = MAX_JOBS_PER_RUN) -> dict:
 
     scraped = inserted = skipped = 0
 
-    with httpx.Client(
-        timeout=30,
-        headers=_HEADERS,
-        follow_redirects=True,
-    ) as client:
-        for category_slug in _IT_SLUGS:
-            for page_num in range(1, _MAX_PAGES + 1):
+    with httpx.Client(timeout=30, headers=_HEADERS, follow_redirects=True) as client:
+        for page_num in range(1, _MAX_PAGES + 1):
+            if scraped >= max_jobs:
+                break
+
+            jobs = _fetch_page(client, page_num)
+            if not jobs:
+                logger.info("XpressJobs: no results on page %d, stopping.", page_num)
+                break
+
+            for job in jobs:
                 if scraped >= max_jobs:
                     break
 
-                listings = _fetch_listing_page(client, category_slug, page_num)
-                if not listings:
-                    logger.info(
-                        "XpressJobs.lk: no listings (cat=%s page=%d), stopping.",
-                        category_slug, page_num,
-                    )
-                    break
+                source_id = str(job.get("jobId", ""))
+                if not source_id:
+                    continue
 
-                for listing in listings:
-                    if scraped >= max_jobs:
-                        break
+                # Combine title + overview for richer skill extraction
+                title = (job.get("jobTitle") or "").strip()
+                overview = (job.get("overview") or "").strip()
+                description = f"{title}. {overview}" if overview else title
 
-                    detail = _fetch_job_detail(client, listing)
-                    if not detail or not detail.get("description"):
-                        continue
+                # Skip entries with no useful text
+                if not description:
+                    continue
 
-                    source_id = _make_source_id(
-                        detail["title"], detail["company"], detail.get("posted_raw", "")
-                    )
+                doc = {
+                    "title": title,
+                    "company": (job.get("organizationName") or "").strip(),
+                    "location": _parse_location(job.get("locations")),
+                    "description": description,
+                    "extractedSkills": [],
+                    "source": "xpressjobs_lk",
+                    "sourceId": source_id,
+                    "marketScope": "local-lk",
+                    "postedAt": _parse_expiry(job.get("expiryDateOnWebsite")),
+                    "scrapedAt": datetime.now(timezone.utc),
+                    "processed": False,
+                }
 
-                    doc = {
-                        "title": detail["title"],
-                        "company": detail["company"],
-                        "location": detail.get("location", "Sri Lanka"),
-                        "description": detail["description"],
-                        "extractedSkills": [],
-                        "source": "xpressjobs_lk",
-                        "sourceId": source_id,
-                        "marketScope": "local-lk",
-                        "postedAt": detail.get("postedAt"),
-                        "scrapedAt": datetime.now(timezone.utc),
-                        "processed": False,
-                    }
+                result = collection.update_one(
+                    {"sourceId": source_id, "source": "xpressjobs_lk"},
+                    {"$setOnInsert": doc},
+                    upsert=True,
+                )
+                scraped += 1
+                if result.upserted_id:
+                    inserted += 1
+                else:
+                    skipped += 1
 
-                    result = collection.update_one(
-                        {"sourceId": source_id, "source": "xpressjobs_lk"},
-                        {"$setOnInsert": doc},
-                        upsert=True,
-                    )
-                    scraped += 1
-                    if result.upserted_id:
-                        inserted += 1
-                    else:
-                        skipped += 1
+            time.sleep(_PAGE_SLEEP)
 
-                time.sleep(_PAGE_SLEEP)
-
-    logger.info("XpressJobs.lk: scraped=%d inserted=%d skipped=%d", scraped, inserted, skipped)
+    logger.info(
+        "XpressJobs: scraped=%d inserted=%d skipped=%d", scraped, inserted, skipped
+    )
     return {"scraped": scraped, "inserted": inserted, "skipped": skipped}
 
 
-def _fetch_listing_page(client: httpx.Client, category: str, page: int) -> list[dict]:
-    """Fetch a category listing page and return job stub dicts."""
-    url = f"{_BASE_URL}{category}/page/{page}/"
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _fetch_page(client: httpx.Client, page: int) -> list[dict]:
+    """Call the searchJobs API and return the list of job dicts."""
+    params = {
+        "page": page,
+        "pageSize": _PAGE_SIZE,
+        "keyword": "",
+        "locations": "",
+        "sectors": _IT_SECTORS,
+        "jobTypes": "",
+        "careerLevels": "",
+        "sortBy": "SortedCreateDate DESC",
+        "byCVLess": "false",
+        "byWalkIn": "false",
+    }
     try:
-        resp = client.get(url)
+        resp = client.get(_SEARCH_URL, params=params)
         resp.raise_for_status()
-    except httpx.HTTPError as exc:
-        logger.warning("XpressJobs.lk listing failed (%s p%d): %s", category, page, exc)
+        data = resp.json()
+    except Exception as exc:
+        logger.warning("XpressJobs: page %d fetch failed: %s", page, exc)
         return []
 
-    soup = BeautifulSoup(resp.text, "lxml")
-    listings = []
+    if not isinstance(data, list):
+        logger.warning("XpressJobs: unexpected response type: %s", type(data))
+        return []
 
-    # XpressJobs uses WordPress-based job board layouts (WP Job Manager / similar).
-    for article in soup.select("li.job_listing, article.job_listing, div.job-listing"):
-        title_tag = article.select_one("h3 a, h2 a, .job-title a, a.position")
-        if not title_tag:
-            continue
-        company_tag = article.select_one(
-            ".company strong, .company-name, span.company, .job_listing-company"
-        )
-        listings.append(
-            {
-                "title": title_tag.get_text(strip=True),
-                "company": company_tag.get_text(strip=True) if company_tag else "",
-                "detail_url": title_tag.get("href", ""),
-            }
-        )
-
-    return listings
+    return data
 
 
-def _fetch_job_detail(client: httpx.Client, listing: dict) -> Optional[dict]:
-    """Fetch a job detail page and extract full description."""
-    url = listing.get("detail_url", "")
-    if not url:
+def _parse_location(raw: Optional[str]) -> str:
+    if not raw:
+        return "Sri Lanka"
+    cleaned = raw.strip().strip(",").strip()
+    return cleaned or "Sri Lanka"
+
+
+def _parse_expiry(raw: Optional[str]) -> Optional[datetime]:
+    """Parse ISO expiry date string into a UTC datetime (best-available date proxy)."""
+    if not raw:
         return None
-
-    time.sleep(0.5)
-
     try:
-        resp = client.get(url)
-        resp.raise_for_status()
-    except httpx.HTTPError as exc:
-        logger.warning("XpressJobs.lk detail failed (%s): %s", url, exc)
-        return None
-
-    soup = BeautifulSoup(resp.text, "lxml")
-
-    desc_tag = soup.select_one(
-        "div.job_description, div.job-description, section.job-description, div#job-description"
-    )
-    desc = desc_tag.get_text(separator=" ", strip=True) if desc_tag else ""
-
-    location_tag = soup.select_one(
-        "li.location span, span.location, .job-location, dd.location"
-    )
-    location = location_tag.get_text(strip=True) if location_tag else "Sri Lanka"
-
-    posted_tag = soup.select_one(
-        "li.date-posted span, time.entry-date, span.date, .posted-date"
-    )
-    posted_raw = posted_tag.get_text(strip=True) if posted_tag else ""
-    posted_at = _parse_date_lk(posted_raw)
-
-    return {
-        "title": listing["title"],
-        "company": listing["company"],
-        "location": location,
-        "description": desc,
-        "posted_raw": posted_raw,
-        "postedAt": posted_at,
-    }
-
-
-def _make_source_id(title: str, company: str, posted_raw: str) -> str:
-    raw = f"{title.lower().strip()}|{company.lower().strip()}|{posted_raw}"
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]
-
-
-def _parse_date_lk(text: str) -> Optional[datetime]:
-    from dateutil import parser as dateparser
-    try:
-        return dateparser.parse(text, dayfirst=True).replace(tzinfo=timezone.utc)
+        return dateparser.parse(raw).replace(tzinfo=timezone.utc)
     except Exception:
         return None
