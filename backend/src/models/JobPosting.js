@@ -27,4 +27,4 @@ jobPostingSchema.index({ scrapedAt: -1 });
 jobPostingSchema.index({ processed: 1 });
 jobPostingSchema.index({ marketScope: 1, scrapedAt: -1 });
 
-module.exports = mongoose.model("JobPosting", jobPostingSchema);
+module.exports = mongoose.model("JobPosting", jobPostingSchema, "job_postings");
