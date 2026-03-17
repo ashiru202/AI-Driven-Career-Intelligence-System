@@ -197,6 +197,94 @@ const refreshResources = asyncHandler(async (req, res) => {
   }, 'Resources refreshed successfully'));
 });
 
+// Progress summary across all user roadmaps
+const getProgressSummary = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  const roadmaps = await Roadmap.find({ user: userId })
+    .sort({ createdAt: -1 })
+    .select('targetRole jobTitle skillsToLearn createdAt updatedAt');
+
+  let totalSkills = 0;
+  let completedSkills = 0;
+  let inProgressSkills = 0;
+  let pendingSkills = 0;
+  let totalEstWeeks = 0;
+  let estimatedHoursInvested = 0;
+  const allSkills = [];
+
+  const roadmapSummaries = roadmaps.map(roadmap => {
+    const skills = roadmap.skillsToLearn || [];
+    const total = skills.length;
+    const completed = skills.filter(s => s.status === 'COMPLETED').length;
+    const inProgress = skills.filter(s => s.status === 'IN_PROGRESS').length;
+    const pending = skills.filter(s => s.status === 'PENDING').length;
+    const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const weeksRemaining = skills
+      .filter(s => s.status !== 'COMPLETED')
+      .reduce((sum, s) => sum + (s.estimateWeeks || 0), 0);
+
+    totalSkills += total;
+    completedSkills += completed;
+    inProgressSkills += inProgress;
+    pendingSkills += pending;
+    totalEstWeeks += weeksRemaining;
+
+    // Estimate hours: completed skills earn full weeks × 5h; in-progress earn half
+    skills.forEach(s => {
+      const weeks = s.estimateWeeks || 1;
+      if (s.status === 'COMPLETED') estimatedHoursInvested += weeks * 5;
+      else if (s.status === 'IN_PROGRESS') estimatedHoursInvested += weeks * 2.5;
+    });
+
+    skills.forEach(s => {
+      allSkills.push({
+        skill: s.skill,
+        status: s.status,
+        estimateWeeks: s.estimateWeeks || 1,
+        roadmapTitle: roadmap.targetRole,
+        roadmapId: roadmap._id,
+      });
+    });
+
+    return {
+      id: roadmap._id,
+      targetRole: roadmap.targetRole,
+      jobTitle: roadmap.jobTitle,
+      createdAt: roadmap.createdAt,
+      updatedAt: roadmap.updatedAt,
+      totalSkills: total,
+      completedSkills: completed,
+      inProgressSkills: inProgress,
+      pendingSkills: pending,
+      progress,
+      estimatedWeeksRemaining: weeksRemaining,
+    };
+  });
+
+  const overallProgress = totalSkills > 0
+    ? Math.round((completedSkills / totalSkills) * 100)
+    : 0;
+
+  const activeRoadmaps = roadmapSummaries.filter(
+    r => r.progress > 0 && r.progress < 100
+  ).length;
+
+  res.json(successResponse({
+    totalRoadmaps: roadmaps.length,
+    activeRoadmaps,
+    totalSkills,
+    completedSkills,
+    inProgressSkills,
+    pendingSkills,
+    overallProgress,
+    estimatedWeeksRemaining: totalEstWeeks,
+    estimatedHoursInvested: Math.round(estimatedHoursInvested * 10) / 10,
+    roadmaps: roadmapSummaries,
+    allSkills,
+  }));
+});
+
 // Delete roadmap
 const deleteRoadmap = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -216,6 +304,7 @@ const deleteRoadmap = asyncHandler(async (req, res) => {
 module.exports = {
   createRoadmap,
   getUserRoadmaps,
+  getProgressSummary,
   getRoadmapDetails,
   updateSkillStatus,
   refreshResources,

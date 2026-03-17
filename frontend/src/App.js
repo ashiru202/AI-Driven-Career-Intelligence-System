@@ -25,6 +25,8 @@ import AdminReport from "./pages/AdminReport";
 import AuditLog from "./pages/AuditLog";
 import JobPostings from "./pages/JobPostings";
 import SkillsInDemand from "./pages/SkillsInDemand";
+import JobTracker from "./pages/JobTracker";
+import ProgressTracking from "./pages/ProgressTracking";
 import TrendsPage from "./pages/TrendsPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -137,6 +139,17 @@ export default function App() {
             <ProtectedRoute>
               <RoleRoute roles={["USER"]}>
                 <TrendsPage />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/progress"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["USER"]}>
+                <ProgressTracking />
               </RoleRoute>
             </ProtectedRoute>
           }
