@@ -201,7 +201,15 @@ const deleteResume = asyncHandler(async (req, res) => {
   }
 
   // Delete file from filesystem
-  await fs.unlink(resume.filePath).catch(() => {});
+  try {
+    // Check if file exists before attempting deletion
+    await fs.access(resume.filePath);
+    await fs.unlink(resume.filePath);
+    console.log(`[Resume] Deleted file: ${resume.filePath}`);
+  } catch (err) {
+    // File might already be deleted or path is invalid - log but continue
+    console.warn(`[Resume] Could not delete file ${resume.filePath}:`, err.message);
+  }
 
   // Delete from database
   await Resume.deleteOne({ _id: id });

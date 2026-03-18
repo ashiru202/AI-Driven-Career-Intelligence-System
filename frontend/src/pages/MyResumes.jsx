@@ -42,11 +42,11 @@ function ResumeCard({ resume, onDelete, onView, onCompare }) {
   };
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all duration-200 hover:shadow-lg hover:shadow-black/20">
+    <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all duration-200 hover:shadow-lg hover:shadow-black/20 flex flex-col h-full">
       {/* Top accent line */}
       <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
-      <div className="p-5">
+      <div className="p-5 flex flex-col flex-1">
         {/* Header row */}
         <div className="flex gap-4 items-start">
           <FileIcon name={resume.fileName} />
@@ -70,7 +70,7 @@ function ResumeCard({ resume, onDelete, onView, onCompare }) {
         </div>
 
         {/* Skills section */}
-        <div className="mt-4">
+        <div className="mt-4 flex-1">
           <div className="flex items-center gap-1.5 mb-2">
             <Tag size={12} className="text-slate-400" />
             <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -121,7 +121,7 @@ function ResumeCard({ resume, onDelete, onView, onCompare }) {
           </div>
         )}
 
-        {/* Actions */}
+        {/* Actions - pushed to bottom */}
         <div className="flex gap-2 mt-4">
           <button
             onClick={() => onView(resume._id, resume.fileName)}

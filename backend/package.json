@@ -14,7 +14,9 @@
     "test:roadmap": "jest --testPathPattern=roadmap --runInBand --forceExit",
     "test:analytics": "jest --testPathPattern=analytics --runInBand --forceExit",
     "test:resume": "jest --testPathPattern=resume --runInBand --forceExit",
-    "test:trends": "jest --testPathPatterns=trends --runInBand --forceExit"
+    "test:trends": "jest --testPathPatterns=trends --runInBand --forceExit",
+    "cleanup:resumes": "node scripts/cleanupOrphanedResumes.js",
+    "cleanup:resumes:dry-run": "node scripts/cleanupOrphanedResumes.js --dry-run"
   },
   "jest": {
     "testEnvironment": "node",

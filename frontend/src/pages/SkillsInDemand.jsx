@@ -9,9 +9,9 @@ function BarChart({ data, isFirstRender }) {
 
   const maxValue = Math.max(...data.map(d => d.value));
   const chartHeight = 280;
-  const chartWidth = 600;
-  const barWidth = Math.min(50, (chartWidth - 80) / data.length);
-  const gap = Math.min(20, barWidth * 0.4);
+  const barWidth = 50;
+  const gap = 20;
+  const chartWidth = data.length * (barWidth + gap) + 80;
 
   return (
     <div style={{
@@ -23,9 +23,9 @@ function BarChart({ data, isFirstRender }) {
       padding: "20px 0",
     }}>
       <svg
-        width={Math.min(chartWidth, data.length * (barWidth + gap) + 80)}
+        width={chartWidth}
         height={chartHeight + 60}
-        style={{ overflow: "visible" }}
+        style={{ display: "block", margin: "0 auto" }}
       >
         {/* Y-axis labels */}
         {[0, 25, 50, 75, 100].map((tick, i) => {
@@ -349,15 +349,18 @@ export default function SkillsInDemand() {
                 borderRadius: 20,
                 background: "rgba(255,255,255,0.03)",
                 border: "1px solid rgba(255,255,255,0.07)",
-                padding: "24px 28px",
+                padding: "32px 28px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
               }}
             >
-              <div style={{ marginBottom: 20 }}>
+              <div style={{ marginBottom: 24, textAlign: "center" }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: "#e2e8f0", margin: 0 }}>
                   Top Skills Demand
                 </h2>
                 <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginTop: 4, marginBottom: 0 }}>
-                  Visual representation of the most in-demand skills
+                  Visual representation of the most in-demand skills (updates every 30s)
                 </p>
               </div>
 
@@ -368,95 +371,6 @@ export default function SkillsInDemand() {
                 }))}
                 isFirstRender={isFirstRender.current}
               />
-            </div>
-
-            {/* ── Top Skills Ranking ── */}
-            <div
-              style={{
-                borderRadius: 20,
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                padding: "24px 28px",
-              }}
-            >
-              <div style={{ marginBottom: 20 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: "#e2e8f0", margin: 0 }}>
-                  Detailed Rankings
-                </h2>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginTop: 4, marginBottom: 0 }}>
-                  Complete breakdown of all tracked skills
-                </p>
-              </div>
-
-              {/* Skills List */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {topSkills.map((item, idx) => {
-                  const rank = idx + 1;
-                  const isTop3 = rank <= 3;
-
-                  return (
-                    <div
-                      key={idx}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: "10px 14px",
-                        borderRadius: 10,
-                        background: isTop3 ? "rgba(65,105,255,0.08)" : "rgba(255,255,255,0.02)",
-                        border: isTop3 ? "1px solid rgba(65,105,255,0.2)" : "1px solid rgba(255,255,255,0.05)",
-                      }}
-                    >
-                      {/* Rank */}
-                      <div style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 8,
-                        background: isTop3 ? "rgba(65,105,255,0.15)" : "rgba(255,255,255,0.04)",
-                        border: isTop3 ? "1.5px solid rgba(65,105,255,0.3)" : "1px solid rgba(255,255,255,0.08)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}>
-                        {isTop3 ? (
-                          <Trophy size={16} style={{ color: rank === 1 ? "#fbbf24" : rank === 2 ? "#cbd5e1" : "#d4a06a" }} />
-                        ) : (
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>
-                            {rank}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Skill Name */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <span style={{
-                          fontSize: 14,
-                          fontWeight: rank === 1 ? 700 : 500,
-                          color: rank === 1 ? "#e0e7ff" : "rgba(241,245,249,0.85)",
-                          textTransform: "capitalize",
-                        }}>
-                          {item.skill}
-                        </span>
-                      </div>
-
-                      {/* Count Badge */}
-                      <span style={{
-                        flexShrink: 0,
-                        fontSize: 13,
-                        fontWeight: 600,
-                        background: isTop3 ? "rgba(65,105,255,0.2)" : "rgba(255,255,255,0.08)",
-                        border: isTop3 ? "1px solid rgba(65,105,255,0.3)" : "1px solid rgba(255,255,255,0.1)",
-                        color: isTop3 ? "#a5b4fc" : "rgba(255,255,255,0.5)",
-                        padding: "4px 12px",
-                        borderRadius: 9999,
-                      }}>
-                        {item.count} jobs
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
 
             {/* ── Category breakdown (compact chips) ── */}
