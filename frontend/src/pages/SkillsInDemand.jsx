@@ -3,27 +3,120 @@ import Layout from "../components/Layout";
 import api from "../api/api";
 import { Trophy, Hash, Briefcase, TrendingUp, AlertTriangle, BarChart2, RefreshCw } from "lucide-react";
 
-// ─── Simple Progress Bar ──────────────────────────────────────────────────────
-function ProgressBar({ pct, isFirstRender }) {
+// ─── Bar Chart Component ──────────────────────────────────────────────────────
+function BarChart({ data, isFirstRender }) {
+  if (!data || data.length === 0) return null;
+
+  const maxValue = Math.max(...data.map(d => d.value));
+  const chartHeight = 280;
+  const chartWidth = 600;
+  const barWidth = Math.min(50, (chartWidth - 80) / data.length);
+  const gap = Math.min(20, barWidth * 0.4);
+
   return (
     <div style={{
       width: "100%",
-      background: "rgba(255,255,255,0.06)",
-      borderRadius: 9999,
-      height: 8,
-      overflow: "hidden",
+      height: chartHeight + 60,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "20px 0",
     }}>
-      <div style={{
-        height: 8,
-        borderRadius: 9999,
-        background: "linear-gradient(90deg, #6366f1, #8b5cf6)",
-        width: `${Math.min(pct, 100)}%`,
-        animation: isFirstRender ? "growBar 0.9s cubic-bezier(0.22,1,0.36,1) both" : "none",
-        transition: isFirstRender ? "none" : "width 0.5s cubic-bezier(0.22,1,0.36,1)",
-      }} />
-      <style>{`
-        @keyframes growBar { from { width: 0% } }
-      `}</style>
+      <svg
+        width={Math.min(chartWidth, data.length * (barWidth + gap) + 80)}
+        height={chartHeight + 60}
+        style={{ overflow: "visible" }}
+      >
+        {/* Y-axis labels */}
+        {[0, 25, 50, 75, 100].map((tick, i) => {
+          const y = chartHeight - (tick / 100) * chartHeight + 10;
+          return (
+            <text
+              key={`y-${i}`}
+              x="0"
+              y={y}
+              fill="rgba(255,255,255,0.3)"
+              fontSize="11"
+              textAnchor="start"
+              dominantBaseline="middle"
+            >
+              {Math.round((tick / 100) * maxValue)}
+            </text>
+          );
+        })}
+
+        {/* Bars */}
+        {data.map((item, idx) => {
+          const barHeight = (item.value / maxValue) * chartHeight;
+          const x = 40 + idx * (barWidth + gap);
+          const y = chartHeight - barHeight + 10;
+
+          return (
+            <g key={idx}>
+              {/* Bar */}
+              <rect
+                x={x}
+                y={isFirstRender ? chartHeight + 10 : y}
+                width={barWidth}
+                height={isFirstRender ? 0 : barHeight}
+                rx="4"
+                fill="#4169FF"
+                style={{
+                  animation: isFirstRender ? `growBarHeight-${idx} 0.8s cubic-bezier(0.22,1,0.36,1) ${idx * 0.05}s forwards` : "none",
+                  transition: isFirstRender ? "none" : "height 0.5s cubic-bezier(0.22,1,0.36,1), y 0.5s cubic-bezier(0.22,1,0.36,1)",
+                }}
+              />
+
+              {/* X-axis label */}
+              <text
+                x={x + barWidth / 2}
+                y={chartHeight + 30}
+                fill="rgba(255,255,255,0.4)"
+                fontSize="12"
+                textAnchor="middle"
+                fontWeight="500"
+              >
+                {item.label}
+              </text>
+
+              {/* Value on top of bar */}
+              <text
+                x={x + barWidth / 2}
+                y={y - 8}
+                fill="rgba(255,255,255,0.6)"
+                fontSize="11"
+                textAnchor="middle"
+                fontWeight="600"
+                style={{
+                  opacity: isFirstRender ? 0 : 1,
+                  animation: isFirstRender ? `fadeIn 0.3s ease-out ${idx * 0.05 + 0.6}s forwards` : "none",
+                }}
+              >
+                {item.value}
+              </text>
+            </g>
+          );
+        })}
+
+        <style>{`
+          ${data.map((_, idx) => `
+            @keyframes growBarHeight-${idx} {
+              from {
+                height: 0;
+                y: ${chartHeight + 10};
+              }
+              to {
+                height: ${(data[idx].value / maxValue) * chartHeight}px;
+                y: ${chartHeight - (data[idx].value / maxValue) * chartHeight + 10}px;
+              }
+            }
+          `).join('')}
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+        `}</style>
+      </svg>
     </div>
   );
 }
@@ -250,6 +343,33 @@ export default function SkillsInDemand() {
               />
             </div>
 
+            {/* ── Skills Demand Chart ── */}
+            <div
+              style={{
+                borderRadius: 20,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                padding: "24px 28px",
+              }}
+            >
+              <div style={{ marginBottom: 20 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: "#e2e8f0", margin: 0 }}>
+                  Top Skills Demand
+                </h2>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginTop: 4, marginBottom: 0 }}>
+                  Visual representation of the most in-demand skills
+                </p>
+              </div>
+
+              <BarChart
+                data={topSkills.slice(0, 10).map(item => ({
+                  label: item.skill.length > 10 ? item.skill.substring(0, 10) + '...' : item.skill,
+                  value: item.count,
+                }))}
+                isFirstRender={isFirstRender.current}
+              />
+            </div>
+
             {/* ── Top Skills Ranking ── */}
             <div
               style={{
@@ -261,18 +381,17 @@ export default function SkillsInDemand() {
             >
               <div style={{ marginBottom: 20 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: "#e2e8f0", margin: 0 }}>
-                  Top Skills Ranking
+                  Detailed Rankings
                 </h2>
                 <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginTop: 4, marginBottom: 0 }}>
-                  Based on recurring skills across all job comparisons on the platform
+                  Complete breakdown of all tracked skills
                 </p>
               </div>
 
               {/* Skills List */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {topSkills.map((item, idx) => {
                   const rank = idx + 1;
-                  const pct = Math.round((item.count / maxCount) * 100);
                   const isTop3 = rank <= 3;
 
                   return (
@@ -282,8 +401,10 @@ export default function SkillsInDemand() {
                         display: "flex",
                         alignItems: "center",
                         gap: 12,
-                        padding: "12px 0",
-                        borderBottom: idx < topSkills.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                        padding: "10px 14px",
+                        borderRadius: 10,
+                        background: isTop3 ? "rgba(65,105,255,0.08)" : "rgba(255,255,255,0.02)",
+                        border: isTop3 ? "1px solid rgba(65,105,255,0.2)" : "1px solid rgba(255,255,255,0.05)",
                       }}
                     >
                       {/* Rank */}
@@ -291,8 +412,8 @@ export default function SkillsInDemand() {
                         width: 32,
                         height: 32,
                         borderRadius: 8,
-                        background: isTop3 ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.04)",
-                        border: isTop3 ? "1.5px solid rgba(99,102,241,0.3)" : "1px solid rgba(255,255,255,0.08)",
+                        background: isTop3 ? "rgba(65,105,255,0.15)" : "rgba(255,255,255,0.04)",
+                        border: isTop3 ? "1.5px solid rgba(65,105,255,0.3)" : "1px solid rgba(255,255,255,0.08)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -307,36 +428,31 @@ export default function SkillsInDemand() {
                         )}
                       </div>
 
-                      {/* Skill Name & Bar */}
+                      {/* Skill Name */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                          <span style={{
-                            fontSize: 14,
-                            fontWeight: rank === 1 ? 700 : 500,
-                            color: rank === 1 ? "#e0e7ff" : "rgba(241,245,249,0.85)",
-                            textTransform: "capitalize",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}>
-                            {item.skill}
-                          </span>
-                          <span style={{
-                            marginLeft: 12,
-                            flexShrink: 0,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            background: isTop3 ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.08)",
-                            border: isTop3 ? "1px solid rgba(99,102,241,0.3)" : "1px solid rgba(255,255,255,0.1)",
-                            color: isTop3 ? "#a5b4fc" : "rgba(255,255,255,0.5)",
-                            padding: "3px 10px",
-                            borderRadius: 9999,
-                          }}>
-                            {item.count}
-                          </span>
-                        </div>
-                        <ProgressBar pct={pct} isFirstRender={isFirstRender.current} />
+                        <span style={{
+                          fontSize: 14,
+                          fontWeight: rank === 1 ? 700 : 500,
+                          color: rank === 1 ? "#e0e7ff" : "rgba(241,245,249,0.85)",
+                          textTransform: "capitalize",
+                        }}>
+                          {item.skill}
+                        </span>
                       </div>
+
+                      {/* Count Badge */}
+                      <span style={{
+                        flexShrink: 0,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        background: isTop3 ? "rgba(65,105,255,0.2)" : "rgba(255,255,255,0.08)",
+                        border: isTop3 ? "1px solid rgba(65,105,255,0.3)" : "1px solid rgba(255,255,255,0.1)",
+                        color: isTop3 ? "#a5b4fc" : "rgba(255,255,255,0.5)",
+                        padding: "4px 12px",
+                        borderRadius: 9999,
+                      }}>
+                        {item.count} jobs
+                      </span>
                     </div>
                   );
                 })}
