@@ -320,8 +320,13 @@ async def extract_skills(input_data: TextInput):
     This is kept as a reliable fallback. Primary extraction is now done
     via Groq AI in the backend.
     """
-    if not input_data.text or len(input_data.text.strip()) == 0:
+    # Handle None or missing text
+    if input_data.text is None:
         raise HTTPException(status_code=400, detail="Text input is required")
+
+    # Handle empty string - return empty skills list
+    if len(input_data.text.strip()) == 0:
+        return SkillsResponse(skills=[])
 
     try:
         skills = extract_skills_from_text(input_data.text)
