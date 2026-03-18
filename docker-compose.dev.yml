@@ -1,0 +1,78 @@
+services:
+  # ── MongoDB ──────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    command: mongod --quiet
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── NLP Microservice (Python / FastAPI) ───────────────────────────────────────
+  nlp-service:
+    build:
+      context: ./nlp-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - huggingface_cache:/root/.cache/huggingface
+    env_file:
+      - path: ./nlp-service/.env
+        required: false
+    environment:
+      MONGO_URI: mongodb://mongo:27017/career-intelligence
+      ADZUNA_APP_ID: ${ADZUNA_APP_ID:-}
+      ADZUNA_APP_KEY: ${ADZUNA_APP_KEY:-}
+      REMOTIVE_ENABLED: "true"
+      TOPJOBS_ENABLED: "true"
+      XPRESSJOBS_ENABLED: "true"
+      SCRAPE_INTERVAL_HOURS: "24"
+      MAX_JOBS_PER_RUN: "200"
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-changeme}
+      MIN_DATA_POINTS: "2"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  # ── Backend API (Node.js / Express) ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      NODE_ENV: development
+      PORT: 5001
+      MONGO_URI: mongodb://mongo:27017/career-intelligence
+      NLP_SERVICE_URL: http://nlp-service:8000
+      CORS_ORIGIN: http://localhost:3000
+      CLIENT_URL: http://localhost:3000
+      NLP_INTERNAL_TOKEN: ${INTERNAL_TOKEN:-changeme}
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+      nlp-service:
+        condition: service_healthy
+
+# ── Named volumes ─────────────────────────────────────────────────────────────
+volumes:
+  mongo_data:
+  huggingface_cache:
+  backend_uploads:
