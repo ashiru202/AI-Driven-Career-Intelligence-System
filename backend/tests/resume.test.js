@@ -133,17 +133,24 @@ describe('GET /api/resumes', () => {
   });
 
   it('returns list of resumes for authenticated user', async () => {
-    // Match the actual controller chain: .find().select().sort()
+    // Mock countDocuments for pagination
+    Resume.countDocuments = jest.fn().mockResolvedValue(1);
+
+    // Match the actual controller chain: .find().select().sort().skip().limit()
     Resume.find = jest.fn().mockReturnValue({
       select: jest.fn().mockReturnValue({
-        sort: jest.fn().mockResolvedValue([
-          {
-            _id: 'bbbbbbbbbbbbbbbbbbbbbbbb',
-            originalName: 'cv.pdf',
-            extractedSkills: ['javascript'],
-            createdAt: new Date()
-          }
-        ])
+        sort: jest.fn().mockReturnValue({
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockResolvedValue([
+              {
+                _id: 'bbbbbbbbbbbbbbbbbbbbbbbb',
+                originalName: 'cv.pdf',
+                extractedSkills: ['javascript'],
+                createdAt: new Date()
+              }
+            ])
+          })
+        })
       })
     });
 
