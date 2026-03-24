@@ -56,7 +56,7 @@ services:
       context: ./backend
     restart: unless-stopped
     ports:
-      - "5001:5000"
+      - "5001:5001"
     # Load API keys (GROQ_API_KEY, GEMINI_API_KEY, SMTP_*, etc.) from the local
     # backend/.env file.  Copy backend/.env.example → backend/.env and fill in
     # your keys before running docker compose up.
