@@ -92,6 +92,10 @@ async def start_scheduler():
     scheduler.start()
     logger.info("Scheduler started — pipeline will run every %sh.", SCRAPE_INTERVAL_HOURS)
 
+    # Run pipeline immediately on startup (non-blocking)
+    logger.info("Running initial pipeline on startup...")
+    asyncio.create_task(run_daily_pipeline())
+
 class TextInput(BaseModel):
     text: str
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate, Navigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FileText, Target, Map, BarChart2, Lock, TrendingUp, User, Upload, Search, Rocket, GraduationCap, Globe, Bot, Unlock, Play, Heart } from "lucide-react";
 
 /* ─────────────────────────────────────────────
@@ -87,7 +87,7 @@ function TypeWriter({ words, speed = 80, pause = 1800 }) {
 /* ════════════════════════════════════════════
    NAVBAR
 ════════════════════════════════════════════ */
-function Navbar() {
+function Navbar({ isLoggedIn, role }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -100,6 +100,13 @@ function Navbar() {
   const scrollTo = (id) => {
     setMenuOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Determine dashboard path based on role
+  const getDashboardPath = () => {
+    if (role === "ADMIN") return "/admin";
+    if (role === "STAFF") return "/staff";
+    return "/dashboard";
   };
 
   return (
@@ -141,31 +148,49 @@ function Navbar() {
 
         {/* CTA buttons */}
         <div className="hidden md:flex" style={{ gap: 10 }}>
-          <Link
-            to="/login"
-            style={{
-              padding: "9px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600,
-              border: "1.5px solid rgba(255,255,255,0.2)", color: "#fff",
-              textDecoration: "none", transition: "border-color 0.2s, background 0.2s",
-            }}
-            onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.08)"; e.target.style.borderColor = "rgba(255,255,255,0.4)"; }}
-            onMouseLeave={(e) => { e.target.style.background = "none"; e.target.style.borderColor = "rgba(255,255,255,0.2)"; }}
-          >
-            Log In
-          </Link>
-          <Link
-            to="/register"
-            style={{
-              padding: "9px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600,
-              background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff",
-              textDecoration: "none", boxShadow: "0 4px 15px rgba(99,102,241,0.4)",
-              transition: "opacity 0.2s, transform 0.2s",
-            }}
-            onMouseEnter={(e) => { e.target.style.opacity = "0.88"; e.target.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={(e) => { e.target.style.opacity = "1"; e.target.style.transform = "translateY(0)"; }}
-          >
-            Get Started Free
-          </Link>
+          {isLoggedIn ? (
+            <Link
+              to={getDashboardPath()}
+              style={{
+                padding: "9px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600,
+                background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff",
+                textDecoration: "none", boxShadow: "0 4px 15px rgba(99,102,241,0.4)",
+                transition: "opacity 0.2s, transform 0.2s",
+              }}
+              onMouseEnter={(e) => { e.target.style.opacity = "0.88"; e.target.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={(e) => { e.target.style.opacity = "1"; e.target.style.transform = "translateY(0)"; }}
+            >
+              Go to Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                style={{
+                  padding: "9px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600,
+                  border: "1.5px solid rgba(255,255,255,0.2)", color: "#fff",
+                  textDecoration: "none", transition: "border-color 0.2s, background 0.2s",
+                }}
+                onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.08)"; e.target.style.borderColor = "rgba(255,255,255,0.4)"; }}
+                onMouseLeave={(e) => { e.target.style.background = "none"; e.target.style.borderColor = "rgba(255,255,255,0.2)"; }}
+              >
+                Log In
+              </Link>
+              <Link
+                to="/register"
+                style={{
+                  padding: "9px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600,
+                  background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff",
+                  textDecoration: "none", boxShadow: "0 4px 15px rgba(99,102,241,0.4)",
+                  transition: "opacity 0.2s, transform 0.2s",
+                }}
+                onMouseEnter={(e) => { e.target.style.opacity = "0.88"; e.target.style.transform = "translateY(-1px)"; }}
+                onMouseLeave={(e) => { e.target.style.opacity = "1"; e.target.style.transform = "translateY(0)"; }}
+              >
+                Get Started Free
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile hamburger */}
@@ -189,8 +214,14 @@ function Navbar() {
             </button>
           ))}
           <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
-            <Link to="/login" style={{ flex: 1, textAlign: "center", padding: "10px", borderRadius: 8, border: "1.5px solid rgba(255,255,255,0.2)", color: "#fff", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>Log In</Link>
-            <Link to="/register" style={{ flex: 1, textAlign: "center", padding: "10px", borderRadius: 8, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>Sign Up</Link>
+            {isLoggedIn ? (
+              <Link to={getDashboardPath()} style={{ flex: 1, textAlign: "center", padding: "10px", borderRadius: 8, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>Go to Dashboard</Link>
+            ) : (
+              <>
+                <Link to="/login" style={{ flex: 1, textAlign: "center", padding: "10px", borderRadius: 8, border: "1.5px solid rgba(255,255,255,0.2)", color: "#fff", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>Log In</Link>
+                <Link to="/register" style={{ flex: 1, textAlign: "center", padding: "10px", borderRadius: 8, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>Sign Up</Link>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -658,18 +689,14 @@ export default function WelcomePage() {
     return () => {};
   }, []);
 
-  // Redirect already-authenticated users to their dashboard
-  const user  = localStorage.getItem("user");
-  const role  = localStorage.getItem("role");
-  if (user && role) {
-    if (role === "ADMIN") return <Navigate to="/admin" replace />;
-    if (role === "STAFF") return <Navigate to="/staff" replace />;
-    return <Navigate to="/dashboard" replace />;
-  }
+  // Check if user is logged in (for navbar display)
+  const user = localStorage.getItem("user");
+  const role = localStorage.getItem("role");
+  const isLoggedIn = !!(user && role);
 
   return (
     <div style={{ fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif", background: "#0a0a1e" }}>
-      <Navbar />
+      <Navbar isLoggedIn={isLoggedIn} role={role} />
       <Hero />
       <Features />
       <HowItWorks />
