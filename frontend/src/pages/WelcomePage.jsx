@@ -5,6 +5,7 @@ import {
   Rocket, Clock, ArrowRight, Brain, LineChart,
   GraduationCap, Briefcase, BarChart3
 } from "lucide-react";
+import FloatingLines from "../components/FloatingLines";
 
 /* ─────────────────────────────────────────────
    Intersection Observer Hook for scroll animations
@@ -346,9 +347,26 @@ function Hero() {
       <div style={{ position: "absolute", bottom: "15%", right: "5%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)", filter: "blur(60px)" }} />
       <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px)", backgroundSize: "50px 50px", pointerEvents: "none" }} />
 
+      {/* Floating Lines Background */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, opacity: 0.4 }}>
+        <FloatingLines
+          linesGradient={["#4f46e5", "#6366f1", "#818cf8", "#8b5cf6"]}
+          enabledWaves={["middle", "bottom"]}
+          lineCount={[3, 3]}
+          lineDistance={[8, 8]}
+          bendRadius={5}
+          bendStrength={-0.3}
+          interactive={true}
+          parallax={true}
+          parallaxStrength={0.1}
+          animationSpeed={0.6}
+          mixBlendMode="screen"
+        />
+      </div>
+
       {/* Badge */}
       <FadeUp>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 100, padding: "8px 18px", marginBottom: 28 }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 100, padding: "8px 18px", marginBottom: 28, position: "relative", zIndex: 1 }}>
           <Rocket size={14} color="#a5b4fc" />
           <span style={{ color: "#a5b4fc", fontSize: 13, fontWeight: 600 }}>AI-Powered Career Intelligence</span>
         </div>
@@ -356,7 +374,7 @@ function Hero() {
 
       {/* Headline */}
       <FadeUp delay={0.1}>
-        <h1 style={{ fontSize: "clamp(2.5rem, 5.5vw, 4rem)", fontWeight: 800, color: "#fff", lineHeight: 1.15, marginBottom: 24, letterSpacing: "-1.5px", maxWidth: 750 }}>
+        <h1 style={{ fontSize: "clamp(2.5rem, 5.5vw, 4rem)", fontWeight: 800, color: "#fff", lineHeight: 1.15, marginBottom: 24, letterSpacing: "-1.5px", maxWidth: 750, position: "relative", zIndex: 1 }}>
           Navigate Your Career<br />
           <span style={{ background: "linear-gradient(135deg, #818cf8, #c084fc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
             With Confidence
@@ -366,14 +384,14 @@ function Hero() {
 
       {/* Subtitle */}
       <FadeUp delay={0.2}>
-        <p style={{ fontSize: "clamp(1rem, 2vw, 1.15rem)", color: "rgba(255,255,255,0.55)", marginBottom: 40, maxWidth: 560, lineHeight: 1.7 }}>
+        <p style={{ fontSize: "clamp(1rem, 2vw, 1.15rem)", color: "rgba(255,255,255,0.55)", marginBottom: 40, maxWidth: 560, lineHeight: 1.7, position: "relative", zIndex: 1 }}>
           Upload your resume, discover skill gaps, and get personalized learning roadmaps to land your dream job faster.
         </p>
       </FadeUp>
 
       {/* CTA buttons */}
       <FadeUp delay={0.3}>
-        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center" }}>
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", position: "relative", zIndex: 1 }}>
           <button
             onClick={() => navigate("/register")}
             style={{
@@ -407,7 +425,7 @@ function Hero() {
 
       {/* Stats */}
       <FadeUp delay={0.45}>
-        <div style={{ display: "flex", gap: 56, marginTop: 64, flexWrap: "wrap", justifyContent: "center" }}>
+        <div style={{ display: "flex", gap: 56, marginTop: 64, flexWrap: "wrap", justifyContent: "center", position: "relative", zIndex: 1 }}>
           {[
             { value: "10K+", label: "Active Users" },
             { value: "50K+", label: "Resumes Analyzed" },
