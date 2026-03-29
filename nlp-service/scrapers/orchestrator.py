@@ -9,6 +9,7 @@ from config import (
     REMOTIVE_ENABLED,
     TOPJOBS_ENABLED,
     XPRESSJOBS_ENABLED,
+    ITPRO_ENABLED,
     MAX_JOBS_PER_RUN,
 )
 
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def run_scrape(max_jobs: int = MAX_JOBS_PER_RUN) -> dict:
     """
-    Run all enabled scrapers (Adzuna, Remotive, TopJobs.lk, XpressJobs.lk),
+    Run all enabled scrapers (Adzuna, Remotive, TopJobs.lk, XpressJobs.lk, ITPro.lk),
     inserting results into the job_postings collection via upsert.
 
     Returns:
@@ -59,6 +60,13 @@ def run_scrape(max_jobs: int = MAX_JOBS_PER_RUN) -> dict:
         logger.info("Running XpressJobs.lk scraper…")
         result = xpressjobs_lk.scrape(max_jobs=max_jobs)
         _merge(totals, "xpressjobs_lk", result)
+
+    # ── ITPro.lk ──────────────────────────────────────────────────────────────
+    if ITPRO_ENABLED:
+        from scrapers import itpro_lk
+        logger.info("Running ITPro.lk scraper…")
+        result = itpro_lk.scrape(max_jobs=max_jobs)
+        _merge(totals, "itpro_lk", result)
 
     logger.info(
         "Scrape complete — scraped=%d inserted=%d skipped=%d",

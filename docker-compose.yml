@@ -38,10 +38,14 @@ services:
       REMOTIVE_ENABLED: "true"
       TOPJOBS_ENABLED: "true"
       XPRESSJOBS_ENABLED: "true"
+      ITPRO_ENABLED: "true"
       SCRAPE_INTERVAL_HOURS: "24"
       MAX_JOBS_PER_RUN: "200"
       INTERNAL_TOKEN: ${INTERNAL_TOKEN:-changeme}
       MIN_DATA_POINTS: "2"
+      # More sensitive slope thresholds for better trend detection
+      RISING_SLOPE_THRESHOLD: "0.0001"
+      FALLING_SLOPE_THRESHOLD: "-0.0001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
