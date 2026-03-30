@@ -277,6 +277,11 @@ export default function FloatingLines({
   const bottomLineDistance = enabledWaves.includes('bottom') ? getLineDistance('bottom') * 0.01 : 0.01;
 
   useEffect(() => {
+    // Skip WebGL initialization in test environments (jsdom doesn't support WebGL)
+    if (process.env.NODE_ENV === 'test') {
+      return;
+    }
+
     const container = containerRef.current;
     if (!container) return;
 
