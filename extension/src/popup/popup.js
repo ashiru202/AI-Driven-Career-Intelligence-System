@@ -8,7 +8,9 @@ const MIN_JOB_DESCRIPTION_LENGTH = 120;
 const popupRuntime = {
   resumeData: null,
   lastExtraction: null,
+  lastComparison: null,
   extractionError: "",
+  comparisonError: "",
   manualDraft: {
     jobTitle: "",
     jobDescription: "",
@@ -35,6 +37,8 @@ const COPY = Object.freeze({
   manualHeading: "Manual Job Description Fallback",
   manualMessage: "If extraction fails on the current page, paste the job details below.",
   manualHint: "Tip: include responsibilities, requirements, and tools for better matching.",
+  comparisonHeading: "Latest Comparison",
+  compareFailed: "Comparison request failed.",
   authHeading: "Sign in required",
   authMessage: "Your extension session is missing or expired. Sign in from the main app to continue.",
   errorHeading: "Could not connect",
@@ -149,6 +153,51 @@ function normalizeManualDraft(value) {
     jobTitle: String(draft.jobTitle || ""),
     jobDescription: String(draft.jobDescription || ""),
     error: String(draft.error || ""),
+  };
+}
+
+function normalizeSkillList(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values
+    .map((item) => String(item || "").trim())
+    .filter((item, index, arr) => item.length > 0 && arr.indexOf(item) === index);
+}
+
+function normalizeComparisonResult(payload, context = {}) {
+  const source = payload && typeof payload === "object" ? payload : {};
+  const data = source && typeof source.data === "object" ? source.data : source;
+
+  const matchScoreRaw = Number(data.matchScore);
+  const matchScore = Number.isFinite(matchScoreRaw) ? Math.max(0, Math.min(100, Math.round(matchScoreRaw))) : 0;
+  const commonSkills = normalizeSkillList(data.commonSkills);
+  const missingSkills = normalizeSkillList(data.missingSkills);
+  const comparisonId = String(data.comparisonId || "").trim() || null;
+
+  return {
+    comparisonId,
+    matchScore,
+    commonSkills,
+    missingSkills,
+    commonCount:
+      Number.isFinite(Number(data.commonCount)) && Number(data.commonCount) >= 0
+        ? Number(data.commonCount)
+        : commonSkills.length,
+    missingCount:
+      Number.isFinite(Number(data.missingCount)) && Number(data.missingCount) >= 0
+        ? Number(data.missingCount)
+        : missingSkills.length,
+    totalRequired:
+      Number.isFinite(Number(data.totalRequired)) && Number(data.totalRequired) >= 0
+        ? Number(data.totalRequired)
+        : commonSkills.length + missingSkills.length,
+    resumeFileName: String(data.resumeFileName || context.resumeName || "").trim() || null,
+    resumeId: String(context.resumeId || "").trim() || null,
+    jobTitle: String(context.jobTitle || "").trim() || null,
+    site: String(context.site || "generic").trim() || "generic",
+    timestamp: data.timestamp || new Date().toISOString(),
   };
 }
 
@@ -270,6 +319,54 @@ async function loadResumesForPopup(forceRefresh = false) {
   }
 }
 
+async function runQuickComparison({ resumeId, jobContext }) {
+  const activeResumeId = String(resumeId || "").trim();
+  const title = String(jobContext?.jobTitle || "").trim() || "Untitled Role";
+  const description = String(jobContext?.jobDescription || "").trim();
+
+  if (!activeResumeId) {
+    throw new Error("Resume selection is required before comparison.");
+  }
+
+  if (!description) {
+    throw new Error("Job description is required for comparison.");
+  }
+
+  const payload = {
+    resumeId: activeResumeId,
+    jobTitle: title,
+    jobDescription: description,
+  };
+
+  const response = await requestWithAuth(EXTENSION_API_ROUTES.QUICK_COMPARE, {
+    method: "POST",
+    body: payload,
+  });
+
+  if (response?.ok === false) {
+    const message = response?.error?.message || COPY.compareFailed;
+    throw new Error(message);
+  }
+
+  const comparison = normalizeComparisonResult(response, {
+    resumeId: activeResumeId,
+    jobTitle: title,
+    site: jobContext?.site,
+  });
+
+  await setToStorage(
+    {
+      [STORAGE_KEYS.LAST_COMPARISON]: comparison,
+    },
+    { area: STORAGE_AREAS.SYNC }
+  );
+
+  popupRuntime.lastComparison = comparison;
+  popupRuntime.comparisonError = "";
+
+  return comparison;
+}
+
 function createElement(tagName, className, textContent) {
   const element = document.createElement(tagName);
   if (className) {
@@ -292,8 +389,8 @@ function createHeader() {
 function createFooter() {
   const footer = createElement("footer", "popup-footer");
   footer.append(
-    createElement("span", "footer-chip", "Task 12 Manual Fallback"),
-    createElement("span", "footer-chip", "Generic + manual path ready")
+    createElement("span", "footer-chip", "Task 13 Compare API"),
+    createElement("span", "footer-chip", "Extraction -> compare wired")
   );
   return footer;
 }
@@ -323,6 +420,36 @@ function createExtractionSummary(options = {}) {
   const snippet = createElement("p", "analysis-summary-snippet", truncateText(extraction.jobDescription, 220));
 
   panel.append(title, meta1, meta2, jobTitle, snippet);
+  return panel;
+}
+
+function createComparisonSummary(options = {}) {
+  const comparison = options.lastComparison;
+  if (!comparison || typeof comparison !== "object") {
+    return null;
+  }
+
+  const panel = createElement("section", "comparison-summary");
+  const title = createElement("h3", "comparison-summary-title", COPY.comparisonHeading);
+  const score = createElement("p", "comparison-summary-score", `${Number(comparison.matchScore || 0)}% match`);
+
+  const stats = createElement(
+    "p",
+    "comparison-summary-meta",
+    `Matched: ${Number(comparison.commonCount || 0)} | Missing: ${Number(comparison.missingCount || 0)} | Required: ${Number(comparison.totalRequired || 0)}`
+  );
+
+  const missingPreview = Array.isArray(comparison.missingSkills)
+    ? comparison.missingSkills.slice(0, 4).join(", ")
+    : "";
+
+  const missingText = createElement(
+    "p",
+    "comparison-summary-missing",
+    missingPreview ? `Top gaps: ${missingPreview}` : "No missing skills found in this comparison."
+  );
+
+  panel.append(title, score, stats, missingText);
   return panel;
 }
 
@@ -522,6 +649,11 @@ function createStateCard(state, options = {}) {
       card.append(extractionSummary);
     }
 
+    const comparisonSummary = createComparisonSummary(options);
+    if (comparisonSummary) {
+      card.append(comparisonSummary);
+    }
+
     const getActiveResumeId = () => {
       const selector = card.querySelector("#resume-selector");
       return String(selector?.value || selectedResumeId || "").trim();
@@ -539,6 +671,10 @@ function createStateCard(state, options = {}) {
 
     if (options.extractionError) {
       card.append(createElement("p", "status-warning", options.extractionError));
+    }
+
+    if (options.comparisonError) {
+      card.append(createElement("p", "status-warning", options.comparisonError));
     }
 
     const analyzeButton = createElement("button", "primary-button", "Analyze Current Job");
@@ -628,7 +764,9 @@ function renderReadyState(resumeData) {
   renderShell(POPUP_STATES.EMPTY, {
     ...resumeData,
     lastExtraction: popupRuntime.lastExtraction,
+    lastComparison: popupRuntime.lastComparison,
     extractionError: popupRuntime.extractionError,
+    comparisonError: popupRuntime.comparisonError,
     manualDraft: popupRuntime.manualDraft,
     onAnalyze: handleAnalyzeCurrentTab,
     onManualDraftChange: handleManualDraftChange,
@@ -698,11 +836,21 @@ async function handleManualInputSubmit({ resumeId, jobTitle, jobDescription }) {
 
   popupRuntime.lastExtraction = manualExtraction;
   popupRuntime.extractionError = "";
+  popupRuntime.comparisonError = "";
   popupRuntime.manualDraft = {
     jobTitle: normalizedTitle,
     jobDescription: normalizedDescription,
     error: "",
   };
+
+  try {
+    await runQuickComparison({
+      resumeId: activeResumeId,
+      jobContext: manualExtraction,
+    });
+  } catch (error) {
+    popupRuntime.comparisonError = getErrorMessage(error, COPY.compareFailed);
+  }
 
   renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: activeResumeId });
 }
@@ -722,6 +870,8 @@ async function handleAnalyzeCurrentTab({ resumeId }) {
     { area: STORAGE_AREAS.SYNC }
   );
 
+  let lastExtraction = null;
+
   try {
     const extractionResponse = await sendRuntimeMessage({
       type: MESSAGE_TYPES.REQUEST_JOB_EXTRACTION,
@@ -732,7 +882,7 @@ async function handleAnalyzeCurrentTab({ resumeId }) {
     }
 
     const extractedJob = normalizeExtractedJob(extractionResponse);
-    const lastExtraction = {
+    lastExtraction = {
       ...extractedJob,
       resumeId: activeResumeId,
       capturedAt: new Date().toISOString(),
@@ -747,12 +897,24 @@ async function handleAnalyzeCurrentTab({ resumeId }) {
 
     popupRuntime.lastExtraction = lastExtraction;
     popupRuntime.extractionError = "";
+    popupRuntime.comparisonError = "";
   } catch (error) {
     popupRuntime.extractionError = getErrorMessage(error, "Could not extract job details from this page.");
     popupRuntime.manualDraft = {
       ...popupRuntime.manualDraft,
       error: "Auto extraction failed. Paste the job description manually below.",
     };
+    renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: activeResumeId });
+    return;
+  }
+
+  try {
+    await runQuickComparison({
+      resumeId: activeResumeId,
+      jobContext: lastExtraction,
+    });
+  } catch (error) {
+    popupRuntime.comparisonError = getErrorMessage(error, COPY.compareFailed);
   }
 
   renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: activeResumeId });
@@ -780,6 +942,20 @@ async function loadLastExtraction() {
   }
 }
 
+async function loadLastComparison() {
+  const stored = await getFromStorage(
+    {
+      [STORAGE_KEYS.LAST_COMPARISON]: null,
+    },
+    { area: STORAGE_AREAS.SYNC }
+  );
+
+  const comparison = stored[STORAGE_KEYS.LAST_COMPARISON];
+  if (comparison && typeof comparison === "object") {
+    popupRuntime.lastComparison = comparison;
+  }
+}
+
 async function bootstrapPopup(forceRefresh = false) {
   renderShell(POPUP_STATES.LOADING);
 
@@ -803,6 +979,7 @@ async function bootstrapPopup(forceRefresh = false) {
 
   try {
     await loadLastExtraction();
+    await loadLastComparison();
     const resumeData = await loadResumesForPopup(forceRefresh);
     renderReadyState(resumeData);
   } catch (error) {

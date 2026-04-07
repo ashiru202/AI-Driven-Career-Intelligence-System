@@ -18,6 +18,7 @@ export const STORAGE_KEYS = Object.freeze({
 	RESUME_CACHE_UPDATED_AT: "extensionResumeCacheUpdatedAt",
 	SELECTED_RESUME_ID: "extensionSelectedResumeId",
 	LAST_ANALYSIS: "extensionLastAnalysis",
+	LAST_COMPARISON: "extensionLastComparison",
 });
 
 export const MESSAGE_TYPES = Object.freeze({
