@@ -44,14 +44,19 @@ function getOriginFromUrl(value) {
   }
 }
 
-async function getConfiguredAppOrigin() {
+async function getConfiguredAppBaseUrl() {
   const defaults = {
     [STORAGE_KEYS.APP_BASE_URL]: DEFAULT_APP_BASE_URL,
   };
 
   const stored = await chrome.storage.sync.get(defaults);
   const configured = stored?.[STORAGE_KEYS.APP_BASE_URL];
-  return resolveBaseUrl(configured).origin;
+  return resolveBaseUrl(configured);
+}
+
+async function getConfiguredAppOrigin() {
+  const configured = await getConfiguredAppBaseUrl();
+  return configured.origin;
 }
 
 async function handleSyncAuthSession(message, sender) {
@@ -133,7 +138,8 @@ async function handleJobExtractionRequest() {
 }
 
 async function handleOpenAppPage(message) {
-  const baseUrl = resolveBaseUrl(message.baseUrl);
+  const configuredBaseUrl = await getConfiguredAppBaseUrl();
+  const baseUrl = resolveBaseUrl(message.baseUrl || configuredBaseUrl.toString());
   const path = sanitizePath(message.path, "/");
   const targetUrl = new URL(path, baseUrl);
 
