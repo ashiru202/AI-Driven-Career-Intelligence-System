@@ -1,11 +1,16 @@
 {
   "name": "career-skill-gap-extension",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Browser extension scaffold for Career Intelligence System",
+  "description": "Browser extension for Career Intelligence System",
   "type": "module",
   "scripts": {
-    "build": "echo \"Build tooling will be added in Task 3\"",
+    "clean": "node ./scripts/clean.mjs",
+    "build": "node ./scripts/build.mjs",
+    "build:watch": "node ./scripts/build.mjs --watch",
     "test": "echo \"Tests will be added in later tasks\""
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9"
   }
 }
