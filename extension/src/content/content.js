@@ -1,5 +1,6 @@
 import { MESSAGE_TYPES } from "../shared/constants.js";
 import { detectLinkedInJob } from "./detectors/linkedin.js";
+import { detectIndeedJob } from "./detectors/indeed.js";
 
 function detectSourceSite(url) {
   const value = String(url || "").toLowerCase();
@@ -60,6 +61,23 @@ function extractCurrentJobContext() {
     if (linkedInJob) {
       return {
         ...linkedInJob,
+        pageTitle: document.title,
+        pageUrl,
+        extractedAt: new Date().toISOString(),
+      };
+    }
+  }
+
+  if (site === "indeed") {
+    const indeedJob = detectIndeedJob({
+      root: document,
+      url: pageUrl,
+      pageTitle: document.title,
+    });
+
+    if (indeedJob) {
+      return {
+        ...indeedJob,
         pageTitle: document.title,
         pageUrl,
         extractedAt: new Date().toISOString(),
