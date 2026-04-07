@@ -7,7 +7,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const { errorHandler } = require("./middleware/errorMiddleware");
-const { authLimiter, generalLimiter, uploadLimiter } = require("./middleware/rateLimitMiddleware");
+const { authLimiter, generalLimiter, uploadLimiter, extensionLimiter } = require("./middleware/rateLimitMiddleware");
 
 const app = express();
 
@@ -111,7 +111,14 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use("/api/resumes",    resumeRoutes);
 app.use("/api/comparisons", comparisonRoutes);
-app.use("/api/extension",   extensionRoutes);
+
+// Extension: custom rate limit in non-test envs
+if (process.env.NODE_ENV !== "test") {
+  app.use("/api/extension", extensionLimiter, extensionRoutes);
+} else {
+  app.use("/api/extension", extensionRoutes);
+}
+
 app.use("/api/roadmaps-new", newRoadmapRoutes);
 app.use("/api/analytics",  analyticsRoutes);
 app.use("/api/reports",        reportRoutes);
