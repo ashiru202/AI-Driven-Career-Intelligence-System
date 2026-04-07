@@ -342,6 +342,16 @@ body {
   color: #475569;
 }
 
+.comparison-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.roadmap-button {
+  min-width: 150px;
+}
+
 .manual-input {
   margin-top: 12px;
   padding: 10px 12px;

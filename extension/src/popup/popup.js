@@ -39,6 +39,8 @@ const COPY = Object.freeze({
   manualHint: "Tip: include responsibilities, requirements, and tools for better matching.",
   comparisonHeading: "Latest Comparison",
   compareFailed: "Comparison request failed.",
+  roadmapLabel: "Generate Roadmap",
+  roadmapFailed: "Could not open roadmap in the main app.",
   authHeading: "Sign in required",
   authMessage: "Your extension session is missing or expired. Sign in from the main app to continue.",
   errorHeading: "Could not connect",
@@ -226,10 +228,16 @@ function normalizeExtractedJob(response) {
 }
 
 async function openMainApp(path = "/") {
-  await sendRuntimeMessage({
+  const response = await sendRuntimeMessage({
     type: MESSAGE_TYPES.OPEN_APP_PAGE,
     path,
   });
+
+  if (!response?.ok) {
+    throw new Error(response?.error || "Failed to open main app.");
+  }
+
+  return response;
 }
 
 async function readResumeCache() {
@@ -389,8 +397,8 @@ function createHeader() {
 function createFooter() {
   const footer = createElement("footer", "popup-footer");
   footer.append(
-    createElement("span", "footer-chip", "Task 14 Results View"),
-    createElement("span", "footer-chip", "Score + skills sections")
+    createElement("span", "footer-chip", "Task 15 Roadmap Link"),
+    createElement("span", "footer-chip", "comparisonId deep link ready")
   );
   return footer;
 }
@@ -490,7 +498,22 @@ function createComparisonSummary(options = {}) {
   const sections = createElement("div", "comparison-sections");
   sections.append(matchedSection, missingSection);
 
-  panel.append(title, score, scoreBar, stats, meta, sections);
+  const actionBar = createElement("div", "comparison-actions");
+  const roadmapButton = createElement("button", "primary-button roadmap-button", COPY.roadmapLabel);
+  roadmapButton.type = "button";
+  roadmapButton.disabled = !comparison.comparisonId;
+  roadmapButton.addEventListener("click", async () => {
+    if (typeof options.onGenerateRoadmap !== "function") {
+      return;
+    }
+
+    roadmapButton.disabled = true;
+    roadmapButton.textContent = "Opening...";
+    await options.onGenerateRoadmap(comparison);
+  });
+  actionBar.append(roadmapButton);
+
+  panel.append(title, score, scoreBar, stats, meta, sections, actionBar);
   return panel;
 }
 
@@ -690,7 +713,10 @@ function createStateCard(state, options = {}) {
       card.append(extractionSummary);
     }
 
-    const comparisonSummary = createComparisonSummary(options);
+    const comparisonSummary = createComparisonSummary({
+      ...options,
+      onGenerateRoadmap: options.onGenerateRoadmap,
+    });
     if (comparisonSummary) {
       card.append(comparisonSummary);
     }
@@ -810,6 +836,7 @@ function renderReadyState(resumeData) {
     comparisonError: popupRuntime.comparisonError,
     manualDraft: popupRuntime.manualDraft,
     onAnalyze: handleAnalyzeCurrentTab,
+    onGenerateRoadmap: handleGenerateRoadmap,
     onManualDraftChange: handleManualDraftChange,
     onManualSubmit: handleManualInputSubmit,
     onManualClear: handleManualInputClear,
@@ -826,6 +853,29 @@ function handleManualInputClear() {
     jobDescription: "",
     error: "",
   };
+  renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
+}
+
+async function handleGenerateRoadmap(comparison) {
+  const comparisonId = String(comparison?.comparisonId || "").trim();
+  if (!comparisonId) {
+    popupRuntime.comparisonError = "No comparison ID is available yet. Analyze a job first.";
+    renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
+    return;
+  }
+
+  const query = new URLSearchParams({
+    from: "extension",
+    comparisonId,
+  });
+
+  try {
+    await openMainApp(`/my-roadmap?${query.toString()}`);
+    popupRuntime.comparisonError = "";
+  } catch (error) {
+    popupRuntime.comparisonError = getErrorMessage(error, COPY.roadmapFailed);
+  }
+
   renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
 }
 
