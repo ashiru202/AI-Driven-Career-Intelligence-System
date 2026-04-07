@@ -74,7 +74,13 @@ The extension reads these storage keys:
 - extensionAuthToken
 - extensionRefreshToken
 
-Temporary developer setup (manual): open the extension service worker console and run:
+Default auth flow:
+
+- In popup, if session is missing, click Open App Login
+- Sign in on the main app login page
+- Extension session token is synced automatically, then return to popup and click Retry
+
+Temporary developer setup (manual fallback): open the extension service worker console and run:
 
 ```javascript
 chrome.storage.sync.set({
@@ -124,7 +130,9 @@ Do not commit real tokens or share them in logs.
 ## Troubleshooting
 
 - Popup says sign-in required:
-	- Verify extensionAuthToken is set in chrome.storage.sync
+	- Click Open App Login and sign in from the opened page
+	- Return to popup and click Retry
+	- If needed, verify extensionAuthToken is set in chrome.storage.sync
 	- Confirm backend /api/users/me accepts the token
 - Compare fails with no resume:
 	- Upload resume in main app, then refresh CV list in popup

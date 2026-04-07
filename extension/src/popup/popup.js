@@ -50,7 +50,7 @@ const COPY = Object.freeze({
   retryExtractionLabel: "Retry Extraction",
   retryComparisonLabel: "Retry Comparison",
   authHeading: "Sign in required",
-  authMessage: "Your extension session is missing or expired. Sign in from the main app to continue.",
+  authMessage: "Your extension session is missing or expired. Open app login, sign in, then return and retry.",
   errorHeading: "Could not connect",
   errorMessage: "The popup could not reach the background service worker.",
 });
@@ -934,7 +934,7 @@ function createStateCard(state, options = {}) {
       openAppButton.type = "button";
       openAppButton.addEventListener("click", async () => {
         try {
-          await openMainApp("/login");
+          await openMainApp("/login?from=extension");
         } catch (error) {
           const detail = getErrorMessage(error, COPY.roadmapFailed);
           renderShell(POPUP_STATES.ERROR, {

@@ -13,6 +13,8 @@
     "https://www.linkedin.com/*",
     "https://*.indeed.com/*",
     "https://www.glassdoor.com/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*",
     "http://localhost:5001/*",
     "http://127.0.0.1:5001/*"
   ],
@@ -33,6 +35,16 @@
       ],
       "js": [
         "src/content/content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*"
+      ],
+      "js": [
+        "src/content/authBridge.js"
       ],
       "run_at": "document_idle"
     }

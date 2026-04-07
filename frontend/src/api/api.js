@@ -15,7 +15,8 @@ api.interceptors.response.use(
       error.config?.url?.includes("/auth/forgot-password") ||
       error.config?.url?.includes("/auth/reset-password") ||
       error.config?.url?.includes("/auth/verify-email") ||
-      error.config?.url?.includes("/auth/resend-verification");
+      error.config?.url?.includes("/auth/resend-verification") ||
+      error.config?.url?.includes("/auth/extension-token");
     if (error.response && error.response.status === 401 && !isAuthEndpoint) {
       // Clear non-sensitive display data and redirect to login
       localStorage.removeItem("user");

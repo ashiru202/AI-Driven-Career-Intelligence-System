@@ -1,5 +1,7 @@
-import { DEFAULT_APP_BASE_URL, MESSAGE_TYPES } from "../shared/constants.js";
-import { isTrustedExtensionSender, sanitizePath } from "../shared/validators.js";
+import { DEFAULT_APP_BASE_URL, MESSAGE_TYPES, STORAGE_KEYS } from "../shared/constants.js";
+import { isTrustedExtensionSender, sanitizePath, sanitizePlainText } from "../shared/validators.js";
+
+const JWT_LIKE_REGEX = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 
 function buildResponse(ok, data = null, error = null) {
   return { ok, data, error };
@@ -24,6 +26,56 @@ function resolveBaseUrl(value) {
   } catch {
     return fallback;
   }
+}
+
+function normalizeAuthToken(value) {
+  const token = sanitizePlainText(value, 4096);
+  if (!token || !JWT_LIKE_REGEX.test(token)) {
+    return "";
+  }
+  return token;
+}
+
+function getOriginFromUrl(value) {
+  try {
+    return new URL(String(value || "")).origin;
+  } catch {
+    return "";
+  }
+}
+
+async function getConfiguredAppOrigin() {
+  const defaults = {
+    [STORAGE_KEYS.APP_BASE_URL]: DEFAULT_APP_BASE_URL,
+  };
+
+  const stored = await chrome.storage.sync.get(defaults);
+  const configured = stored?.[STORAGE_KEYS.APP_BASE_URL];
+  return resolveBaseUrl(configured).origin;
+}
+
+async function handleSyncAuthSession(message, sender) {
+  const configuredOrigin = await getConfiguredAppOrigin();
+  const senderOrigin = getOriginFromUrl(sender?.url);
+
+  if (!senderOrigin || senderOrigin !== configuredOrigin) {
+    return buildResponse(false, null, "Auth sync is only allowed from the configured app origin.");
+  }
+
+  const token = normalizeAuthToken(message?.payload?.accessToken || message?.accessToken);
+  if (!token) {
+    return buildResponse(false, null, "No valid access token provided for auth sync.");
+  }
+
+  await chrome.storage.sync.set({
+    [STORAGE_KEYS.AUTH_TOKEN]: token,
+    [STORAGE_KEYS.REFRESH_TOKEN]: "",
+  });
+
+  return buildResponse(true, {
+    synced: true,
+    origin: senderOrigin,
+  });
 }
 
 async function getActiveTab() {
@@ -135,6 +187,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case MESSAGE_TYPES.OPEN_APP_PAGE: {
           const openResult = await handleOpenAppPage(message);
           sendResponse(openResult);
+          return;
+        }
+
+        case MESSAGE_TYPES.SYNC_AUTH_SESSION: {
+          const syncResult = await handleSyncAuthSession(message, sender);
+          sendResponse(syncResult);
           return;
         }
 

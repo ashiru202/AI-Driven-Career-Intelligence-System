@@ -1,16 +1,44 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import api from "../api/api";
 import { ArrowLeft, Sparkles, Mail, Lock } from "lucide-react";
 
+const EXTENSION_AUTH_SYNC_EVENT = "AIDC_EXTENSION_AUTH_SYNC";
+
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [resendSent, setResendSent]           = useState(false);
+  const isExtensionLoginFlow = searchParams.get("from") === "extension";
+
+  const syncExtensionSession = async () => {
+    if (!isExtensionLoginFlow) {
+      return;
+    }
+
+    try {
+      const response = await api.get("/api/auth/extension-token");
+      const token = String(response?.data?.data?.token || "").trim();
+      if (!token) {
+        return;
+      }
+
+      window.postMessage(
+        {
+          type: EXTENSION_AUTH_SYNC_EVENT,
+          token,
+        },
+        window.location.origin
+      );
+    } catch {
+      // Login is still valid for the web app even if extension token sync fails.
+    }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -25,6 +53,8 @@ export default function Login() {
       if (res.data.ok && res.data.data) {
         localStorage.setItem("user", JSON.stringify(res.data.data.user));
         localStorage.setItem("role", res.data.data.user.role);
+
+        await syncExtensionSession();
 
         const role = res.data.data.user.role;
         if (role === 'ADMIN')       navigate('/admin',     { replace: true });

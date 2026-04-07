@@ -49,7 +49,12 @@ async function prepareDist() {
 
 const buildOptions = {
   absWorkingDir: rootDir,
-  entryPoints: ["src/background/background.js", "src/content/content.js", "src/popup/popup.js"],
+  entryPoints: [
+    "src/background/background.js",
+    "src/content/content.js",
+    "src/content/authBridge.js",
+    "src/popup/popup.js",
+  ],
   outbase: ".",
   outdir: "dist",
   bundle: true,
