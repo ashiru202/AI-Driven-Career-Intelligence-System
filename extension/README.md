@@ -134,3 +134,15 @@ Do not commit real tokens or share them in logs.
 - API unreachable:
 	- Confirm backend is running on configured extensionApiBaseUrl
 
+## Alpha Handoff
+
+Use the dedicated QA handoff doc for final alpha validation and sign-off:
+
+- extension/QA_HANDOFF.md
+
+Before handoff, run:
+
+```bash
+npm --prefix extension run verify
+```
+

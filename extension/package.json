@@ -9,7 +9,8 @@
     "build": "node ./scripts/build.mjs",
     "build:watch": "node ./scripts/build.mjs --watch",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify": "npm run build && npm run test"
   },
   "devDependencies": {
     "esbuild": "^0.25.9",
