@@ -32,5 +32,5 @@ export const EXTENSION_API_ROUTES = Object.freeze({
 	RESUMES_LIST: "/api/extension/resumes/list",
 	QUICK_COMPARE: "/api/extension/compare",
 	HEALTH: "/api/extension/health",
-	AUTH_ME: "/api/auth/me",
+	AUTH_ME: "/api/users/me",
 });

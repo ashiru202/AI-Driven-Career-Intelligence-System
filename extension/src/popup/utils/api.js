@@ -161,6 +161,10 @@ export const extensionApi = {
     return requestExtensionApi(EXTENSION_API_ROUTES.RESUMES_LIST);
   },
 
+  getCurrentUser() {
+    return requestExtensionApi(EXTENSION_API_ROUTES.AUTH_ME);
+  },
+
   quickCompare(payload) {
     return requestExtensionApi(EXTENSION_API_ROUTES.QUICK_COMPARE, {
       method: "POST",
