@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/authMiddleware');
+const { validate, schemas } = require('../middleware/validationMiddleware');
 const ExtensionController = require('../controllers/extensionController');
 
 // All extension routes require authentication
@@ -10,7 +11,7 @@ router.use(requireAuth);
 router.get('/resumes/list', ExtensionController.listResumes);
 
 // Quick comparison without roadmap generation
-router.post('/compare', ExtensionController.quickCompare);
+router.post('/compare', validate(schemas.extensionQuickCompare), ExtensionController.quickCompare);
 
 // Health check for extension
 router.get('/health', ExtensionController.healthCheck);

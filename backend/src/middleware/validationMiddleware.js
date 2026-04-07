@@ -146,6 +146,24 @@ const schemas = {
         .max(254, 'Email too long')
         .toLowerCase()
     })
+  }),
+
+  // Extension API schemas
+  extensionQuickCompare: z.object({
+    body: z.object({
+      jobTitle: z.string()
+        .min(2, 'Job title too short')
+        .max(200, 'Job title too long')
+        .transform(stripHtml),
+      jobDescription: z.string()
+        .min(10, 'Job description must be at least 10 characters')
+        .max(10000, 'Job description too long')
+        .transform(stripHtml),
+      resumeId: z.string()
+        .regex(/^[0-9a-fA-F]{24}$/, 'Invalid resume ID')
+        .optional()
+        .nullable()
+    })
   })
 };
 

@@ -34,18 +34,11 @@ class ExtensionController {
    * POST /api/extension/compare
    * Quick comparison: jobDesc → extract skills → compare → return
    * Lightweight response optimized for extension popup
+   * Validation: extensionQuickCompare schema (in middleware)
    */
   static quickCompare = asyncHandler(async (req, res) => {
     const { jobDescription, jobTitle, resumeId } = req.body;
     const userId = req.user.id;
-
-    // Validation
-    if (!jobDescription || !jobDescription.trim()) {
-      throw AppError.badRequest('EMPTY_JOB_DESC', 'Job description is required');
-    }
-    if (!jobTitle || !jobTitle.trim()) {
-      throw AppError.badRequest('EMPTY_JOB_TITLE', 'Job title is required');
-    }
 
     // Fetch resume
     let resume;
@@ -77,15 +70,15 @@ class ExtensionController {
       user: userId,
       resume: resumeId || resume._id,
       resumeFileName: resume.fileName,
-      jobTitle: jobTitle.trim(),
-      jobDescription: jobDescription.trim(),
+      jobTitle,
+      jobDescription,
       jobSkills: gap.jobSkills || jobSkills,
       resumeSkills: gap.resumeSkills || resumeSkills,
       commonSkills: gap.commonSkills,
       missingSkills: gap.missingSkills,
       matchScore: gap.matchScore,
       matchingMethod: 'keyword', // Extension always uses fast keyword method
-      source: 'extension', // NEW: Track that this came from extension
+      source: 'extension', // Track that this came from extension
     });
 
     await comparison.save();
