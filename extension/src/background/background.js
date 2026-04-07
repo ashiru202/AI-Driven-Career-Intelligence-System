@@ -1,4 +1,5 @@
 import { DEFAULT_APP_BASE_URL, MESSAGE_TYPES } from "../shared/constants.js";
+import { isTrustedExtensionSender, sanitizePath } from "../shared/validators.js";
 
 function buildResponse(ok, data = null, error = null) {
   return { ok, data, error };
@@ -6,6 +7,23 @@ function buildResponse(ok, data = null, error = null) {
 
 function isExtensionMessage(message) {
   return !!message && typeof message === "object" && typeof message.type === "string";
+}
+
+function resolveBaseUrl(value) {
+  const fallback = new URL(DEFAULT_APP_BASE_URL);
+  if (typeof value !== "string" || !value.trim()) {
+    return fallback;
+  }
+
+  try {
+    const parsed = new URL(value.trim());
+    if (!/^https?:$/.test(parsed.protocol)) {
+      return fallback;
+    }
+    return parsed;
+  } catch {
+    return fallback;
+  }
 }
 
 async function getActiveTab() {
@@ -63,26 +81,24 @@ async function handleJobExtractionRequest() {
 }
 
 async function handleOpenAppPage(message) {
-  const baseUrl =
-    typeof message.baseUrl === "string" && message.baseUrl.startsWith("http")
-      ? message.baseUrl
-      : DEFAULT_APP_BASE_URL;
-  const path = typeof message.path === "string" ? message.path : "/";
-  const targetUrl = new URL(path, baseUrl).toString();
-  const tab = await chrome.tabs.create({ url: targetUrl });
+  const baseUrl = resolveBaseUrl(message.baseUrl);
+  const path = sanitizePath(message.path, "/");
+  const targetUrl = new URL(path, baseUrl);
+
+  if (targetUrl.origin !== baseUrl.origin) {
+    return buildResponse(false, null, "Cross-origin app navigation is blocked.");
+  }
+
+  const tab = await chrome.tabs.create({ url: targetUrl.toString() });
 
   return buildResponse(true, {
-    openedUrl: targetUrl,
+    openedUrl: targetUrl.toString(),
     tabId: tab.id || null,
   });
 }
 
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("Extension service worker installed.");
-});
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (!isExtensionMessage(message)) {
+  if (!isExtensionMessage(message) || !isTrustedExtensionSender(sender, chrome.runtime.id)) {
     return false;
   }
 

@@ -1,4 +1,5 @@
 import { MESSAGE_TYPES } from "../shared/constants.js";
+import { isTrustedExtensionSender, sanitizePlainText } from "../shared/validators.js";
 import { detectLinkedInJob } from "./detectors/linkedin.js";
 import { detectIndeedJob } from "./detectors/indeed.js";
 import { detectGenericJob } from "./detectors/generic.js";
@@ -19,6 +20,25 @@ function detectSourceSite(url) {
   }
 
   return "generic";
+}
+
+function sanitizeExtractedJobPayload(payload) {
+  const source = payload && typeof payload === "object" ? payload : {};
+  const description = sanitizePlainText(source.jobDescription, 10000);
+
+  return {
+    ...source,
+    jobTitle: sanitizePlainText(source.jobTitle, 220) || "Untitled Role",
+    company: sanitizePlainText(source.company, 160) || null,
+    location: sanitizePlainText(source.location, 160) || null,
+    jobDescription: description,
+    descriptionLength: description.length,
+    site: sanitizePlainText(source.site, 40) || "generic",
+    extractedBy: sanitizePlainText(source.extractedBy, 80) || "generic-detector",
+    pageTitle: sanitizePlainText(source.pageTitle || document.title, 240),
+    pageUrl: sanitizePlainText(source.pageUrl || window.location.href, 2000),
+    extractedAt: source.extractedAt || new Date().toISOString(),
+  };
 }
 
 function extractCurrentJobContext() {
@@ -87,12 +107,16 @@ function extractCurrentJobContext() {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (!message || message.type !== MESSAGE_TYPES.CONTENT_EXTRACT_JOB) {
+  if (
+    !message ||
+    message.type !== MESSAGE_TYPES.CONTENT_EXTRACT_JOB ||
+    !isTrustedExtensionSender(sender, chrome.runtime.id)
+  ) {
     return false;
   }
 
   try {
-    const payload = extractCurrentJobContext();
+    const payload = sanitizeExtractedJobPayload(extractCurrentJobContext());
     sendResponse({ ok: true, data: payload });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Failed to extract job content.";

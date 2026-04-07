@@ -2,6 +2,7 @@ import { EXTENSION_API_ROUTES, MESSAGE_TYPES, STORAGE_AREAS, STORAGE_KEYS } from
 import { AuthSessionError, requestWithAuth, validateSessionWithBackend } from "../shared/auth.js";
 import { ApiRequestError } from "./utils/api.js";
 import { getFromStorage, setToStorage } from "./utils/storage.js";
+import { sanitizePlainText } from "../shared/validators.js";
 
 const app = document.getElementById("app");
 const RESUME_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -78,7 +79,7 @@ function normalizeResume(resume) {
     return null;
   }
 
-  const name = String(resume.name || resume.fileName || "Untitled Resume").trim();
+  const name = sanitizePlainText(resume.name || resume.fileName || "Untitled Resume", 180);
   const parsedSize = Number(resume.sizeKB);
   const sizeKB = Number.isFinite(parsedSize) ? Math.max(0, Math.round(parsedSize)) : null;
 
@@ -135,7 +136,7 @@ function formatRelativeTime(timestampMs) {
 }
 
 function truncateText(value, maxLength) {
-  const text = String(value || "").trim();
+  const text = sanitizePlainText(value, Number.isFinite(maxLength) ? maxLength * 2 : 12000);
   if (text.length <= maxLength) {
     return text;
   }
@@ -179,28 +180,28 @@ function getErrorMessage(error, fallback) {
     }
 
     if (typeof error.message === "string" && error.message.trim()) {
-      return error.message;
+      return sanitizePlainText(error.message, 240);
     }
   }
 
   if (error instanceof AuthSessionError && error.message) {
-    return error.message;
+    return sanitizePlainText(error.message, 240);
   }
 
   if (error instanceof Error && error.message) {
-    return error.message;
+    return sanitizePlainText(error.message, 240);
   }
 
-  return fallback;
+  return sanitizePlainText(fallback, 240);
 }
 
 function normalizeManualDraft(value) {
   const draft = value && typeof value === "object" ? value : {};
 
   return {
-    jobTitle: String(draft.jobTitle || ""),
-    jobDescription: String(draft.jobDescription || ""),
-    error: String(draft.error || ""),
+    jobTitle: sanitizePlainText(draft.jobTitle, 220),
+    jobDescription: sanitizePlainText(draft.jobDescription, 10000),
+    error: sanitizePlainText(draft.error, 240),
   };
 }
 
@@ -210,7 +211,7 @@ function normalizeSkillList(values) {
   }
 
   return values
-    .map((item) => String(item || "").trim())
+    .map((item) => sanitizePlainText(item, 80))
     .filter((item, index, arr) => item.length > 0 && arr.indexOf(item) === index);
 }
 
@@ -241,12 +242,41 @@ function normalizeComparisonResult(payload, context = {}) {
       Number.isFinite(Number(data.totalRequired)) && Number(data.totalRequired) >= 0
         ? Number(data.totalRequired)
         : commonSkills.length + missingSkills.length,
-    resumeFileName: String(data.resumeFileName || context.resumeName || "").trim() || null,
-    resumeId: String(context.resumeId || "").trim() || null,
-    jobTitle: String(context.jobTitle || "").trim() || null,
-    site: String(context.site || "generic").trim() || "generic",
+    resumeFileName: sanitizePlainText(data.resumeFileName || context.resumeName || "", 180) || null,
+    resumeId: sanitizePlainText(context.resumeId || "", 120) || null,
+    jobTitle: sanitizePlainText(context.jobTitle || "", 220) || null,
+    site: sanitizePlainText(context.site || "generic", 40) || "generic",
     timestamp: data.timestamp || new Date().toISOString(),
   };
+}
+
+function buildStoredExtractionRecord(source, resumeId) {
+  const input = source && typeof source === "object" ? source : {};
+  const description = sanitizePlainText(input.jobDescription, 10000);
+
+  return {
+    jobTitle: sanitizePlainText(input.jobTitle, 220) || "Untitled role",
+    jobDescription: description,
+    descriptionLength: description.length,
+    company: sanitizePlainText(input.company, 160) || null,
+    location: sanitizePlainText(input.location, 160) || null,
+    site: sanitizePlainText(input.site, 40) || "generic",
+    extractedBy: sanitizePlainText(input.extractedBy, 80) || "unknown-detector",
+    pageTitle: sanitizePlainText(input.pageTitle, 240) || "",
+    pageUrl: sanitizePlainText(input.pageUrl, 2000) || "",
+    resumeId: sanitizePlainText(resumeId, 120) || null,
+    extractedAt: input.extractedAt || new Date().toISOString(),
+    capturedAt: new Date().toISOString(),
+  };
+}
+
+function normalizeStoredExtractionRecord(source) {
+  const input = source && typeof source === "object" ? source : {};
+  const resumeId = sanitizePlainText(input.resumeId, 120);
+  const normalized = buildStoredExtractionRecord(input, resumeId);
+  normalized.capturedAt = input.capturedAt || normalized.capturedAt;
+  normalized.extractedAt = input.extractedAt || normalized.extractedAt;
+  return normalized;
 }
 
 function normalizeExtractedJob(response) {
@@ -258,8 +288,8 @@ function normalizeExtractedJob(response) {
     throw new Error("No job details were returned from the active tab.");
   }
 
-  const jobTitle = String(job.jobTitle || "").trim();
-  const jobDescription = String(job.jobDescription || "").trim();
+  const jobTitle = sanitizePlainText(job.jobTitle, 220);
+  const jobDescription = sanitizePlainText(job.jobDescription, 10000);
 
   if (!jobDescription || jobDescription.length < MIN_JOB_DESCRIPTION_LENGTH) {
     throw new Error("Job description appears too short. Open a full job post and try again.");
@@ -269,7 +299,14 @@ function normalizeExtractedJob(response) {
     ...job,
     jobTitle: jobTitle || "Untitled role",
     jobDescription,
-    tab,
+    tab:
+      tab && typeof tab === "object"
+        ? {
+            id: Number.isFinite(Number(tab.id)) ? Number(tab.id) : null,
+            title: sanitizePlainText(tab.title, 220) || null,
+            url: sanitizePlainText(tab.url, 2000) || null,
+          }
+        : null,
   };
 }
 
@@ -374,9 +411,9 @@ async function loadResumesForPopup(forceRefresh = false) {
 }
 
 async function runQuickComparison({ resumeId, jobContext }) {
-  const activeResumeId = String(resumeId || "").trim();
-  const title = String(jobContext?.jobTitle || "").trim() || "Untitled Role";
-  const description = String(jobContext?.jobDescription || "").trim();
+  const activeResumeId = sanitizePlainText(resumeId, 120);
+  const title = sanitizePlainText(jobContext?.jobTitle, 220) || "Untitled Role";
+  const description = sanitizePlainText(jobContext?.jobDescription, 10000);
 
   if (!activeResumeId) {
     throw new Error("Resume selection is required before comparison.");
@@ -411,7 +448,7 @@ async function runQuickComparison({ resumeId, jobContext }) {
   const comparison = normalizeComparisonResult(response, {
     resumeId: activeResumeId,
     jobTitle: title,
-    site: jobContext?.site,
+    site: sanitizePlainText(jobContext?.site, 40),
   });
 
   await setToStorage(
@@ -1005,7 +1042,7 @@ async function handleRetryComparison({ resumeId }) {
 }
 
 async function handleGenerateRoadmap(comparison) {
-  const comparisonId = String(comparison?.comparisonId || "").trim();
+  const comparisonId = sanitizePlainText(comparison?.comparisonId, 120);
   if (!comparisonId) {
     popupRuntime.comparisonError = "No comparison ID is available yet. Analyze a job first.";
     renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
@@ -1028,9 +1065,9 @@ async function handleGenerateRoadmap(comparison) {
 }
 
 async function handleManualInputSubmit({ resumeId, jobTitle, jobDescription }) {
-  const activeResumeId = String(resumeId || "").trim();
-  const normalizedTitle = String(jobTitle || "").trim();
-  const normalizedDescription = String(jobDescription || "").trim();
+  const activeResumeId = sanitizePlainText(resumeId, 120);
+  const normalizedTitle = sanitizePlainText(jobTitle, 220);
+  const normalizedDescription = sanitizePlainText(jobDescription, 10000);
 
   if (!activeResumeId) {
     popupRuntime.manualDraft = {
@@ -1050,7 +1087,8 @@ async function handleManualInputSubmit({ resumeId, jobTitle, jobDescription }) {
     return;
   }
 
-  const manualExtraction = {
+  const manualExtraction = buildStoredExtractionRecord(
+    {
     jobTitle: normalizedTitle || "Manual Job Entry",
     jobDescription: normalizedDescription,
     descriptionLength: normalizedDescription.length,
@@ -1060,10 +1098,10 @@ async function handleManualInputSubmit({ resumeId, jobTitle, jobDescription }) {
     extractedBy: "manual-input",
     pageTitle: "Manual Input",
     pageUrl: "manual://input",
-    resumeId: activeResumeId,
-    capturedAt: new Date().toISOString(),
     extractedAt: new Date().toISOString(),
-  };
+    },
+    activeResumeId
+  );
 
   await setToStorage(
     {
@@ -1099,7 +1137,7 @@ async function handleManualInputSubmit({ resumeId, jobTitle, jobDescription }) {
 }
 
 async function handleAnalyzeCurrentTab({ resumeId }) {
-  const activeResumeId = String(resumeId || "").trim();
+  const activeResumeId = sanitizePlainText(resumeId, 120);
   if (!activeResumeId) {
     popupRuntime.extractionError = "Select a resume before starting analysis.";
     renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
@@ -1125,11 +1163,7 @@ async function handleAnalyzeCurrentTab({ resumeId }) {
     }
 
     const extractedJob = normalizeExtractedJob(extractionResponse);
-    lastExtraction = {
-      ...extractedJob,
-      resumeId: activeResumeId,
-      capturedAt: new Date().toISOString(),
-    };
+    lastExtraction = buildStoredExtractionRecord(extractedJob, activeResumeId);
 
     await setToStorage(
       {
@@ -1177,12 +1211,12 @@ async function loadLastExtraction() {
 
   const extraction = stored[STORAGE_KEYS.LAST_ANALYSIS];
   if (extraction && typeof extraction === "object") {
-    popupRuntime.lastExtraction = extraction;
+    popupRuntime.lastExtraction = normalizeStoredExtractionRecord(extraction);
 
-    if (String(extraction.site || "") === "manual") {
+    if (String(popupRuntime.lastExtraction.site || "") === "manual") {
       popupRuntime.manualDraft = {
-        jobTitle: String(extraction.jobTitle || ""),
-        jobDescription: String(extraction.jobDescription || ""),
+        jobTitle: sanitizePlainText(popupRuntime.lastExtraction.jobTitle, 220),
+        jobDescription: sanitizePlainText(popupRuntime.lastExtraction.jobDescription, 10000),
         error: "",
       };
     }
@@ -1199,7 +1233,11 @@ async function loadLastComparison() {
 
   const comparison = stored[STORAGE_KEYS.LAST_COMPARISON];
   if (comparison && typeof comparison === "object") {
-    popupRuntime.lastComparison = comparison;
+    popupRuntime.lastComparison = normalizeComparisonResult(comparison, {
+      resumeId: comparison.resumeId,
+      jobTitle: comparison.jobTitle,
+      site: comparison.site,
+    });
   }
 }
 
