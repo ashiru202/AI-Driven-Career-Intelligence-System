@@ -9,6 +9,11 @@ const popupRuntime = {
   resumeData: null,
   lastExtraction: null,
   extractionError: "",
+  manualDraft: {
+    jobTitle: "",
+    jobDescription: "",
+    error: "",
+  },
 };
 
 const POPUP_STATES = Object.freeze({
@@ -27,6 +32,9 @@ const COPY = Object.freeze({
     "Choose a resume in the next step, then run analysis directly from the job page you are viewing.",
   emptyNoResumeMessage:
     "No resumes found yet. Upload a resume in the main app, then reopen this popup.",
+  manualHeading: "Manual Job Description Fallback",
+  manualMessage: "If extraction fails on the current page, paste the job details below.",
+  manualHint: "Tip: include responsibilities, requirements, and tools for better matching.",
   authHeading: "Sign in required",
   authMessage: "Your extension session is missing or expired. Sign in from the main app to continue.",
   errorHeading: "Could not connect",
@@ -132,6 +140,16 @@ function getErrorMessage(error, fallback) {
   }
 
   return fallback;
+}
+
+function normalizeManualDraft(value) {
+  const draft = value && typeof value === "object" ? value : {};
+
+  return {
+    jobTitle: String(draft.jobTitle || ""),
+    jobDescription: String(draft.jobDescription || ""),
+    error: String(draft.error || ""),
+  };
 }
 
 function normalizeExtractedJob(response) {
@@ -274,8 +292,8 @@ function createHeader() {
 function createFooter() {
   const footer = createElement("footer", "popup-footer");
   footer.append(
-    createElement("span", "footer-chip", "Task 9 Messaging Bridge"),
-    createElement("span", "footer-chip", "Tab extraction wired")
+    createElement("span", "footer-chip", "Task 12 Manual Fallback"),
+    createElement("span", "footer-chip", "Generic + manual path ready")
   );
   return footer;
 }
@@ -368,6 +386,110 @@ function createResumeSelector(options = {}) {
   return section;
 }
 
+function createManualInputSection(options = {}) {
+  const draft = normalizeManualDraft(options.manualDraft);
+
+  const section = createElement("section", "manual-input");
+  const heading = createElement("h3", "manual-input-title", COPY.manualHeading);
+  const message = createElement("p", "manual-input-message", COPY.manualMessage);
+
+  const titleLabel = createElement("label", "manual-input-label", "Job Title (optional)");
+  titleLabel.setAttribute("for", "manual-job-title");
+
+  const titleInput = createElement("input", "manual-input-field");
+  titleInput.id = "manual-job-title";
+  titleInput.type = "text";
+  titleInput.placeholder = "e.g. Senior Frontend Engineer";
+  titleInput.value = draft.jobTitle;
+
+  const descLabel = createElement("label", "manual-input-label", "Job Description");
+  descLabel.setAttribute("for", "manual-job-description");
+
+  const descInput = createElement("textarea", "manual-input-area");
+  descInput.id = "manual-job-description";
+  descInput.rows = 5;
+  descInput.placeholder = "Paste full job requirements, responsibilities, and skills...";
+  descInput.value = draft.jobDescription;
+
+  const hint = createElement("p", "manual-input-hint", COPY.manualHint);
+  const charCount = createElement(
+    "p",
+    "manual-input-count",
+    `${String(draft.jobDescription || "").trim().length} characters`
+  );
+
+  const manualActions = createElement("div", "manual-input-actions");
+  const saveButton = createElement("button", "secondary-button", "Use Manual Input");
+  saveButton.type = "button";
+
+  const clearButton = createElement("button", "secondary-button", "Clear");
+  clearButton.type = "button";
+
+  titleInput.addEventListener("input", () => {
+    const nextDraft = {
+      ...draft,
+      jobTitle: titleInput.value,
+      jobDescription: descInput.value,
+      error: "",
+    };
+    options.onManualDraftChange?.(nextDraft);
+    charCount.textContent = `${String(nextDraft.jobDescription || "").trim().length} characters`;
+  });
+
+  descInput.addEventListener("input", () => {
+    const nextDraft = {
+      ...draft,
+      jobTitle: titleInput.value,
+      jobDescription: descInput.value,
+      error: "",
+    };
+    options.onManualDraftChange?.(nextDraft);
+    charCount.textContent = `${String(nextDraft.jobDescription || "").trim().length} characters`;
+  });
+
+  saveButton.addEventListener("click", async () => {
+    const activeResumeId = options.getSelectedResumeId?.() || "";
+    saveButton.disabled = true;
+    saveButton.textContent = "Saving...";
+
+    await options.onManualSubmit?.({
+      resumeId: activeResumeId,
+      jobTitle: titleInput.value,
+      jobDescription: descInput.value,
+    });
+  });
+
+  clearButton.addEventListener("click", () => {
+    const cleared = {
+      jobTitle: "",
+      jobDescription: "",
+      error: "",
+    };
+    options.onManualDraftChange?.(cleared);
+    options.onManualClear?.();
+  });
+
+  manualActions.append(saveButton, clearButton);
+
+  section.append(
+    heading,
+    message,
+    titleLabel,
+    titleInput,
+    descLabel,
+    descInput,
+    hint,
+    charCount,
+    manualActions
+  );
+
+  if (draft.error) {
+    section.append(createElement("p", "status-warning", draft.error));
+  }
+
+  return section;
+}
+
 function createStateCard(state, options = {}) {
   const card = createElement("section", "status-card");
   const pill = createElement("div", `status-pill ${state}`);
@@ -400,6 +522,21 @@ function createStateCard(state, options = {}) {
       card.append(extractionSummary);
     }
 
+    const getActiveResumeId = () => {
+      const selector = card.querySelector("#resume-selector");
+      return String(selector?.value || selectedResumeId || "").trim();
+    };
+
+    card.append(
+      createManualInputSection({
+        manualDraft: options.manualDraft,
+        onManualDraftChange: options.onManualDraftChange,
+        onManualSubmit: options.onManualSubmit,
+        onManualClear: options.onManualClear,
+        getSelectedResumeId: getActiveResumeId,
+      })
+    );
+
     if (options.extractionError) {
       card.append(createElement("p", "status-warning", options.extractionError));
     }
@@ -413,8 +550,7 @@ function createStateCard(state, options = {}) {
         return;
       }
 
-      const selector = card.querySelector("#resume-selector");
-      const activeResumeId = String(selector?.value || selectedResumeId || "").trim();
+      const activeResumeId = getActiveResumeId();
       if (!activeResumeId) {
         return;
       }
@@ -493,8 +629,82 @@ function renderReadyState(resumeData) {
     ...resumeData,
     lastExtraction: popupRuntime.lastExtraction,
     extractionError: popupRuntime.extractionError,
+    manualDraft: popupRuntime.manualDraft,
     onAnalyze: handleAnalyzeCurrentTab,
+    onManualDraftChange: handleManualDraftChange,
+    onManualSubmit: handleManualInputSubmit,
+    onManualClear: handleManualInputClear,
   });
+}
+
+function handleManualDraftChange(nextDraft) {
+  popupRuntime.manualDraft = normalizeManualDraft(nextDraft);
+}
+
+function handleManualInputClear() {
+  popupRuntime.manualDraft = {
+    jobTitle: "",
+    jobDescription: "",
+    error: "",
+  };
+  renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
+}
+
+async function handleManualInputSubmit({ resumeId, jobTitle, jobDescription }) {
+  const activeResumeId = String(resumeId || "").trim();
+  const normalizedTitle = String(jobTitle || "").trim();
+  const normalizedDescription = String(jobDescription || "").trim();
+
+  if (!activeResumeId) {
+    popupRuntime.manualDraft = {
+      ...normalizeManualDraft({ jobTitle: normalizedTitle, jobDescription: normalizedDescription }),
+      error: "Select a resume before saving manual input.",
+    };
+    renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
+    return;
+  }
+
+  if (normalizedDescription.length < MIN_JOB_DESCRIPTION_LENGTH) {
+    popupRuntime.manualDraft = {
+      ...normalizeManualDraft({ jobTitle: normalizedTitle, jobDescription: normalizedDescription }),
+      error: `Description is too short. Add at least ${MIN_JOB_DESCRIPTION_LENGTH} characters.`,
+    };
+    renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: activeResumeId });
+    return;
+  }
+
+  const manualExtraction = {
+    jobTitle: normalizedTitle || "Manual Job Entry",
+    jobDescription: normalizedDescription,
+    descriptionLength: normalizedDescription.length,
+    company: null,
+    location: null,
+    site: "manual",
+    extractedBy: "manual-input",
+    pageTitle: "Manual Input",
+    pageUrl: "manual://input",
+    resumeId: activeResumeId,
+    capturedAt: new Date().toISOString(),
+    extractedAt: new Date().toISOString(),
+  };
+
+  await setToStorage(
+    {
+      [STORAGE_KEYS.SELECTED_RESUME_ID]: activeResumeId,
+      [STORAGE_KEYS.LAST_ANALYSIS]: manualExtraction,
+    },
+    { area: STORAGE_AREAS.SYNC }
+  );
+
+  popupRuntime.lastExtraction = manualExtraction;
+  popupRuntime.extractionError = "";
+  popupRuntime.manualDraft = {
+    jobTitle: normalizedTitle,
+    jobDescription: normalizedDescription,
+    error: "",
+  };
+
+  renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: activeResumeId });
 }
 
 async function handleAnalyzeCurrentTab({ resumeId }) {
@@ -539,6 +749,10 @@ async function handleAnalyzeCurrentTab({ resumeId }) {
     popupRuntime.extractionError = "";
   } catch (error) {
     popupRuntime.extractionError = getErrorMessage(error, "Could not extract job details from this page.");
+    popupRuntime.manualDraft = {
+      ...popupRuntime.manualDraft,
+      error: "Auto extraction failed. Paste the job description manually below.",
+    };
   }
 
   renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: activeResumeId });
@@ -555,6 +769,14 @@ async function loadLastExtraction() {
   const extraction = stored[STORAGE_KEYS.LAST_ANALYSIS];
   if (extraction && typeof extraction === "object") {
     popupRuntime.lastExtraction = extraction;
+
+    if (String(extraction.site || "") === "manual") {
+      popupRuntime.manualDraft = {
+        jobTitle: String(extraction.jobTitle || ""),
+        jobDescription: String(extraction.jobDescription || ""),
+        error: "",
+      };
+    }
   }
 }
 

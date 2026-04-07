@@ -1,6 +1,7 @@
 import { MESSAGE_TYPES } from "../shared/constants.js";
 import { detectLinkedInJob } from "./detectors/linkedin.js";
 import { detectIndeedJob } from "./detectors/indeed.js";
+import { detectGenericJob } from "./detectors/generic.js";
 
 function detectSourceSite(url) {
   const value = String(url || "").toLowerCase();
@@ -18,33 +19,6 @@ function detectSourceSite(url) {
   }
 
   return "generic";
-}
-
-function normalizeText(value) {
-  return String(value || "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function getDescriptionText() {
-  const selectors = [
-    "main",
-    "article",
-    "[role='main']",
-    ".jobs-description",
-    ".jobsearch-jobDescriptionText",
-    ".jobDescriptionContent",
-  ];
-
-  for (const selector of selectors) {
-    const element = document.querySelector(selector);
-    const text = normalizeText(element?.innerText || element?.textContent || "");
-    if (text.length > 80) {
-      return text;
-    }
-  }
-
-  return normalizeText(document.body?.innerText || "");
 }
 
 function extractCurrentJobContext() {
@@ -85,14 +59,25 @@ function extractCurrentJobContext() {
     }
   }
 
-  const titleElement = document.querySelector("h1, h2");
-  const title = normalizeText(titleElement?.textContent || document.title);
-  const description = getDescriptionText().slice(0, 10000);
+  const genericJob = detectGenericJob({
+    root: document,
+    pageTitle: document.title,
+    site,
+  });
+
+  if (genericJob) {
+    return {
+      ...genericJob,
+      pageTitle: document.title,
+      pageUrl,
+      extractedAt: new Date().toISOString(),
+    };
+  }
 
   return {
-    jobTitle: title,
-    jobDescription: description,
-    descriptionLength: description.length,
+    jobTitle: document.title || "Untitled Role",
+    jobDescription: "",
+    descriptionLength: 0,
     site,
     extractedBy: "generic-detector",
     pageTitle: document.title,
