@@ -1,10 +1,10 @@
-import Resume from '../models/Resume.js';
-import Comparison from '../models/Comparison.js';
-import { successResponse, errorResponse } from '../utils/responseHelper.js';
-import { AppError } from '../utils/AppError.js';
-import asyncHandler from '../middleware/asyncHandler.js';
-import aiSkillExtractorService from '../services/aiSkillExtractorService.js';
-import skillGapService from '../services/skillGapService.js';
+const Resume = require('../models/Resume');
+const Comparison = require('../models/Comparison');
+const { successResponse, errorResponse } = require('../utils/responseHelper');
+const { AppError } = require('../utils/AppError');
+const asyncHandler = require('../middleware/asyncHandler');
+const aiSkillExtractorService = require('../services/aiSkillExtractorService');
+const skillGapService = require('../services/skillGapService');
 
 class ExtensionController {
   /**
@@ -124,4 +124,4 @@ class ExtensionController {
   });
 }
 
-export default ExtensionController;
+module.exports = ExtensionController;

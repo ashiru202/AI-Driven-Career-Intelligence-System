@@ -1,8 +1,7 @@
-import express from 'express';
-import { requireAuth } from '../middleware/authMiddleware.js';
-import ExtensionController from '../controllers/extensionController.js';
-
+const express = require('express');
 const router = express.Router();
+const { requireAuth } = require('../middleware/authMiddleware');
+const ExtensionController = require('../controllers/extensionController');
 
 // All extension routes require authentication
 router.use(requireAuth);
@@ -16,4 +15,4 @@ router.post('/compare', ExtensionController.quickCompare);
 // Health check for extension
 router.get('/health', ExtensionController.healthCheck);
 
-export default router;
+module.exports = router;

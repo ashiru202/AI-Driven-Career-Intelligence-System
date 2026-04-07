@@ -72,6 +72,7 @@ const analyticsRoutes       = require("./routes/analyticsRoutes");
 const reportRoutes          = require("./routes/reportRoutes");
 const notificationsRoutes   = require("./routes/notificationsRoutes");
 const trendRoutes           = require("./routes/trendRoutes");
+const extensionRoutes       = require("./routes/extensionRoutes");
 
 app.use("/api",            healthRoutes);
 
@@ -84,6 +85,7 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use("/api/resumes",    resumeRoutes);
 app.use("/api/comparisons", comparisonRoutes);
+app.use("/api/extension",   extensionRoutes);
 app.use("/api/roadmaps-new", newRoadmapRoutes);
 app.use("/api/analytics",  analyticsRoutes);
 app.use("/api/reports",        reportRoutes);
