@@ -1,0 +1,11 @@
+{
+  "name": "career-skill-gap-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser extension scaffold for Career Intelligence System",
+  "type": "module",
+  "scripts": {
+    "build": "echo \"Build tooling will be added in Task 3\"",
+    "test": "echo \"Tests will be added in later tasks\""
+  }
+}
