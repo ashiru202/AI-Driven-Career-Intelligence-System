@@ -1,6 +1,4 @@
-const CONTENT_MESSAGE_TYPES = Object.freeze({
-  EXTRACT_JOB: "CONTENT/EXTRACT_JOB",
-});
+import { MESSAGE_TYPES } from "../shared/constants.js";
 
 function normalizeText(value) {
   return String(value || "")
@@ -44,7 +42,7 @@ function extractCurrentJobContext() {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (!message || message.type !== CONTENT_MESSAGE_TYPES.EXTRACT_JOB) {
+  if (!message || message.type !== MESSAGE_TYPES.CONTENT_EXTRACT_JOB) {
     return false;
   }
 

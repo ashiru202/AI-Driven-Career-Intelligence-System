@@ -1,3 +1,5 @@
+import { MESSAGE_TYPES } from "../shared/constants.js";
+
 const app = document.getElementById("app");
 
 function sendRuntimeMessage(message) {
@@ -23,7 +25,7 @@ async function renderStatus() {
   status.textContent = "Checking background service worker...";
   app.appendChild(status);
 
-  const pingResponse = await sendRuntimeMessage({ type: "EXTENSION/PING" });
+  const pingResponse = await sendRuntimeMessage({ type: MESSAGE_TYPES.PING });
   if (pingResponse.ok) {
     status.textContent = "Background service worker connected.";
     return;

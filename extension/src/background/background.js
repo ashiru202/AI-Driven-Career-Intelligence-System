@@ -1,12 +1,4 @@
-const MESSAGE_TYPES = Object.freeze({
-  PING: "EXTENSION/PING",
-  GET_ACTIVE_TAB: "EXTENSION/GET_ACTIVE_TAB",
-  REQUEST_JOB_EXTRACTION: "EXTENSION/REQUEST_JOB_EXTRACTION",
-  OPEN_APP_PAGE: "EXTENSION/OPEN_APP_PAGE",
-  CONTENT_EXTRACT_JOB: "CONTENT/EXTRACT_JOB",
-});
-
-const DEFAULT_APP_URL = "http://localhost:3000";
+import { DEFAULT_APP_BASE_URL, MESSAGE_TYPES } from "../shared/constants.js";
 
 function buildResponse(ok, data = null, error = null) {
   return { ok, data, error };
@@ -65,7 +57,7 @@ async function handleOpenAppPage(message) {
   const baseUrl =
     typeof message.baseUrl === "string" && message.baseUrl.startsWith("http")
       ? message.baseUrl
-      : DEFAULT_APP_URL;
+      : DEFAULT_APP_BASE_URL;
   const path = typeof message.path === "string" ? message.path : "/";
   const targetUrl = new URL(path, baseUrl).toString();
   const tab = await chrome.tabs.create({ url: targetUrl });
