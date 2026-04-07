@@ -4,6 +4,12 @@ import { getFromStorage, setToStorage } from "./utils/storage.js";
 
 const app = document.getElementById("app");
 const RESUME_CACHE_TTL_MS = 5 * 60 * 1000;
+const MIN_JOB_DESCRIPTION_LENGTH = 120;
+const popupRuntime = {
+  resumeData: null,
+  lastExtraction: null,
+  extractionError: "",
+};
 
 const POPUP_STATES = Object.freeze({
   LOADING: "loading",
@@ -105,6 +111,51 @@ function formatRelativeTime(timestampMs) {
 
   const diffHours = Math.round(diffMinutes / 60);
   return `${diffHours}h ago`;
+}
+
+function truncateText(value, maxLength) {
+  const text = String(value || "").trim();
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, Math.max(0, maxLength - 1)).trimEnd()}...`;
+}
+
+function getErrorMessage(error, fallback) {
+  if (error instanceof AuthSessionError && error.message) {
+    return error.message;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
+function normalizeExtractedJob(response) {
+  const data = response?.data || null;
+  const job = data?.job || data?.extraction?.data || null;
+  const tab = data?.tab || null;
+
+  if (!job || typeof job !== "object") {
+    throw new Error("No job details were returned from the active tab.");
+  }
+
+  const jobTitle = String(job.jobTitle || "").trim();
+  const jobDescription = String(job.jobDescription || "").trim();
+
+  if (!jobDescription || jobDescription.length < MIN_JOB_DESCRIPTION_LENGTH) {
+    throw new Error("Job description appears too short. Open a full job post and try again.");
+  }
+
+  return {
+    ...job,
+    jobTitle: jobTitle || "Untitled role",
+    jobDescription,
+    tab,
+  };
 }
 
 async function openMainApp(path = "/") {
@@ -223,10 +274,38 @@ function createHeader() {
 function createFooter() {
   const footer = createElement("footer", "popup-footer");
   footer.append(
-    createElement("span", "footer-chip", "Task 8 CV Selector"),
-    createElement("span", "footer-chip", "5-min cache enabled")
+    createElement("span", "footer-chip", "Task 9 Messaging Bridge"),
+    createElement("span", "footer-chip", "Tab extraction wired")
   );
   return footer;
+}
+
+function createExtractionSummary(options = {}) {
+  const extraction = options.lastExtraction;
+  if (!extraction || typeof extraction !== "object") {
+    return null;
+  }
+
+  const resumes = Array.isArray(options.resumes) ? options.resumes : [];
+  const selectedResume = resumes.find((resume) => resume.id === extraction.resumeId);
+
+  const panel = createElement("section", "analysis-summary");
+  const title = createElement("h3", "analysis-summary-title", "Latest Extraction");
+  const meta1 = createElement(
+    "p",
+    "analysis-summary-meta",
+    `Source: ${String(extraction.site || "generic").toUpperCase()} | Resume: ${selectedResume?.name || "Unknown"}`
+  );
+  const meta2 = createElement(
+    "p",
+    "analysis-summary-meta",
+    `Captured ${formatRelativeTime(new Date(extraction.capturedAt || extraction.extractedAt || Date.now()).getTime())}`
+  );
+  const jobTitle = createElement("p", "analysis-summary-role", extraction.jobTitle || "Untitled role");
+  const snippet = createElement("p", "analysis-summary-snippet", truncateText(extraction.jobDescription, 220));
+
+  panel.append(title, meta1, meta2, jobTitle, snippet);
+  return panel;
 }
 
 function createResumeSelector(options = {}) {
@@ -316,8 +395,35 @@ function createStateCard(state, options = {}) {
 
     card.append(createResumeSelector(options));
 
+    const extractionSummary = createExtractionSummary(options);
+    if (extractionSummary) {
+      card.append(extractionSummary);
+    }
+
+    if (options.extractionError) {
+      card.append(createElement("p", "status-warning", options.extractionError));
+    }
+
     const analyzeButton = createElement("button", "primary-button", "Analyze Current Job");
+    analyzeButton.type = "button";
     analyzeButton.disabled = resumes.length === 0;
+
+    analyzeButton.addEventListener("click", async () => {
+      if (typeof options.onAnalyze !== "function") {
+        return;
+      }
+
+      const selector = card.querySelector("#resume-selector");
+      const activeResumeId = String(selector?.value || selectedResumeId || "").trim();
+      if (!activeResumeId) {
+        return;
+      }
+
+      analyzeButton.disabled = true;
+      analyzeButton.textContent = "Extracting...";
+
+      await options.onAnalyze({ resumeId: activeResumeId });
+    });
 
     const refreshButton = createElement("button", "secondary-button", "Refresh CV List");
     refreshButton.type = "button";
@@ -380,6 +486,78 @@ function renderShell(state, options = {}) {
   app.append(shell);
 }
 
+function renderReadyState(resumeData) {
+  popupRuntime.resumeData = resumeData;
+
+  renderShell(POPUP_STATES.EMPTY, {
+    ...resumeData,
+    lastExtraction: popupRuntime.lastExtraction,
+    extractionError: popupRuntime.extractionError,
+    onAnalyze: handleAnalyzeCurrentTab,
+  });
+}
+
+async function handleAnalyzeCurrentTab({ resumeId }) {
+  const activeResumeId = String(resumeId || "").trim();
+  if (!activeResumeId) {
+    popupRuntime.extractionError = "Select a resume before starting analysis.";
+    renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
+    return;
+  }
+
+  await setToStorage(
+    {
+      [STORAGE_KEYS.SELECTED_RESUME_ID]: activeResumeId,
+    },
+    { area: STORAGE_AREAS.SYNC }
+  );
+
+  try {
+    const extractionResponse = await sendRuntimeMessage({
+      type: MESSAGE_TYPES.REQUEST_JOB_EXTRACTION,
+    });
+
+    if (!extractionResponse.ok) {
+      throw new Error(extractionResponse.error || "Extraction request failed.");
+    }
+
+    const extractedJob = normalizeExtractedJob(extractionResponse);
+    const lastExtraction = {
+      ...extractedJob,
+      resumeId: activeResumeId,
+      capturedAt: new Date().toISOString(),
+    };
+
+    await setToStorage(
+      {
+        [STORAGE_KEYS.LAST_ANALYSIS]: lastExtraction,
+      },
+      { area: STORAGE_AREAS.SYNC }
+    );
+
+    popupRuntime.lastExtraction = lastExtraction;
+    popupRuntime.extractionError = "";
+  } catch (error) {
+    popupRuntime.extractionError = getErrorMessage(error, "Could not extract job details from this page.");
+  }
+
+  renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: activeResumeId });
+}
+
+async function loadLastExtraction() {
+  const stored = await getFromStorage(
+    {
+      [STORAGE_KEYS.LAST_ANALYSIS]: null,
+    },
+    { area: STORAGE_AREAS.SYNC }
+  );
+
+  const extraction = stored[STORAGE_KEYS.LAST_ANALYSIS];
+  if (extraction && typeof extraction === "object") {
+    popupRuntime.lastExtraction = extraction;
+  }
+}
+
 async function bootstrapPopup(forceRefresh = false) {
   renderShell(POPUP_STATES.LOADING);
 
@@ -402,8 +580,9 @@ async function bootstrapPopup(forceRefresh = false) {
   }
 
   try {
+    await loadLastExtraction();
     const resumeData = await loadResumesForPopup(forceRefresh);
-    renderShell(POPUP_STATES.EMPTY, resumeData);
+    renderReadyState(resumeData);
   } catch (error) {
     const isAuthError = error instanceof AuthSessionError;
     const message = error instanceof Error ? error.message : "Failed to load resumes.";

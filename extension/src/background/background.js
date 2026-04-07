@@ -43,13 +43,22 @@ async function handleJobExtractionRequest() {
     return extractionResult;
   }
 
+  const contentPayload = extractionResult.data;
+  if (!contentPayload || contentPayload.ok !== true || !contentPayload.data) {
+    return buildResponse(
+      false,
+      null,
+      contentPayload?.error || "Content script could not extract job details from this page."
+    );
+  }
+
   return buildResponse(true, {
     tab: {
       id: activeTab.id,
       title: activeTab.title || null,
       url: activeTab.url || null,
     },
-    extraction: extractionResult.data,
+    job: contentPayload.data,
   });
 }
 

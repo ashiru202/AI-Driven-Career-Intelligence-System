@@ -163,6 +163,45 @@ body {
   padding: 8px 10px;
 }
 
+.analysis-summary {
+  margin-top: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(248, 250, 252, 0.82);
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.analysis-summary-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #0f172a;
+}
+
+.analysis-summary-meta {
+  margin: 0;
+  font-size: 11px;
+  color: #475569;
+}
+
+.analysis-summary-role {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.analysis-summary-snippet {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #334155;
+}
+
 .primary-button,
 .secondary-button {
   border: 0;

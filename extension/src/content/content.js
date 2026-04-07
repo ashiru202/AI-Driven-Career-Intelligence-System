@@ -1,5 +1,23 @@
 import { MESSAGE_TYPES } from "../shared/constants.js";
 
+function detectSourceSite(url) {
+  const value = String(url || "").toLowerCase();
+
+  if (value.includes("linkedin.com")) {
+    return "linkedin";
+  }
+
+  if (value.includes("indeed.")) {
+    return "indeed";
+  }
+
+  if (value.includes("glassdoor.")) {
+    return "glassdoor";
+  }
+
+  return "generic";
+}
+
 function normalizeText(value) {
   return String(value || "")
     .replace(/\s+/g, " ")
@@ -31,12 +49,15 @@ function extractCurrentJobContext() {
   const titleElement = document.querySelector("h1, h2");
   const title = normalizeText(titleElement?.textContent || document.title);
   const description = getDescriptionText().slice(0, 10000);
+  const pageUrl = window.location.href;
 
   return {
     jobTitle: title,
     jobDescription: description,
+    descriptionLength: description.length,
+    site: detectSourceSite(pageUrl),
     pageTitle: document.title,
-    pageUrl: window.location.href,
+    pageUrl,
     extractedAt: new Date().toISOString(),
   };
 }
@@ -61,6 +82,7 @@ export function bootstrapContentScript() {
   return {
     ready: true,
     url: window.location.href,
+    site: detectSourceSite(window.location.href),
   };
 }
 
