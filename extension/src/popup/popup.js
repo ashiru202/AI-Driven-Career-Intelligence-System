@@ -389,8 +389,8 @@ function createHeader() {
 function createFooter() {
   const footer = createElement("footer", "popup-footer");
   footer.append(
-    createElement("span", "footer-chip", "Task 13 Compare API"),
-    createElement("span", "footer-chip", "Extraction -> compare wired")
+    createElement("span", "footer-chip", "Task 14 Results View"),
+    createElement("span", "footer-chip", "Score + skills sections")
   );
   return footer;
 }
@@ -429,27 +429,68 @@ function createComparisonSummary(options = {}) {
     return null;
   }
 
+  const matchScore = Math.max(0, Math.min(100, Number(comparison.matchScore || 0)));
+  const commonSkills = normalizeSkillList(comparison.commonSkills);
+  const missingSkills = normalizeSkillList(comparison.missingSkills);
+
+  const createSkillList = (skills, variant, emptyText) => {
+    if (!skills.length) {
+      return createElement("p", "comparison-section-empty", emptyText);
+    }
+
+    const list = createElement("div", `comparison-skill-list ${variant}`);
+    skills.slice(0, 12).forEach((skill) => {
+      list.append(createElement("span", `comparison-skill-pill ${variant}`, skill));
+    });
+    return list;
+  };
+
   const panel = createElement("section", "comparison-summary");
   const title = createElement("h3", "comparison-summary-title", COPY.comparisonHeading);
-  const score = createElement("p", "comparison-summary-score", `${Number(comparison.matchScore || 0)}% match`);
+  const score = createElement("p", "comparison-summary-score", `${Math.round(matchScore)}% match`);
 
-  const stats = createElement(
+  const scoreBar = createElement("div", "comparison-scorebar");
+  const scoreFill = createElement("div", "comparison-scorebar-fill");
+  scoreFill.style.width = `${Math.round(matchScore)}%`;
+  scoreBar.append(scoreFill);
+
+  const stats = createElement("div", "comparison-summary-stats");
+  stats.append(
+    createElement("span", "comparison-stat-pill matched", `Matched ${Number(comparison.commonCount || 0)}`),
+    createElement("span", "comparison-stat-pill missing", `Missing ${Number(comparison.missingCount || 0)}`),
+    createElement("span", "comparison-stat-pill total", `Required ${Number(comparison.totalRequired || 0)}`)
+  );
+
+  const metaTextParts = [];
+  if (comparison.site) {
+    metaTextParts.push(String(comparison.site).toUpperCase());
+  }
+  if (comparison.timestamp) {
+    metaTextParts.push(`Updated ${formatRelativeTime(new Date(comparison.timestamp).getTime())}`);
+  }
+
+  const meta = createElement(
     "p",
     "comparison-summary-meta",
-    `Matched: ${Number(comparison.commonCount || 0)} | Missing: ${Number(comparison.missingCount || 0)} | Required: ${Number(comparison.totalRequired || 0)}`
+    metaTextParts.length ? metaTextParts.join(" | ") : "Latest analysis"
   );
 
-  const missingPreview = Array.isArray(comparison.missingSkills)
-    ? comparison.missingSkills.slice(0, 4).join(", ")
-    : "";
-
-  const missingText = createElement(
-    "p",
-    "comparison-summary-missing",
-    missingPreview ? `Top gaps: ${missingPreview}` : "No missing skills found in this comparison."
+  const matchedSection = createElement("div", "comparison-section");
+  matchedSection.append(
+    createElement("h4", "comparison-section-title matched", "Matched Skills"),
+    createSkillList(commonSkills, "matched", "No matched skills found yet.")
   );
 
-  panel.append(title, score, stats, missingText);
+  const missingSection = createElement("div", "comparison-section");
+  missingSection.append(
+    createElement("h4", "comparison-section-title missing", "Missing Skills"),
+    createSkillList(missingSkills, "missing", "No missing skills detected.")
+  );
+
+  const sections = createElement("div", "comparison-sections");
+  sections.append(matchedSection, missingSection);
+
+  panel.append(title, score, scoreBar, stats, meta, sections);
   return panel;
 }
 

@@ -209,7 +209,7 @@ body {
   background: rgba(236, 253, 245, 0.82);
   padding: 10px 12px;
   display: grid;
-  gap: 5px;
+  gap: 8px;
 }
 
 .comparison-summary-title {
@@ -228,11 +228,118 @@ body {
   color: #065f46;
 }
 
+.comparison-scorebar {
+  width: 100%;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+}
+
+.comparison-scorebar-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #0f766e 0%, #14b8a6 100%);
+  border-radius: inherit;
+  transition: width 220ms ease;
+}
+
+.comparison-summary-stats {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.comparison-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.comparison-stat-pill.matched {
+  color: #065f46;
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.comparison-stat-pill.missing {
+  color: #7f1d1d;
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.comparison-stat-pill.total {
+  color: #1d4ed8;
+  background: rgba(59, 130, 246, 0.14);
+}
+
 .comparison-summary-meta,
 .comparison-summary-missing {
   margin: 0;
   font-size: 12px;
   color: #1f2937;
+}
+
+.comparison-sections {
+  display: grid;
+  gap: 8px;
+}
+
+.comparison-section {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.74);
+  padding: 8px;
+  display: grid;
+  gap: 7px;
+}
+
+.comparison-section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.comparison-section-title.matched {
+  color: #065f46;
+}
+
+.comparison-section-title.missing {
+  color: #991b1b;
+}
+
+.comparison-skill-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.comparison-skill-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.comparison-skill-pill.matched {
+  color: #065f46;
+  background: rgba(16, 185, 129, 0.16);
+}
+
+.comparison-skill-pill.missing {
+  color: #7f1d1d;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.comparison-section-empty {
+  margin: 0;
+  font-size: 11px;
+  color: #475569;
 }
 
 .manual-input {
