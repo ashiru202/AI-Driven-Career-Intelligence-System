@@ -1,5 +1,6 @@
 import { EXTENSION_API_ROUTES, MESSAGE_TYPES, STORAGE_AREAS, STORAGE_KEYS } from "../shared/constants.js";
 import { AuthSessionError, requestWithAuth, validateSessionWithBackend } from "../shared/auth.js";
+import { ApiRequestError } from "./utils/api.js";
 import { getFromStorage, setToStorage } from "./utils/storage.js";
 
 const app = document.getElementById("app");
@@ -41,6 +42,12 @@ const COPY = Object.freeze({
   compareFailed: "Comparison request failed.",
   roadmapLabel: "Generate Roadmap",
   roadmapFailed: "Could not open roadmap in the main app.",
+  timeoutMessage: "Request timed out. Please retry.",
+  networkMessage: "Network issue detected. Check your connection and retry.",
+  noResumeMessage: "No resume found. Upload one in the app, then retry.",
+  tokenExpiredMessage: "Your session expired. Please sign in again from the main app.",
+  retryExtractionLabel: "Retry Extraction",
+  retryComparisonLabel: "Retry Comparison",
   authHeading: "Sign in required",
   authMessage: "Your extension session is missing or expired. Sign in from the main app to continue.",
   errorHeading: "Could not connect",
@@ -136,7 +143,46 @@ function truncateText(value, maxLength) {
   return `${text.slice(0, Math.max(0, maxLength - 1)).trimEnd()}...`;
 }
 
+function getApiErrorCode(error) {
+  return String(error?.payload?.error?.code || "").trim().toUpperCase();
+}
+
+function isAuthFailure(error) {
+  if (error instanceof AuthSessionError) {
+    return true;
+  }
+
+  if (error instanceof ApiRequestError && error.status === 401) {
+    return true;
+  }
+
+  return getApiErrorCode(error) === "UNAUTHORIZED";
+}
+
 function getErrorMessage(error, fallback) {
+  if (isAuthFailure(error)) {
+    return COPY.tokenExpiredMessage;
+  }
+
+  if (error instanceof ApiRequestError) {
+    if (error.status === 408) {
+      return COPY.timeoutMessage;
+    }
+
+    if (error.status === 0) {
+      return COPY.networkMessage;
+    }
+
+    const code = getApiErrorCode(error);
+    if (code === "NO_RESUME") {
+      return COPY.noResumeMessage;
+    }
+
+    if (typeof error.message === "string" && error.message.trim()) {
+      return error.message;
+    }
+  }
+
   if (error instanceof AuthSessionError && error.message) {
     return error.message;
   }
@@ -352,8 +398,14 @@ async function runQuickComparison({ resumeId, jobContext }) {
   });
 
   if (response?.ok === false) {
+    const code = String(response?.error?.code || "COMPARE_FAILED").trim().toUpperCase();
     const message = response?.error?.message || COPY.compareFailed;
-    throw new Error(message);
+    throw new ApiRequestError(message, 400, {
+      error: {
+        code,
+        message,
+      },
+    });
   }
 
   const comparison = normalizeComparisonResult(response, {
@@ -397,8 +449,8 @@ function createHeader() {
 function createFooter() {
   const footer = createElement("footer", "popup-footer");
   footer.append(
-    createElement("span", "footer-chip", "Task 15 Roadmap Link"),
-    createElement("span", "footer-chip", "comparisonId deep link ready")
+    createElement("span", "footer-chip", "Task 16 Error Recovery"),
+    createElement("span", "footer-chip", "Timeout/auth/retry handling")
   );
   return footer;
 }
@@ -775,12 +827,53 @@ function createStateCard(state, options = {}) {
     if (resumes.length === 0) {
       const uploadButton = createElement("button", "secondary-button", "Open App to Upload");
       uploadButton.type = "button";
-      uploadButton.addEventListener("click", () => {
-        openMainApp("/upload");
+      uploadButton.addEventListener("click", async () => {
+        try {
+          await openMainApp("/upload");
+        } catch (error) {
+          popupRuntime.extractionError = getErrorMessage(error, "Could not open upload page.");
+          renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
+        }
       });
       actions.append(uploadButton);
     } else {
       analyzeButton.dataset.resumeId = selectedResumeId;
+
+      if (options.extractionError && typeof options.onRetryExtraction === "function") {
+        const retryExtractionButton = createElement("button", "secondary-button", COPY.retryExtractionLabel);
+        retryExtractionButton.type = "button";
+        retryExtractionButton.addEventListener("click", async () => {
+          const activeResumeId = getActiveResumeId();
+          if (!activeResumeId) {
+            return;
+          }
+
+          retryExtractionButton.disabled = true;
+          retryExtractionButton.textContent = "Retrying...";
+          await options.onRetryExtraction({ resumeId: activeResumeId });
+        });
+        actions.append(retryExtractionButton);
+      }
+
+      if (
+        options.comparisonError &&
+        options.lastExtraction &&
+        typeof options.onRetryComparison === "function"
+      ) {
+        const retryComparisonButton = createElement("button", "secondary-button", COPY.retryComparisonLabel);
+        retryComparisonButton.type = "button";
+        retryComparisonButton.addEventListener("click", async () => {
+          const activeResumeId = getActiveResumeId();
+          if (!activeResumeId) {
+            return;
+          }
+
+          retryComparisonButton.disabled = true;
+          retryComparisonButton.textContent = "Retrying...";
+          await options.onRetryComparison({ resumeId: activeResumeId });
+        });
+        actions.append(retryComparisonButton);
+      }
     }
   }
 
@@ -802,8 +895,18 @@ function createStateCard(state, options = {}) {
     if (options.allowOpenApp) {
       const openAppButton = createElement("button", "secondary-button", "Open App Login");
       openAppButton.type = "button";
-      openAppButton.addEventListener("click", () => {
-        openMainApp("/login");
+      openAppButton.addEventListener("click", async () => {
+        try {
+          await openMainApp("/login");
+        } catch (error) {
+          const detail = getErrorMessage(error, COPY.roadmapFailed);
+          renderShell(POPUP_STATES.ERROR, {
+            heading: COPY.authHeading,
+            message: COPY.authMessage,
+            error: detail,
+            allowOpenApp: true,
+          });
+        }
       });
       actions.append(openAppButton);
     }
@@ -837,9 +940,19 @@ function renderReadyState(resumeData) {
     manualDraft: popupRuntime.manualDraft,
     onAnalyze: handleAnalyzeCurrentTab,
     onGenerateRoadmap: handleGenerateRoadmap,
+    onRetryExtraction: handleRetryExtraction,
+    onRetryComparison: handleRetryComparison,
     onManualDraftChange: handleManualDraftChange,
     onManualSubmit: handleManualInputSubmit,
     onManualClear: handleManualInputClear,
+  });
+}
+
+function renderAuthRequiredState(message = COPY.authMessage) {
+  renderShell(POPUP_STATES.ERROR, {
+    heading: COPY.authHeading,
+    message,
+    allowOpenApp: true,
   });
 }
 
@@ -854,6 +967,41 @@ function handleManualInputClear() {
     error: "",
   };
   renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
+}
+
+async function handleRetryExtraction({ resumeId }) {
+  await handleAnalyzeCurrentTab({ resumeId });
+}
+
+async function handleRetryComparison({ resumeId }) {
+  const activeResumeId = String(resumeId || "").trim() || String(popupRuntime.lastExtraction?.resumeId || "").trim();
+  if (!activeResumeId) {
+    popupRuntime.comparisonError = "Select a resume before retrying comparison.";
+    renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
+    return;
+  }
+
+  if (!popupRuntime.lastExtraction) {
+    popupRuntime.comparisonError = "No extracted job data found. Retry extraction first.";
+    renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: activeResumeId });
+    return;
+  }
+
+  try {
+    await runQuickComparison({
+      resumeId: activeResumeId,
+      jobContext: popupRuntime.lastExtraction,
+    });
+    popupRuntime.comparisonError = "";
+  } catch (error) {
+    if (isAuthFailure(error)) {
+      renderAuthRequiredState(getErrorMessage(error, COPY.authMessage));
+      return;
+    }
+    popupRuntime.comparisonError = getErrorMessage(error, COPY.compareFailed);
+  }
+
+  renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: activeResumeId });
 }
 
 async function handleGenerateRoadmap(comparison) {
@@ -940,6 +1088,10 @@ async function handleManualInputSubmit({ resumeId, jobTitle, jobDescription }) {
       jobContext: manualExtraction,
     });
   } catch (error) {
+    if (isAuthFailure(error)) {
+      renderAuthRequiredState(getErrorMessage(error, COPY.authMessage));
+      return;
+    }
     popupRuntime.comparisonError = getErrorMessage(error, COPY.compareFailed);
   }
 
@@ -1005,6 +1157,10 @@ async function handleAnalyzeCurrentTab({ resumeId }) {
       jobContext: lastExtraction,
     });
   } catch (error) {
+    if (isAuthFailure(error)) {
+      renderAuthRequiredState(getErrorMessage(error, COPY.authMessage));
+      return;
+    }
     popupRuntime.comparisonError = getErrorMessage(error, COPY.compareFailed);
   }
 
@@ -1060,11 +1216,8 @@ async function bootstrapPopup(forceRefresh = false) {
 
   const authState = await validateSessionWithBackend({ strict: false });
   if (!authState.ok && ["missing-token", "expired-token", "unauthorized"].includes(authState.reason)) {
-    renderShell(POPUP_STATES.ERROR, {
-      heading: COPY.authHeading,
-      message: COPY.authMessage,
-      allowOpenApp: true,
-    });
+    const reasonMessage = authState.reason === "expired-token" ? COPY.tokenExpiredMessage : COPY.authMessage;
+    renderAuthRequiredState(reasonMessage);
     return;
   }
 
@@ -1074,14 +1227,18 @@ async function bootstrapPopup(forceRefresh = false) {
     const resumeData = await loadResumesForPopup(forceRefresh);
     renderReadyState(resumeData);
   } catch (error) {
-    const isAuthError = error instanceof AuthSessionError;
+    const isAuthError = isAuthFailure(error);
     const message = error instanceof Error ? error.message : "Failed to load resumes.";
 
+    if (isAuthError) {
+      renderAuthRequiredState(getErrorMessage(error, COPY.authMessage));
+      return;
+    }
+
     renderShell(POPUP_STATES.ERROR, {
-      heading: isAuthError ? COPY.authHeading : COPY.errorHeading,
-      message: isAuthError ? COPY.authMessage : "Could not load your resumes.",
-      error: message,
-      allowOpenApp: isAuthError,
+      heading: COPY.errorHeading,
+      message: "Could not load your resumes.",
+      error: getErrorMessage(error, message),
     });
   }
 }
