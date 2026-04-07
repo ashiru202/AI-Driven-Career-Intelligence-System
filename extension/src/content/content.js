@@ -1,4 +1,5 @@
 import { MESSAGE_TYPES } from "../shared/constants.js";
+import { detectLinkedInJob } from "./detectors/linkedin.js";
 
 function detectSourceSite(url) {
   const value = String(url || "").toLowerCase();
@@ -46,16 +47,36 @@ function getDescriptionText() {
 }
 
 function extractCurrentJobContext() {
+  const pageUrl = window.location.href;
+  const site = detectSourceSite(pageUrl);
+
+  if (site === "linkedin") {
+    const linkedInJob = detectLinkedInJob({
+      root: document,
+      url: pageUrl,
+      pageTitle: document.title,
+    });
+
+    if (linkedInJob) {
+      return {
+        ...linkedInJob,
+        pageTitle: document.title,
+        pageUrl,
+        extractedAt: new Date().toISOString(),
+      };
+    }
+  }
+
   const titleElement = document.querySelector("h1, h2");
   const title = normalizeText(titleElement?.textContent || document.title);
   const description = getDescriptionText().slice(0, 10000);
-  const pageUrl = window.location.href;
 
   return {
     jobTitle: title,
     jobDescription: description,
     descriptionLength: description.length,
-    site: detectSourceSite(pageUrl),
+    site,
+    extractedBy: "generic-detector",
     pageTitle: document.title,
     pageUrl,
     extractedAt: new Date().toISOString(),
