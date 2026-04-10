@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/api";
-import { ArrowLeft, Sparkles, User, Mail, Lock, CheckCircle } from "lucide-react";
+import { ArrowLeft, User, Mail, Lock, CheckCircle } from "lucide-react";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -98,13 +98,8 @@ export default function Register() {
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 500, letterSpacing: 0.6, marginTop: 4, textTransform: 'uppercase' }}>Career Intelligence</div>
           </Link>
 
-          {/* Decorative element */}
-          <div style={{ width: 80, height: 80, borderRadius: 20, background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.15))', border: '1px solid rgba(99,102,241,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px' }}>
-            <Sparkles size={36} color="#a5b4fc" />
-          </div>
-
           {/* Quote */}
-          <blockquote style={{ margin: 0 }}>
+          <blockquote style={{ margin: 0, maxWidth: 520 }}>
             <p style={{ color: '#fff', fontSize: 22, fontWeight: 600, lineHeight: 1.5, marginBottom: 20 }}>
               "Success is not final, failure is not fatal: it is the courage to continue that counts."
             </p>
@@ -114,9 +109,9 @@ export default function Register() {
           </blockquote>
 
           {/* Feature highlights */}
-          <div style={{ marginTop: 48, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+          <div style={{ margin: '48px auto 0', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
             {["Free forever tier", "No credit card required", "Cancel anytime"].map((text, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+              <div key={i} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 10, color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'left' }}>
                 <CheckCircle size={14} color="#6366f1" />
                 {text}
               </div>
