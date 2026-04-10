@@ -10,7 +10,6 @@ import {
   Flame,
   Layers3,
   PenLine,
-  Radio,
   RefreshCw,
   Search,
   Shield,
@@ -32,7 +31,7 @@ import {
   YAxis,
 } from "recharts";
 
-const LIVE_INTERVAL_MS = 15000;
+const LIVE_INTERVAL_MS = 60000;
 const MIX_COLORS = ["#ef4444", "#38bdf8", "#f59e0b", "#22c55e", "#a78bfa", "#06b6d4"];
 
 function formatNumber(value) {
@@ -73,6 +72,7 @@ function ChartTooltip({ active, payload, label }) {
 }
 
 function MetricCard({ title, value, subtitle, delta, Icon, accent }) {
+  const hasDelta = Number.isFinite(delta) && delta !== 0;
   const deltaColor = delta > 0 ? "#4ade80" : delta < 0 ? "#f87171" : "#94a3b8";
   const deltaText = delta > 0 ? `+${delta}` : `${delta}`;
 
@@ -135,7 +135,7 @@ function MetricCard({ title, value, subtitle, delta, Icon, accent }) {
             />
           </div>
 
-          {delta != null && (
+          {hasDelta && (
             <span className="ml-3 text-xs font-semibold whitespace-nowrap" style={{ color: deltaColor }}>
               {deltaText}
             </span>
@@ -154,8 +154,6 @@ export default function AdminReport() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [isLive, setIsLive] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState(null);
   const [focusedSkill, setFocusedSkill] = useState("");
 
   const fetchReport = useCallback(async ({ silent = false } = {}) => {
@@ -175,7 +173,6 @@ export default function AdminReport() {
       setFocusedSkill(
         (current) => current || nextReport?.skillDemand?.top?.[0]?.skill || nextReport?.commonGaps?.[0]?.skill || ""
       );
-      setLastUpdated(new Date());
       setError("");
 
       reportRef.current = nextReport;
@@ -192,12 +189,12 @@ export default function AdminReport() {
   }, [fetchReport]);
 
   useEffect(() => {
-    if (!isLive) return undefined;
     const timer = setInterval(() => {
+      if (document.hidden) return;
       fetchReport({ silent: true });
     }, LIVE_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [fetchReport, isLive]);
+  }, [fetchReport]);
 
   const downloadPDF = async () => {
     try {
@@ -365,40 +362,9 @@ export default function AdminReport() {
           <div>
             <h2 className="text-3xl font-bold text-white">Platform Reports</h2>
             <p className="text-slate-400 mt-1 text-sm">Interactive, real-time insights across users, skills, and outcomes</p>
-
-            <div className="flex items-center gap-3 mt-3">
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  borderRadius: 999,
-                  padding: "5px 10px",
-                  border: `1px solid ${isLive ? "rgba(34,197,94,0.45)" : "rgba(148,163,184,0.3)"}`,
-                  background: isLive ? "rgba(34,197,94,0.12)" : "rgba(148,163,184,0.1)",
-                  color: isLive ? "#86efac" : "#94a3b8",
-                  fontSize: 12,
-                  fontWeight: 700,
-                }}
-              >
-                <Radio size={12} className={isLive ? "animate-pulse" : ""} />
-                {isLive ? "LIVE" : "PAUSED"}
-              </span>
-
-              <span className="text-xs text-slate-400">
-                {lastUpdated ? `Last sync: ${lastUpdated.toLocaleTimeString()}` : "Waiting for first sync..."}
-              </span>
-            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => setIsLive((current) => !current)}
-              className={isLive ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-slate-700 hover:bg-slate-600 text-white"}
-            >
-              {isLive ? "Pause Live" : "Resume Live"}
-            </Button>
-
             <Button
               onClick={() => fetchReport({ silent: true })}
               disabled={refreshing}
@@ -450,9 +416,9 @@ export default function AdminReport() {
                     <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
                     <Tooltip content={<ChartTooltip />} />
                     <Legend wrapperStyle={{ color: "#e2e8f0", fontSize: 12 }} />
-                    <Bar dataKey="demand" name="In Demand" fill="#ef4444" radius={[5, 5, 0, 0]} />
-                    <Bar dataKey="gaps" name="Missing Often" fill="#f59e0b" radius={[5, 5, 0, 0]} />
-                    <Bar dataKey="lowDemand" name="Low Demand" fill="#38bdf8" radius={[5, 5, 0, 0]} />
+                    <Bar dataKey="demand" name="In Demand" fill="#ef4444" radius={[5, 5, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="gaps" name="Missing Often" fill="#f59e0b" radius={[5, 5, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="lowDemand" name="Low Demand" fill="#38bdf8" radius={[5, 5, 0, 0]} isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -520,6 +486,7 @@ export default function AdminReport() {
                         innerRadius={52}
                         outerRadius={84}
                         paddingAngle={2}
+                        isAnimationActive={false}
                       >
                         {resourceMixData.map((entry, idx) => (
                           <Cell key={`${entry.name}-${idx}`} fill={MIX_COLORS[idx % MIX_COLORS.length]} />
@@ -564,12 +531,6 @@ export default function AdminReport() {
                     ))}
                   </div>
 
-                  <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 mt-auto">
-                    <p className="text-[11px] text-slate-400">Live Status</p>
-                    <p className="text-sm text-slate-200 mt-1">
-                      {isLive ? "Auto-refreshing every 15s" : "Live updates paused"}
-                    </p>
-                  </div>
                 </div>
               </div>
             </CardContent>
@@ -671,12 +632,6 @@ export default function AdminReport() {
                 )}
               </div>
 
-              <div className="border-t border-white/10 pt-3 mt-auto">
-                <p className="text-[11px] uppercase tracking-wide text-slate-400">Report Generation</p>
-                <p className="text-sm text-slate-200 mt-2">
-                  Generated at: {report?.generatedAt ? new Date(report.generatedAt).toLocaleString() : "-"}
-                </p>
-              </div>
             </CardContent>
           </Card>
         </div>

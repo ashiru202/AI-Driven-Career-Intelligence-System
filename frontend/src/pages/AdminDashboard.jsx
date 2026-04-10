@@ -9,7 +9,6 @@ import {
   Activity,
   AlertTriangle,
   Flame,
-  Radio,
   RefreshCw,
   Search,
   Shield,
@@ -88,6 +87,7 @@ function ChartTooltip({ active, payload, label }) {
 }
 
 function MetricCard({ title, value, subtitle, delta, Icon, accent }) {
+  const hasDelta = Number.isFinite(delta) && delta !== 0;
   const deltaColor = delta > 0 ? "#4ade80" : delta < 0 ? "#f87171" : "#94a3b8";
   const deltaText = delta > 0 ? `+${delta}` : `${delta}`;
 
@@ -150,7 +150,7 @@ function MetricCard({ title, value, subtitle, delta, Icon, accent }) {
             />
           </div>
 
-          {delta != null && (
+          {hasDelta && (
             <span className="ml-3 text-xs font-semibold whitespace-nowrap" style={{ color: deltaColor }}>
               {deltaText}
             </span>
@@ -169,8 +169,6 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [isLive, setIsLive] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState(null);
   const [focusedSkill, setFocusedSkill] = useState("");
 
   const fetchDashboard = useCallback(async ({ silent = false } = {}) => {
@@ -194,7 +192,6 @@ export default function AdminDashboard() {
       setStats(nextStats);
       setUserSample(users);
       setFocusedSkill((current) => current || nextStats.topSkills?.[0]?.skill || "");
-      setLastUpdated(new Date());
       setError("");
 
       statsRef.current = nextStats;
@@ -212,12 +209,11 @@ export default function AdminDashboard() {
   }, [fetchDashboard]);
 
   useEffect(() => {
-    if (!isLive) return undefined;
     const timer = setInterval(() => {
       fetchDashboard({ silent: true });
     }, LIVE_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [fetchDashboard, isLive]);
+  }, [fetchDashboard]);
 
   const activeRate = useMemo(() => {
     if (!stats?.totalUsers) return 0;
@@ -406,40 +402,9 @@ export default function AdminDashboard() {
           <div>
             <h2 className="text-3xl font-bold text-white">Admin Dashboard</h2>
             <p className="text-slate-400 mt-1 text-sm">Real-time platform intelligence with interactive analytics</p>
-
-            <div className="flex items-center gap-3 mt-3">
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  borderRadius: 999,
-                  padding: "5px 10px",
-                  border: `1px solid ${isLive ? "rgba(34,197,94,0.45)" : "rgba(148,163,184,0.3)"}`,
-                  background: isLive ? "rgba(34,197,94,0.12)" : "rgba(148,163,184,0.1)",
-                  color: isLive ? "#86efac" : "#94a3b8",
-                  fontSize: 12,
-                  fontWeight: 700,
-                }}
-              >
-                <Radio size={12} className={isLive ? "animate-pulse" : ""} />
-                {isLive ? "LIVE" : "PAUSED"}
-              </span>
-
-              <span className="text-xs text-slate-400">
-                {lastUpdated ? `Last sync: ${lastUpdated.toLocaleTimeString()}` : "Waiting for first sync..."}
-              </span>
-            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => setIsLive((current) => !current)}
-              className={isLive ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-slate-700 hover:bg-slate-600 text-white"}
-            >
-              {isLive ? "Pause Live" : "Resume Live"}
-            </Button>
-
             <Button
               onClick={() => fetchDashboard({ silent: true })}
               disabled={refreshing}
@@ -633,12 +598,6 @@ export default function AdminDashboard() {
                     ))}
                   </div>
 
-                  <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 mt-auto">
-                    <p className="text-[11px] text-slate-400">Live Status</p>
-                    <p className="text-sm text-slate-200 mt-1">
-                      {isLive ? "Auto-refreshing every 15s" : "Live updates paused"}
-                    </p>
-                  </div>
                 </div>
               </div>
             </CardContent>
@@ -753,41 +712,37 @@ export default function AdminDashboard() {
 
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
           <Link to="/staff-management" className="h-full">
-            <Card className="h-full hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-sky-400/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)" }}>
-              <CardContent className="pt-4 h-full flex flex-col">
+            <Card className="h-full hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-sky-400/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)", minHeight: 170 }}>
+              <CardContent className="pt-4 h-full flex flex-col justify-between">
                 <p className="font-semibold text-sky-300 flex items-center gap-2"><Shield size={14} /> Staff Management</p>
-                <p className="text-sm text-slate-400 mt-1">Create, monitor, and manage staff accounts</p>
-                <p className="text-xs text-slate-500 mt-auto pt-3">Live: {formatNumber(stats?.totalStaff)} staff accounts</p>
+                <p className="text-sm text-slate-400 mt-1" style={{ minHeight: 56 }}>Create, monitor, and manage staff accounts</p>
               </CardContent>
             </Card>
           </Link>
 
           <Link to="/users" className="h-full">
-            <Card className="h-full hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-emerald-400/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)" }}>
-              <CardContent className="pt-4 h-full flex flex-col">
+            <Card className="h-full hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-emerald-400/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)", minHeight: 170 }}>
+              <CardContent className="pt-4 h-full flex flex-col justify-between">
                 <p className="font-semibold text-emerald-300 flex items-center gap-2"><Users size={14} /> Job Seekers</p>
-                <p className="text-sm text-slate-400 mt-1">Search and manage user accounts</p>
-                <p className="text-xs text-slate-500 mt-auto pt-3">Live: {formatNumber(stats?.totalUsers)} users • {activeRate}% active</p>
+                <p className="text-sm text-slate-400 mt-1" style={{ minHeight: 56 }}>Search and manage user accounts</p>
               </CardContent>
             </Card>
           </Link>
 
           <Link to="/admin-report" className="h-full">
-            <Card className="h-full hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-red-400/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)" }}>
-              <CardContent className="pt-4 h-full flex flex-col">
+            <Card className="h-full hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-red-400/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)", minHeight: 170 }}>
+              <CardContent className="pt-4 h-full flex flex-col justify-between">
                 <p className="font-semibold text-red-300 flex items-center gap-2"><FileText size={14} /> Platform Report</p>
-                <p className="text-sm text-slate-400 mt-1">View and export platform-level reports</p>
-                <p className="text-xs text-slate-500 mt-auto pt-3">Live: Avg match {Number(stats?.avgMatchScore || 0).toFixed(1)}%</p>
+                <p className="text-sm text-slate-400 mt-1" style={{ minHeight: 56 }}>View and export platform-level reports</p>
               </CardContent>
             </Card>
           </Link>
 
           <Link to="/admin/audit-logs" className="h-full">
-            <Card className="h-full hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-amber-300/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)" }}>
-              <CardContent className="pt-4 h-full flex flex-col">
+            <Card className="h-full hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-amber-300/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)", minHeight: 170 }}>
+              <CardContent className="pt-4 h-full flex flex-col justify-between">
                 <p className="font-semibold text-amber-200 flex items-center gap-2"><Search size={14} /> Audit Log</p>
-                <p className="text-sm text-slate-400 mt-1">Review admin operations and events</p>
-                <p className="text-xs text-slate-500 mt-auto pt-3">Live sync: {isLive ? "On" : "Off"} • 15s cycle</p>
+                <p className="text-sm text-slate-400 mt-1" style={{ minHeight: 56 }}>Review admin operations and events</p>
               </CardContent>
             </Card>
           </Link>

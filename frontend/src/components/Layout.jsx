@@ -964,7 +964,7 @@ export default function Layout({ children }) {
         )}
 
         {/* Main content area */}
-        <main style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
+        <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', minWidth: 0 }}>
           <div style={{ padding: '32px' }}>
             {children}
           </div>
