@@ -88,7 +88,9 @@ body::-webkit-scrollbar-thumb {
   width: 42px;
   height: 42px;
   border-radius: var(--radius);
-  background: linear-gradient(135deg, var(--teal-600), #14b8a6);
+  background:
+    url("../icons/icon.png") center / cover no-repeat,
+    linear-gradient(135deg, var(--teal-600), #14b8a6);
   box-shadow: 0 8px 18px rgba(13, 148, 136, 0.2);
   flex-shrink: 0;
 }
