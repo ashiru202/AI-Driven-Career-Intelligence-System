@@ -514,9 +514,13 @@ async function createRoadmapFromComparison(comparison) {
     sanitizePlainText(comparison?.jobTitle, 200) ||
     sanitizePlainText(comparison?.resumeFileName, 200) ||
     "Career Roadmap";
+  const normalizedJobTitle = sanitizePlainText(comparison?.jobTitle, 200) || targetRole;
+  const missingSkills = normalizeSkillList(comparison?.missingSkills).slice(0, 100);
 
   const payload = {
     targetRole,
+    jobTitle: normalizedJobTitle,
+    missingSkills,
     comparisonId,
   };
 

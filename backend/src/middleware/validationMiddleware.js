@@ -117,7 +117,11 @@ const schemas = {
       jobTitle: z.string().max(200).transform(stripHtml).optional(),
       jobSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional(),
       missingSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional(),
-      resumeSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional()
+      resumeSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional(),
+      comparisonId: z.string()
+        .regex(/^[0-9a-fA-F]{24}$/, 'Invalid comparison ID')
+        .optional()
+        .nullable()
     })
   }),
 
