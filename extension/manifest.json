@@ -20,7 +20,19 @@
   ],
   "action": {
     "default_title": "Career Skill Gap Analyzer",
-    "default_popup": "src/popup/popup.html"
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "src/icons/icon.png",
+      "32": "src/icons/icon.png",
+      "48": "src/icons/icon.png",
+      "128": "src/icons/icon.png"
+    }
+  },
+  "icons": {
+    "16": "src/icons/icon.png",
+    "32": "src/icons/icon.png",
+    "48": "src/icons/icon.png",
+    "128": "src/icons/icon.png"
   },
   "background": {
     "service_worker": "src/background/background.js",
