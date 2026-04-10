@@ -22,4 +22,4 @@ skillSnapshotSchema.index(
 skillSnapshotSchema.index({ periodStart: -1 });
 skillSnapshotSchema.index({ relativeFreq: -1, periodStart: -1 });
 
-module.exports = mongoose.model("SkillSnapshot", skillSnapshotSchema);
+module.exports = mongoose.model("SkillSnapshot", skillSnapshotSchema, "skill_snapshots");

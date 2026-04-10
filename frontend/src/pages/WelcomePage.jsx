@@ -1,44 +1,49 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate, Navigate } from "react-router-dom";
-import { FileText, Target, Map, BarChart2, Lock, TrendingUp, User, Upload, Search, Rocket, GraduationCap, Globe, Bot, Unlock, Play, Heart } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  FileText, Target, Map, TrendingUp, Upload, Search,
+  Rocket, Clock, ArrowRight, Brain, LineChart,
+  GraduationCap, Briefcase, BarChart3
+} from "lucide-react";
+import FloatingLines from "../components/FloatingLines";
 
 /* ─────────────────────────────────────────────
-   Tiny hook: returns true once the element enters the viewport
+   Intersection Observer Hook for scroll animations
 ───────────────────────────────────────────── */
-function useInView(threshold = 0.15) {
+function useInView(threshold = 0.15, rootMargin = "0px 0px -50px 0px") {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
+
   useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    // Check if element is already in view on mount
+    const rect = el.getBoundingClientRect();
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    if (rect.top < windowHeight && rect.bottom > 0) {
+      setVisible(true);
+      return;
+    }
+
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold }
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          obs.unobserve(el); // Stop observing once visible
+        }
+      },
+      { threshold, rootMargin }
     );
-    if (ref.current) obs.observe(ref.current);
+    obs.observe(el);
     return () => obs.disconnect();
-  }, [threshold]);
+  }, [threshold, rootMargin]);
+
   return [ref, visible];
 }
 
-/* ─── animated counter ─── */
-function Counter({ target, suffix = "", duration = 1800 }) {
-  const [count, setCount] = useState(0);
-  const [ref, visible] = useInView();
-  useEffect(() => {
-    if (!visible) return;
-    let start = 0;
-    const step = Math.ceil(target / (duration / 16));
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= target) { setCount(target); clearInterval(timer); }
-      else setCount(start);
-    }, 16);
-    return () => clearInterval(timer);
-  }, [visible, target, duration]);
-  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
-}
-
-/* ─── section wrapper with fade‑up animation ─── */
-function FadeUp({ children, delay = 0, className = "" }) {
+/* ─── Fade up animation wrapper ─── */
+function FadeUp({ children, delay = 0, className = "", distance = 50 }) {
   const [ref, visible] = useInView();
   return (
     <div
@@ -46,8 +51,9 @@ function FadeUp({ children, delay = 0, className = "" }) {
       className={className}
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(40px)",
-        transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`,
+        transform: visible ? "translateY(0)" : `translateY(${distance}px)`,
+        transition: `opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`,
+        willChange: "opacity, transform",
       }}
     >
       {children}
@@ -55,39 +61,114 @@ function FadeUp({ children, delay = 0, className = "" }) {
   );
 }
 
-/* ─── typing animation ─── */
-function TypeWriter({ words, speed = 80, pause = 1800 }) {
-  const [display, setDisplay] = useState("");
-  const [wordIdx, setWordIdx] = useState(0);
-  const [charIdx, setCharIdx] = useState(0);
-  const [deleting, setDeleting] = useState(false);
+/* ─── Scale in animation wrapper ─── */
+function ScaleIn({ children, delay = 0, className = "" }) {
+  const [ref, visible] = useInView();
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "scale(1) translateY(0)" : "scale(0.92) translateY(30px)",
+        transition: `opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`,
+        height: "100%",
+        willChange: "opacity, transform",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ─── Slide in from left animation wrapper ─── */
+function SlideLeft({ children, delay = 0, className = "" }) {
+  const [ref, visible] = useInView();
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateX(0)" : "translateX(-60px)",
+        transition: `opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`,
+        willChange: "opacity, transform",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ─── Slide in from right animation wrapper ─── */
+function SlideRight({ children, delay = 0, className = "" }) {
+  const [ref, visible] = useInView();
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateX(0)" : "translateX(60px)",
+        transition: `opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`,
+        willChange: "opacity, transform",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ─── Animated counter ─── */
+function AnimatedCounter({ value, duration = 2000 }) {
+  const [ref, visible] = useInView();
+  const [count, setCount] = useState(0);
+  const numericValue = parseInt(value.replace(/[^0-9]/g, ""), 10);
+  const suffix = value.replace(/[0-9]/g, "");
 
   useEffect(() => {
-    const current = words[wordIdx];
-    let delay = deleting ? speed / 2 : speed;
-    if (!deleting && charIdx === current.length) delay = pause;
-    if (deleting && charIdx === 0) { setDeleting(false); setWordIdx((i) => (i + 1) % words.length); return; }
+    if (!visible) return;
+    let start = 0;
+    const end = numericValue;
+    const increment = end / (duration / 16);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, 16);
+    return () => clearInterval(timer);
+  }, [visible, numericValue, duration]);
 
-    const t = setTimeout(() => {
-      if (!deleting && charIdx === current.length) { setDeleting(true); return; }
-      setDisplay(current.slice(0, charIdx + (deleting ? -1 : 1)));
-      setCharIdx((c) => c + (deleting ? -1 : 1));
-    }, delay);
-    return () => clearTimeout(t);
-  }, [charIdx, deleting, wordIdx, words, speed, pause]);
+  return <span ref={ref}>{count}{suffix}</span>;
+}
 
+/* ════════════════════════════════════════════
+   GLOWING LOGO COMPONENT
+════════════════════════════════════════════ */
+function GlowingLogo({ size = "normal" }) {
+  const isSmall = size === "small";
   return (
-    <span>
-      {display}
-      <span className="animate-pulse">|</span>
-    </span>
+    <div style={{ display: "flex", alignItems: "center", gap: isSmall ? 8 : 10 }}>
+      <span
+        className="brand-text"
+        style={{
+          fontSize: isSmall ? 20 : 26,
+        }}
+      >
+        AptitudeX
+      </span>
+    </div>
   );
 }
 
 /* ════════════════════════════════════════════
    NAVBAR
 ════════════════════════════════════════════ */
-function Navbar() {
+function Navbar({ isLoggedIn, role }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -102,95 +183,143 @@ function Navbar() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const getDashboardPath = () => {
+    if (role === "ADMIN") return "/admin";
+    if (role === "STAFF") return "/staff";
+    return "/dashboard";
+  };
+
   return (
     <nav
       style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
-        transition: "background 0.3s, box-shadow 0.3s",
-        background: scrolled ? "rgba(10,10,30,0.92)" : "transparent",
-        backdropFilter: scrolled ? "blur(12px)" : "none",
-        boxShadow: scrolled ? "0 2px 20px rgba(0,0,0,0.4)" : "none",
+        transition: "all 0.3s ease",
+        background: scrolled ? "rgba(10,10,30,0.95)" : "rgba(7,7,26,0.9)",
+        backdropFilter: "blur(20px)",
+        boxShadow: scrolled ? "0 2px 20px rgba(0,0,0,0.3)" : "none",
+        borderBottom: scrolled ? "1px solid rgba(255,255,255,0.06)" : "none",
       }}
     >
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 68 }}>
-        {/* Logo */}
-        <div style={{ cursor: "pointer" }} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-          <span className="brand-text" style={{ fontSize: 20 }}>AptitudeX</span>
-          <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 10.5, fontWeight: 500, letterSpacing: 0.5, marginTop: 2, textTransform: "uppercase" }}>AI-Driven Career Intelligence System</div>
+      <div style={{
+        maxWidth: 1200,
+        margin: "0 auto",
+        padding: "0 32px",
+        display: "grid",
+        gridTemplateColumns: "1fr auto 1fr",
+        alignItems: "center",
+        height: 72
+      }}>
+        {/* Logo - left aligned */}
+        <div
+          style={{ cursor: "pointer", justifySelf: "start" }}
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        >
+          <GlowingLogo />
         </div>
 
-        {/* Desktop nav links */}
-        <div className="hidden md:flex" style={{ gap: 8 }}>
-          {[["Features", "features"], ["How It Works", "how"], ["About Us", "about"]].map(([label, id]) => (
+        {/* Desktop nav links - centered */}
+        <div className="hidden md:flex" style={{
+          gap: 4,
+          background: "rgba(255,255,255,0.05)",
+          padding: "6px 8px",
+          borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.08)",
+        }}>
+          {[["Features", "features"], ["How It Works", "how"], ["Benefits", "benefits"]].map(([label, id]) => (
             <button
               key={id}
               onClick={() => scrollTo(id)}
               style={{
                 background: "none", border: "none", cursor: "pointer",
-                color: "rgba(255,255,255,0.75)", fontSize: 15, fontWeight: 500,
-                padding: "8px 14px", borderRadius: 8,
+                color: "rgba(255,255,255,0.6)", fontSize: 14, fontWeight: 500,
+                padding: "8px 16px", borderRadius: 8,
                 transition: "color 0.2s, background 0.2s",
               }}
-              onMouseEnter={(e) => { e.target.style.color = "#fff"; e.target.style.background = "rgba(255,255,255,0.08)"; }}
-              onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.75)"; e.target.style.background = "none"; }}
+              onMouseEnter={(e) => { e.target.style.color = "#a5b4fc"; e.target.style.background = "rgba(99,102,241,0.15)"; }}
+              onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.6)"; e.target.style.background = "none"; }}
             >
               {label}
             </button>
           ))}
         </div>
 
-        {/* CTA buttons */}
-        <div className="hidden md:flex" style={{ gap: 10 }}>
-          <Link
-            to="/login"
-            style={{
-              padding: "9px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600,
-              border: "1.5px solid rgba(255,255,255,0.2)", color: "#fff",
-              textDecoration: "none", transition: "border-color 0.2s, background 0.2s",
-            }}
-            onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.08)"; e.target.style.borderColor = "rgba(255,255,255,0.4)"; }}
-            onMouseLeave={(e) => { e.target.style.background = "none"; e.target.style.borderColor = "rgba(255,255,255,0.2)"; }}
-          >
-            Log In
-          </Link>
-          <Link
-            to="/register"
-            style={{
-              padding: "9px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600,
-              background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff",
-              textDecoration: "none", boxShadow: "0 4px 15px rgba(99,102,241,0.4)",
-              transition: "opacity 0.2s, transform 0.2s",
-            }}
-            onMouseEnter={(e) => { e.target.style.opacity = "0.88"; e.target.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={(e) => { e.target.style.opacity = "1"; e.target.style.transform = "translateY(0)"; }}
-          >
-            Get Started Free
-          </Link>
+        {/* CTA buttons - right aligned */}
+        <div className="hidden md:flex" style={{ gap: 12, alignItems: "center", justifySelf: "end" }}>
+          {isLoggedIn ? (
+            <Link
+              to={getDashboardPath()}
+              style={{
+                padding: "10px 24px", borderRadius: 10, fontSize: 14, fontWeight: 600,
+                background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff",
+                textDecoration: "none", boxShadow: "0 4px 14px rgba(99,102,241,0.35)",
+                transition: "transform 0.2s, box-shadow 0.2s",
+              }}
+              onMouseEnter={(e) => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 6px 20px rgba(99,102,241,0.45)"; }}
+              onMouseLeave={(e) => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 4px 14px rgba(99,102,241,0.35)"; }}
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                style={{
+                  padding: "10px 20px", borderRadius: 10, fontSize: 14, fontWeight: 500,
+                  color: "rgba(255,255,255,0.7)", textDecoration: "none",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => { e.target.style.color = "#a5b4fc"; }}
+                onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.7)"; }}
+              >
+                Log in
+              </Link>
+              <Link
+                to="/register"
+                style={{
+                  padding: "10px 24px", borderRadius: 10, fontSize: 14, fontWeight: 600,
+                  background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff",
+                  textDecoration: "none",
+                  boxShadow: "0 0 20px rgba(99,102,241,0.4), 0 4px 14px rgba(99,102,241,0.35)",
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                }}
+                onMouseEnter={(e) => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 0 30px rgba(99,102,241,0.5), 0 6px 20px rgba(99,102,241,0.45)"; }}
+                onMouseLeave={(e) => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 0 20px rgba(99,102,241,0.4), 0 4px 14px rgba(99,102,241,0.35)"; }}
+              >
+                Get Started
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile hamburger */}
         <button
           className="md:hidden"
           onClick={() => setMenuOpen((o) => !o)}
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }}
+          style={{ background: "none", border: "none", cursor: "pointer", padding: 8, justifySelf: "end" }}
         >
-          <div style={{ width: 22, height: 2, background: "#fff", marginBottom: 5, borderRadius: 2 }} />
-          <div style={{ width: 22, height: 2, background: "#fff", marginBottom: 5, borderRadius: 2 }} />
-          <div style={{ width: 16, height: 2, background: "#fff", borderRadius: 2 }} />
+          <div style={{ width: 22, height: 2, background: "rgba(255,255,255,0.7)", marginBottom: 5, borderRadius: 2 }} />
+          <div style={{ width: 22, height: 2, background: "rgba(255,255,255,0.7)", marginBottom: 5, borderRadius: 2 }} />
+          <div style={{ width: 16, height: 2, background: "rgba(255,255,255,0.7)", borderRadius: 2 }} />
         </button>
       </div>
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div style={{ background: "rgba(10,10,30,0.97)", borderTop: "1px solid rgba(255,255,255,0.08)", padding: "16px 24px 20px" }}>
-          {[["Features", "features"], ["How It Works", "how"], ["About Us", "about"]].map(([label, id]) => (
-            <button key={id} onClick={() => scrollTo(id)} style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", color: "#fff", fontSize: 16, padding: "10px 0", cursor: "pointer" }}>
+        <div style={{ background: "rgba(10,10,30,0.98)", borderTop: "1px solid rgba(255,255,255,0.08)", padding: "16px 24px 20px" }}>
+          {[["Features", "features"], ["How It Works", "how"], ["Benefits", "benefits"]].map(([label, id]) => (
+            <button key={id} onClick={() => scrollTo(id)} style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", color: "rgba(255,255,255,0.8)", fontSize: 16, padding: "12px 0", cursor: "pointer" }}>
               {label}
             </button>
           ))}
           <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
-            <Link to="/login" style={{ flex: 1, textAlign: "center", padding: "10px", borderRadius: 8, border: "1.5px solid rgba(255,255,255,0.2)", color: "#fff", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>Log In</Link>
-            <Link to="/register" style={{ flex: 1, textAlign: "center", padding: "10px", borderRadius: 8, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>Sign Up</Link>
+            {isLoggedIn ? (
+              <Link to={getDashboardPath()} style={{ flex: 1, textAlign: "center", padding: "14px", borderRadius: 12, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", textDecoration: "none", fontSize: 15, fontWeight: 600 }}>Dashboard</Link>
+            ) : (
+              <>
+                <Link to="/login" style={{ flex: 1, textAlign: "center", padding: "14px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)", color: "#fff", textDecoration: "none", fontSize: 15, fontWeight: 600 }}>Log In</Link>
+                <Link to="/register" style={{ flex: 1, textAlign: "center", padding: "14px", borderRadius: 12, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", textDecoration: "none", fontSize: 15, fontWeight: 600 }}>Get Started</Link>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -208,190 +337,110 @@ function Hero() {
     <section
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #0a0a1e 0%, #0d0d2b 40%, #130d30 70%, #0f0a25 100%)",
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        textAlign: "center", padding: "100px 24px 60px", position: "relative", overflow: "hidden",
+        textAlign: "center", padding: "120px 24px 80px", position: "relative", overflow: "hidden",
+        background: "linear-gradient(180deg, #07071a 0%, #0a0a1e 50%, #0d0d2b 100%)",
       }}
     >
-      {/* Animated background orbs */}
-      <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-        <div style={{ position: "absolute", top: "15%", left: "10%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)", animation: "float1 8s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", bottom: "20%", right: "10%", width: 350, height: 350, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)", animation: "float2 10s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", top: "50%", left: "50%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%)", transform: "translate(-50%,-50%)", animation: "pulse 6s ease-in-out infinite" }} />
+      {/* Decorative gradient orbs */}
+      <div style={{ position: "absolute", top: "10%", left: "5%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)", filter: "blur(60px)" }} />
+      <div style={{ position: "absolute", bottom: "15%", right: "5%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)", filter: "blur(60px)" }} />
+      <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px)", backgroundSize: "50px 50px", pointerEvents: "none" }} />
+
+      {/* Floating Lines Background */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, opacity: 0.4 }}>
+        <FloatingLines
+          linesGradient={["#4f46e5", "#6366f1", "#818cf8", "#8b5cf6"]}
+          enabledWaves={["middle", "bottom"]}
+          lineCount={[3, 3]}
+          lineDistance={[8, 8]}
+          bendRadius={5}
+          bendStrength={-0.3}
+          interactive={true}
+          parallax={true}
+          parallaxStrength={0.1}
+          animationSpeed={0.6}
+          mixBlendMode="screen"
+        />
       </div>
 
-      {/* Grid lines overlay */}
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px)", backgroundSize: "50px 50px", pointerEvents: "none" }} />
-
+      {/* Badge */}
+      <FadeUp>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 100, padding: "8px 18px", marginBottom: 28, position: "relative", zIndex: 1 }}>
+          <Rocket size={14} color="#a5b4fc" />
+          <span style={{ color: "#a5b4fc", fontSize: 13, fontWeight: 600 }}>AI-Powered Career Intelligence</span>
+        </div>
+      </FadeUp>
 
       {/* Headline */}
-      <h1 style={{ fontSize: "clamp(2.4rem, 6vw, 5.2rem)", fontWeight: 800, color: "#fff", lineHeight: 1.12, marginBottom: 20, letterSpacing: "-1px", animation: "fadeInUp 0.9s ease 0.1s both" }}>
-        Your Career, Powered<br />
-        <span style={{ background: "linear-gradient(135deg,#6366f1,#a78bfa,#60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-          by Intelligence
-        </span>
-      </h1>
+      <FadeUp delay={0.1}>
+        <h1 style={{ fontSize: "clamp(2.5rem, 5.5vw, 4rem)", fontWeight: 800, color: "#fff", lineHeight: 1.15, marginBottom: 24, letterSpacing: "-1.5px", maxWidth: 750, position: "relative", zIndex: 1 }}>
+          Navigate Your Career<br />
+          <span style={{ background: "linear-gradient(135deg, #818cf8, #c084fc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+            With Confidence
+          </span>
+        </h1>
+      </FadeUp>
 
-      {/* Typewriter subtitle */}
-      <p style={{ fontSize: "clamp(1.1rem,2.5vw,1.4rem)", color: "rgba(255,255,255,0.55)", marginBottom: 14, fontWeight: 400, animation: "fadeInUp 0.9s ease 0.2s both" }}>
-        Stop guessing. Start growing.
-      </p>
-      <p style={{ fontSize: "clamp(1.05rem,2vw,1.25rem)", color: "#a78bfa", fontWeight: 600, marginBottom: 40, minHeight: 36, animation: "fadeInUp 0.9s ease 0.3s both" }}>
-        <TypeWriter words={["Analyse your Resume", "Detect Skill Gaps", "Build Learning Roadmaps", "Land Your Dream Job"]} />
-      </p>
+      {/* Subtitle */}
+      <FadeUp delay={0.2}>
+        <p style={{ fontSize: "clamp(1rem, 2vw, 1.15rem)", color: "rgba(255,255,255,0.55)", marginBottom: 40, maxWidth: 560, lineHeight: 1.7, position: "relative", zIndex: 1 }}>
+          Upload your resume, discover skill gaps, and get personalized learning roadmaps to land your dream job faster.
+        </p>
+      </FadeUp>
 
       {/* CTA buttons */}
-      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", marginBottom: 64, animation: "fadeInUp 0.9s ease 0.4s both" }}>
-        <button
-          onClick={() => navigate("/register")}
-          style={{
-            padding: "16px 36px", borderRadius: 12, fontSize: 16, fontWeight: 700,
-            background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", border: "none",
-            cursor: "pointer", boxShadow: "0 8px 30px rgba(99,102,241,0.5)",
-            transition: "transform 0.2s, box-shadow 0.2s",
-          }}
-          onMouseEnter={(e) => { e.target.style.transform = "translateY(-3px)"; e.target.style.boxShadow = "0 14px 40px rgba(99,102,241,0.6)"; }}
-          onMouseLeave={(e) => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 8px 30px rgba(99,102,241,0.5)"; }}
-        >
-          Get Started Free 
-        </button>
-        <button
-          onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}
-          style={{
-            padding: "16px 36px", borderRadius: 12, fontSize: 16, fontWeight: 600,
-            background: "rgba(255,255,255,0.05)", color: "#fff", border: "1.5px solid rgba(255,255,255,0.15)",
-            cursor: "pointer", backdropFilter: "blur(10px)",
-            transition: "background 0.2s, border-color 0.2s",
-          }}
-          onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.1)"; e.target.style.borderColor = "rgba(255,255,255,0.3)"; }}
-          onMouseLeave={(e) => { e.target.style.background = "rgba(255,255,255,0.05)"; e.target.style.borderColor = "rgba(255,255,255,0.15)"; }}
-        >
-          <Play size={14} className="inline mr-1" /> See How It Works
-        </button>
-      </div>
-
-      {/* Hero visual card */}
-      <div style={{ animation: "fadeInUp 1s ease 0.5s both", maxWidth: 680, width: "100%" }}>
-        <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "24px 28px", backdropFilter: "blur(20px)", textAlign: "left" }}>
-          <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-            {["#ff5f57", "#febc2e", "#28c840"].map(c => <div key={c} style={{ width: 12, height: 12, borderRadius: "50%", background: c }} />)}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
-            {[
-              { label: "Skill Match", value: "87%", color: "#6366f1", bg: "rgba(99,102,241,0.12)" },
-              { label: "Gaps Found", value: "5", color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
-              { label: "Roadmap Steps", value: "12", color: "#10b981", bg: "rgba(16,185,129,0.12)" },
-            ].map(({ label, value, color, bg }) => (
-              <div key={label} style={{ background: bg, border: `1px solid ${color}30`, borderRadius: 12, padding: "14px 16px" }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color, marginBottom: 4 }}>{value}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>{label}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ flex: 1, height: 6, borderRadius: 100, background: "rgba(255,255,255,0.07)", overflow: "hidden" }}>
-              <div style={{ width: "87%", height: "100%", borderRadius: 100, background: "linear-gradient(90deg,#6366f1,#8b5cf6)", animation: "growBar 1.5s ease 1.2s both" }} />
-            </div>
-            <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 600 }}>Profile Strength</span>
-          </div>
+      <FadeUp delay={0.3}>
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", position: "relative", zIndex: 1 }}>
+          <button
+            onClick={() => navigate("/register")}
+            style={{
+              padding: "14px 32px", borderRadius: 12, fontSize: 15, fontWeight: 600,
+              background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", border: "none",
+              cursor: "pointer",
+              boxShadow: "0 0 30px rgba(99,102,241,0.4), 0 8px 30px rgba(99,102,241,0.3)",
+              transition: "transform 0.25s, box-shadow 0.25s",
+              display: "flex", alignItems: "center", gap: 10,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 0 40px rgba(99,102,241,0.5), 0 12px 40px rgba(99,102,241,0.4)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 0 30px rgba(99,102,241,0.4), 0 8px 30px rgba(99,102,241,0.3)"; }}
+          >
+            Get Started Free <ArrowRight size={18} />
+          </button>
+          <button
+            onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}
+            style={{
+              padding: "14px 32px", borderRadius: 12, fontSize: 15, fontWeight: 600,
+              background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.8)", border: "1px solid rgba(255,255,255,0.15)",
+              cursor: "pointer",
+              transition: "border-color 0.25s, color 0.25s, background 0.25s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.color = "#a5b4fc"; e.currentTarget.style.background = "rgba(99,102,241,0.1)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "rgba(255,255,255,0.8)"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+          >
+            See How It Works
+          </button>
         </div>
-      </div>
+      </FadeUp>
 
-    </section>
-  );
-}
-
-/* ════════════════════════════════════════════
-   FEATURES
-════════════════════════════════════════════ */
-const features = [
-  {
-    Icon: FileText,
-    title: "Smart Resume Analysis",
-    desc: "Upload your PDF or DOCX resume. Our NLP engine instantly extracts your skills, qualifications, and experience with high accuracy.",
-    color: "#6366f1",
-  },
-  {
-    Icon: Target,
-    title: "Skill Gap Detection",
-    desc: "Paste any job description and instantly discover your match score, existing strengths, and the exact skills holding you back.",
-    color: "#8b5cf6",
-  },
-  {
-    Icon: Map,
-    title: "Personalized Roadmaps",
-    desc: "Get a curated, step-by-step learning roadmap built from your specific skill gaps. Track progress as you grow.",
-    color: "#a78bfa",
-  },
-  {
-    Icon: BarChart2,
-    title: "Analytics & Insights",
-    desc: "See which skills are in highest demand on the market and understand why candidates get overlooked for roles.",
-    color: "#60a5fa",
-  },
-  {
-    Icon: Lock,
-    title: "Role-Based Access",
-    desc: "Designed for everyone: job seekers get personal insights, staff monitor users, and admins manage the full platform.",
-    color: "#34d399",
-  },
-  {
-    Icon: TrendingUp,
-    title: "CV Completeness Score",
-    desc: "Receive an actionable completeness score for your CV with specific tips on what to add to stand out to recruiters.",
-    color: "#f59e0b",
-  },
-];
-
-function Features() {
-  return (
-    <section id="features" style={{ background: "#07071a", padding: "100px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <FadeUp>
-          <div style={{ textAlign: "center", marginBottom: 64 }}>
-            <span style={{ color: "#6366f1", fontWeight: 700, fontSize: 13, letterSpacing: "2px", textTransform: "uppercase" }}>Features</span>
-            <h2 style={{ fontSize: "clamp(2rem,4vw,3rem)", fontWeight: 800, color: "#fff", marginTop: 12, marginBottom: 16 }}>
-              Everything You Need to<br />
-              <span style={{ background: "linear-gradient(135deg,#6366f1,#a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Accelerate Your Career</span>
-            </h2>
-            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 17, maxWidth: 520, margin: "0 auto" }}>
-              One intelligent platform that replaces the guesswork in career planning with clear, data-driven guidance.
-            </p>
-          </div>
-        </FadeUp>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 22 }}>
-          {features.map(({ Icon, title, desc, color }, i) => (
-            <FadeUp key={title} delay={i * 0.08}>
-              <FeatureCard Icon={Icon} title={title} desc={desc} color={color} />
-            </FadeUp>
+      {/* Stats */}
+      <FadeUp delay={0.45}>
+        <div style={{ display: "flex", gap: 56, marginTop: 64, flexWrap: "wrap", justifyContent: "center", position: "relative", zIndex: 1 }}>
+          {[
+            { value: "10K+", label: "Active Users" },
+            { value: "50K+", label: "Resumes Analyzed" },
+            { value: "95%", label: "Satisfaction Rate" },
+          ].map(({ value, label }, i) => (
+            <div key={label} style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 32, fontWeight: 800, color: "#a5b4fc" }}>
+                <AnimatedCounter value={value} duration={2000 + i * 300} />
+              </div>
+              <div style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>{label}</div>
+            </div>
           ))}
         </div>
-      </div>
+      </FadeUp>
     </section>
-  );
-}
-
-function FeatureCard({ Icon, title, desc, color }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: hovered ? "rgba(99,102,241,0.08)" : "rgba(255,255,255,0.03)",
-        border: `1px solid ${hovered ? color + "50" : "rgba(255,255,255,0.07)"}`,
-        borderRadius: 18, padding: "28px 26px",
-        transition: "all 0.3s ease",
-        transform: hovered ? "translateY(-6px)" : "translateY(0)",
-        cursor: "default",
-      }}
-    >
-      <div style={{ marginBottom: 16, color }}><Icon size={36} /></div>
-      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 18, marginBottom: 10 }}>{title}</h3>
-      <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14.5, lineHeight: 1.65 }}>{desc}</p>
-      <div style={{ marginTop: 18, height: 2, borderRadius: 100, background: `linear-gradient(90deg, ${color}, transparent)`, opacity: hovered ? 1 : 0, transition: "opacity 0.3s" }} />
-    </div>
   );
 }
 
@@ -399,41 +448,30 @@ function FeatureCard({ Icon, title, desc, color }) {
    HOW IT WORKS
 ════════════════════════════════════════════ */
 const steps = [
-  { step: "01", title: "Create Your Account", desc: "Register in seconds. No credit card required. Pick your role - job seeker, staff, or admin.", Icon: User },
-  { step: "02", title: "Upload Your Resume", desc: "Upload your resume in PDF or DOCX format. Our AI instantly extracts your skills and experience.", Icon: Upload },
-  { step: "03", title: "Compare With Job Descriptions", desc: "Paste a job description to get your match score, common skills, and a full list of what's missing.", Icon: Search },
-  { step: "04", title: "Follow Your Roadmap", desc: "Your personalised learning roadmap is generated automatically. Mark steps as complete and track your growth.", Icon: Rocket },
+  { step: "01", title: "Upload Resume", desc: "Upload your resume in PDF or DOCX format. Our AI instantly parses and extracts your skills.", Icon: Upload },
+  { step: "02", title: "Extract Skills", desc: "Our advanced NLP engine identifies technical skills, soft skills, and experience from your resume.", Icon: Brain },
+  { step: "03", title: "Compare with Jobs", desc: "Paste any job description to get a match score and see exactly which skills you're missing.", Icon: Search },
+  { step: "04", title: "Get Learning Roadmap", desc: "Receive a personalized learning path with curated resources to bridge your skill gaps.", Icon: Map },
 ];
 
 function HowItWorks() {
   return (
-    <section id="how" style={{ background: "linear-gradient(180deg,#07071a 0%,#0a0a1e 100%)", padding: "100px 24px" }}>
+    <section id="how" style={{ padding: "100px 24px", background: "#0a0a1e" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <FadeUp>
           <div style={{ textAlign: "center", marginBottom: 64 }}>
-            <span style={{ color: "#a78bfa", fontWeight: 700, fontSize: 13, letterSpacing: "2px", textTransform: "uppercase" }}>How It Works</span>
-            <h2 style={{ fontSize: "clamp(2rem,4vw,3rem)", fontWeight: 800, color: "#fff", marginTop: 12, marginBottom: 16 }}>
-              From Resume to Roadmap<br />
-              <span style={{ background: "linear-gradient(135deg,#8b5cf6,#60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>in Minutes</span>
+            <span style={{ color: "#a5b4fc", fontWeight: 700, fontSize: 12, letterSpacing: "3px", textTransform: "uppercase" }}>How It Works</span>
+            <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.5rem)", fontWeight: 800, color: "#fff", marginTop: 14, marginBottom: 12 }}>
+              Four Simple Steps to Career Clarity
             </h2>
           </div>
         </FadeUp>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 28, position: "relative" }}>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }} className="steps-grid">
           {steps.map(({ step, title, desc, Icon }, i) => (
-            <FadeUp key={step} delay={i * 0.1}>
-              <div style={{ textAlign: "center", padding: "32px 20px", position: "relative" }}>
-                {/* connector line */}
-                {i < steps.length - 1 && (
-                  <div style={{ display: "none" }} className="lg:block" />
-                )}
-                <div style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.2))", border: "2px solid rgba(99,102,241,0.4)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", color: "#a5b4fc" }}>
-                  <Icon size={28} />
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: "#6366f1", letterSpacing: "3px", marginBottom: 10 }}>STEP {step}</div>
-                <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 17, marginBottom: 10 }}>{title}</h3>
-                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, lineHeight: 1.65 }}>{desc}</p>
-              </div>
-            </FadeUp>
+            <ScaleIn key={step} delay={0.1 + i * 0.12}>
+              <StepCard step={step} title={title} desc={desc} Icon={Icon} index={i} />
+            </ScaleIn>
           ))}
         </div>
       </div>
@@ -441,60 +479,242 @@ function HowItWorks() {
   );
 }
 
-/* ════════════════════════════════════════════
-   ABOUT US
-════════════════════════════════════════════ */
-function AboutUs() {
-  const pillars = [
-    { Icon: GraduationCap, title: "Academic Roots", desc: "Built as a research project combining NLP, machine learning, and software engineering to solve real-world career challenges." },
-    { Icon: Globe, title: "Global + Local Focus", desc: "Designed for both local Sri Lankan job markets and international career pathways, with relevant skill benchmarks." },
-    { Icon: Bot, title: "AI at the Core", desc: "Our Python NLP microservice (spaCy) powers all skill extraction, normalisation, and matching - no generic keyword lists." },
-    { Icon: Unlock, title: "Open & Transparent", desc: "We show you exactly why you match or don't match a role - no black-box scores, full explainability." },
-  ];
-
+function StepCard({ step, title, desc, Icon, index }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <section id="about" style={{ background: "#0a0a1e", padding: "100px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
-          {/* Left text */}
-          <FadeUp>
-            <div>
-              <span style={{ color: "#34d399", fontWeight: 700, fontSize: 13, letterSpacing: "2px", textTransform: "uppercase" }}>About Us</span>
-              <h2 style={{ fontSize: "clamp(1.8rem,3.5vw,2.8rem)", fontWeight: 800, color: "#fff", marginTop: 12, marginBottom: 20, lineHeight: 1.2 }}>
-                Built by Students,<br />
-                <span style={{ background: "linear-gradient(135deg,#34d399,#60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                  Built for Everyone
-                </span>
-              </h2>
-              <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, lineHeight: 1.75, marginBottom: 18 }}>
-                AptitudeX was born from a frustration shared by thousands of graduates and job seekers: existing platforms tell you <em>what</em> jobs are available, but not <em>why</em> you aren't getting them.
-              </p>
-              <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, lineHeight: 1.75, marginBottom: 28 }}>
-                We set out to build something different - an intelligent system that analyses your current skills in real-time, maps them against actual job requirements, and gives you a clear, actionable learning path forward. No fluff, no guessing, no wasted time.
-              </p>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                {["MERN Stack", "FastAPI + spaCy", "RBAC", "JWT Auth", "Real-time NLP"].map(tag => (
-                  <span key={tag} style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", color: "#a5b4fc", borderRadius: 100, padding: "5px 14px", fontSize: 13, fontWeight: 600 }}>{tag}</span>
-                ))}
-              </div>
-            </div>
-          </FadeUp>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="step-card"
+      style={{
+        background: hovered ? "rgba(99,102,241,0.08)" : "rgba(255,255,255,0.03)",
+        border: hovered ? "1px solid rgba(99,102,241,0.3)" : "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 16,
+        padding: "28px 22px",
+        transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        transform: hovered ? "translateY(-8px)" : "translateY(0)",
+        boxShadow: hovered ? "0 20px 50px rgba(99,102,241,0.2)" : "none",
+        position: "relative",
+        overflow: "hidden",
+        height: "100%",
+        minHeight: 240,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Animated gradient border on hover */}
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        borderRadius: 16,
+        padding: 1,
+        background: hovered ? "linear-gradient(135deg, rgba(99,102,241,0.5), rgba(139,92,246,0.5))" : "transparent",
+        WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+        WebkitMaskComposite: "xor",
+        maskComposite: "exclude",
+        pointerEvents: "none",
+        transition: "all 0.4s ease",
+      }} />
 
-          {/* Right pillars */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-            {pillars.map(({ Icon, title, desc }, i) => (
-              <FadeUp key={title} delay={i * 0.1}>
-                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "20px 18px" }}>
-                  <div style={{ marginBottom: 10, color: "#a5b4fc" }}><Icon size={26} /></div>
-                  <h4 style={{ color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 8 }}>{title}</h4>
-                  <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, lineHeight: 1.6 }}>{desc}</p>
-                </div>
-              </FadeUp>
-            ))}
+      {/* Large step number watermark */}
+      <div style={{
+        position: "absolute",
+        top: 8,
+        right: 12,
+        fontSize: 64,
+        fontWeight: 900,
+        color: hovered ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.1)",
+        lineHeight: 1,
+        pointerEvents: "none",
+        transition: "color 0.4s ease",
+      }}>
+        {step}
+      </div>
+
+      <div style={{
+        width: 50, height: 50, borderRadius: 12,
+        background: hovered ? "rgba(99,102,241,0.25)" : "rgba(99,102,241,0.15)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        marginBottom: 18,
+        transition: "all 0.4s ease",
+        transform: hovered ? "scale(1.1)" : "scale(1)",
+      }}>
+        <Icon size={24} color="#a5b4fc" />
+      </div>
+
+      <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 10 }}>{title}</h3>
+      <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, lineHeight: 1.6, flex: 1 }}>{desc}</p>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════
+   FEATURES
+════════════════════════════════════════════ */
+const features = [
+  { Icon: FileText, title: "AI Skill Extraction", desc: "Our NLP engine accurately extracts skills from resumes, identifying both technical and soft skills." },
+  { Icon: Target, title: "Smart Job Matching", desc: "Compare your profile against job descriptions to get precise match scores and insights." },
+  { Icon: BarChart3, title: "Gap Analysis", desc: "Identify exactly which skills you need to develop to qualify for your target roles." },
+  { Icon: Map, title: "Learning Roadmaps", desc: "Get personalized learning paths with curated resources tailored to your career goals." },
+  { Icon: LineChart, title: "Progress Tracking", desc: "Monitor your skill development over time with visual analytics and milestones." },
+  { Icon: TrendingUp, title: "Career Analytics", desc: "Gain insights into industry trends and see which skills are in highest demand." },
+];
+
+function Features() {
+  return (
+    <section id="features" style={{ padding: "100px 24px", background: "#07071a" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <FadeUp>
+          <div style={{ textAlign: "center", marginBottom: 64 }}>
+            <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.5rem)", fontWeight: 800, color: "#fff", marginBottom: 14 }}>
+              Everything You Need for Career Growth
+            </h2>
+            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 16, maxWidth: 520, margin: "0 auto" }}>
+              Powerful AI tools designed to accelerate your career journey.
+            </p>
           </div>
+        </FadeUp>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }} className="features-grid">
+          {features.map(({ Icon, title, desc }, i) => (
+            <ScaleIn key={title} delay={0.05 + i * 0.1}>
+              <FeatureCard Icon={Icon} title={title} desc={desc} />
+            </ScaleIn>
+          ))}
         </div>
       </div>
     </section>
+  );
+}
+
+function FeatureCard({ Icon, title, desc }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: hovered ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.03)",
+        border: hovered ? "1px solid rgba(99,102,241,0.25)" : "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 16,
+        padding: "26px 24px",
+        transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        transform: hovered ? "translateY(-6px)" : "translateY(0)",
+        boxShadow: hovered ? "0 16px 40px rgba(99,102,241,0.15)" : "none",
+        display: "flex",
+        gap: 16,
+        alignItems: "flex-start",
+        height: "100%",
+        minHeight: 130,
+      }}
+    >
+      <div style={{
+        width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+        background: hovered ? "rgba(99,102,241,0.25)" : "rgba(99,102,241,0.15)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "all 0.4s ease",
+        transform: hovered ? "scale(1.1) rotate(5deg)" : "scale(1) rotate(0deg)",
+      }}>
+        <Icon size={22} color="#a5b4fc" />
+      </div>
+      <div style={{ flex: 1 }}>
+        <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 8 }}>{title}</h3>
+        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, lineHeight: 1.6 }}>{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════
+   BENEFITS
+════════════════════════════════════════════ */
+const benefits = [
+  { Icon: GraduationCap, title: "For Students", desc: "Understand what skills employers want before you graduate and prepare accordingly." },
+  { Icon: Briefcase, title: "For Job Seekers", desc: "Identify skill gaps quickly and focus your learning on what matters most." },
+  { Icon: BarChart3, title: "Data-Driven Decisions", desc: "Make informed career decisions based on real market data and AI insights." },
+  { Icon: Clock, title: "Save Time", desc: "Stop guessing what to learn. Get targeted recommendations instantly." },
+];
+
+function Benefits() {
+  return (
+    <section id="benefits" style={{ padding: "100px 24px", background: "#0a0a1e" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }} className="benefits-grid">
+          <SlideLeft>
+            <div>
+              <span style={{ color: "#a5b4fc", fontWeight: 700, fontSize: 12, letterSpacing: "3px", textTransform: "uppercase" }}>Benefits</span>
+              <h2 style={{ fontSize: "clamp(1.8rem, 3.5vw, 2.4rem)", fontWeight: 800, color: "#fff", marginTop: 14, marginBottom: 20, lineHeight: 1.25 }}>
+                Why Choose AptitudeX?
+              </h2>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 16, lineHeight: 1.75, marginBottom: 28 }}>
+                We built AptitudeX to solve a real problem: job seekers and students know they need to improve, but don't know exactly what skills to focus on. Our AI analyzes the market and creates actionable roadmaps tailored just for you.
+              </p>
+              <button
+                onClick={() => window.location.href = "/register"}
+                style={{
+                  padding: "13px 28px", borderRadius: 10, fontSize: 15, fontWeight: 600,
+                  background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", border: "none",
+                  cursor: "pointer",
+                  boxShadow: "0 0 20px rgba(99,102,241,0.4), 0 6px 24px rgba(99,102,241,0.3)",
+                  transition: "transform 0.25s, box-shadow 0.25s",
+                  display: "inline-flex", alignItems: "center", gap: 10,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 0 30px rgba(99,102,241,0.5), 0 10px 32px rgba(99,102,241,0.4)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 0 20px rgba(99,102,241,0.4), 0 6px 24px rgba(99,102,241,0.3)"; }}
+              >
+                Start Now <ArrowRight size={18} />
+              </button>
+            </div>
+          </SlideLeft>
+
+          <SlideRight>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              {benefits.map(({ Icon, title, desc }, i) => (
+                <ScaleIn key={title} delay={i * 0.1}>
+                  <BenefitCard Icon={Icon} title={title} desc={desc} />
+                </ScaleIn>
+              ))}
+            </div>
+          </SlideRight>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BenefitCard({ Icon, title, desc }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: hovered ? "rgba(99,102,241,0.08)" : "rgba(255,255,255,0.03)",
+        border: hovered ? "1px solid rgba(99,102,241,0.3)" : "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 14,
+        padding: "22px 18px",
+        transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        transform: hovered ? "translateY(-6px) scale(1.02)" : "translateY(0) scale(1)",
+        boxShadow: hovered ? "0 16px 40px rgba(99,102,241,0.18)" : "none",
+        height: "100%",
+        minHeight: 180,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div style={{
+        width: 44, height: 44, borderRadius: 10,
+        background: hovered ? "rgba(99,102,241,0.25)" : "rgba(99,102,241,0.15)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        marginBottom: 14,
+        transition: "all 0.4s ease",
+        transform: hovered ? "scale(1.15)" : "scale(1)",
+      }}>
+        <Icon size={20} color="#a5b4fc" />
+      </div>
+      <h4 style={{ color: "#fff", fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{title}</h4>
+      <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, lineHeight: 1.6, flex: 1 }}>{desc}</p>
+    </div>
   );
 }
 
@@ -504,44 +724,47 @@ function AboutUs() {
 function CTA() {
   const navigate = useNavigate();
   return (
-    <section style={{ background: "linear-gradient(135deg,#0a0a1e,#0d0d2b)", padding: "100px 24px", textAlign: "center" }}>
+    <section style={{ padding: "80px 24px 100px", background: "#07071a" }}>
       <FadeUp>
-        <div style={{ maxWidth: 680, margin: "0 auto", background: "linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.1))", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 28, padding: "64px 48px" }}>
-          <div style={{ marginBottom: 20, color: "#a5b4fc" }}><Rocket size={48} /></div>
-          <h2 style={{ fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 800, color: "#fff", marginBottom: 16 }}>
-            Ready to Take Control of Your Career?
-          </h2>
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 17, marginBottom: 36, lineHeight: 1.6 }}>
-            Join thousands of professionals who stopped guessing and started growing with AI-powered career intelligence.
-          </p>
-          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+        <div style={{
+          maxWidth: 900, margin: "0 auto",
+          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)",
+          borderRadius: 24,
+          padding: "56px 40px",
+          textAlign: "center",
+          position: "relative",
+          overflow: "hidden",
+        }}>
+          {/* Decorative circles */}
+          <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.1)" }} />
+          <div style={{ position: "absolute", bottom: -80, left: -80, width: 250, height: 250, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
+
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <div style={{ width: 60, height: 60, borderRadius: 16, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 22px" }}>
+              <Rocket size={28} color="#fff" />
+            </div>
+            <h2 style={{ fontSize: "clamp(1.7rem, 4vw, 2.3rem)", fontWeight: 800, color: "#fff", marginBottom: 14 }}>
+              Ready to Accelerate Your Career?
+            </h2>
+            <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 16, marginBottom: 32, lineHeight: 1.6, maxWidth: 480, margin: "0 auto 32px" }}>
+              Join thousands of professionals who stopped guessing and started growing with AI-powered career intelligence.
+            </p>
             <button
               onClick={() => navigate("/register")}
               style={{
-                padding: "16px 40px", borderRadius: 12, fontSize: 16, fontWeight: 700,
-                background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", border: "none",
-                cursor: "pointer", boxShadow: "0 8px 30px rgba(99,102,241,0.5)",
-                transition: "transform 0.2s, box-shadow 0.2s",
+                padding: "14px 36px", borderRadius: 12, fontSize: 15, fontWeight: 700,
+                background: "#fff", color: "#6366f1", border: "none",
+                cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                transition: "transform 0.25s, box-shadow 0.25s",
+                display: "inline-flex", alignItems: "center", gap: 10,
               }}
-              onMouseEnter={(e) => { e.target.style.transform = "translateY(-3px)"; e.target.style.boxShadow = "0 14px 40px rgba(99,102,241,0.65)"; }}
-              onMouseLeave={(e) => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 8px 30px rgba(99,102,241,0.5)"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.2)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)"; }}
             >
-              Create Free Account
+              Get Started Free <ArrowRight size={18} />
             </button>
-            <button
-              onClick={() => navigate("/login")}
-              style={{
-                padding: "16px 40px", borderRadius: 12, fontSize: 16, fontWeight: 600,
-                background: "rgba(255,255,255,0.06)", color: "#fff", border: "1.5px solid rgba(255,255,255,0.15)",
-                cursor: "pointer", transition: "background 0.2s",
-              }}
-              onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.12)"; }}
-              onMouseLeave={(e) => { e.target.style.background = "rgba(255,255,255,0.06)"; }}
-            >
-              Already have an account?
-            </button>
+            <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, marginTop: 18 }}>No credit card required</p>
           </div>
-          <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 13, marginTop: 24 }}>No credit card required · Free to get started · Cancel anytime</p>
         </div>
       </FadeUp>
     </section>
@@ -554,126 +777,165 @@ function CTA() {
 function Footer() {
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   return (
-    <footer style={{ background: "#05050f", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "48px 24px 32px" }}>
+    <footer style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "48px 24px 36px", background: "#0a0a1e" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 40, marginBottom: 40 }}>
-          {/* Brand */}
-          <div>
-            <div style={{ marginBottom: 16 }}>
-              <span className="brand-text" style={{ fontSize: 17 }}>AptitudeX</span>
-              <div style={{ color: "rgba(255,255,255,0.38)", fontSize: 10, fontWeight: 500, letterSpacing: 0.4, marginTop: 3, textTransform: "uppercase" }}>AI-Driven Career Intelligence System</div>
+        <FadeUp distance={30}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 40 }} className="footer-grid">
+            <div>
+              <div style={{ marginBottom: 14 }}>
+                <GlowingLogo size="small" />
+              </div>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, lineHeight: 1.7, maxWidth: 260 }}>
+                AI-powered career intelligence platform helping professionals land their dream jobs faster.
+              </p>
             </div>
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14, lineHeight: 1.7, maxWidth: 260 }}>
-              AI-powered career intelligence for the modern job seeker. Analyse, compare, and grow.
-            </p>
+            <div>
+              <h4 style={{ color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 16 }}>Platform</h4>
+              {[["Features", "features"], ["How It Works", "how"], ["Benefits", "benefits"]].map(([label, id]) => (
+                <button key={id} onClick={() => scrollTo(id)} style={{ display: "block", background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 14, padding: "5px 0", cursor: "pointer", transition: "color 0.2s" }}
+                  onMouseEnter={(e) => { e.target.style.color = "#a5b4fc"; }}
+                  onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.5)"; }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div>
+              <h4 style={{ color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 16 }}>Account</h4>
+              {[["Log In", "/login"], ["Sign Up", "/register"]].map(([label, path]) => (
+                <Link key={path} to={path} style={{ display: "block", color: "rgba(255,255,255,0.5)", fontSize: 14, textDecoration: "none", padding: "5px 0", transition: "color 0.2s" }}
+                  onMouseEnter={(e) => { e.target.style.color = "#a5b4fc"; }}
+                  onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.5)"; }}>
+                  {label}
+                </Link>
+              ))}
+            </div>
+            <div>
+              <h4 style={{ color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 16 }}>Legal</h4>
+              {["Privacy Policy", "Terms of Service"].map((label) => (
+                <span key={label} style={{ display: "block", color: "rgba(255,255,255,0.5)", fontSize: 14, padding: "5px 0", cursor: "pointer", transition: "color 0.2s" }}
+                  onMouseEnter={(e) => { e.target.style.color = "#a5b4fc"; }}
+                  onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.5)"; }}>
+                  {label}
+                </span>
+              ))}
+            </div>
           </div>
-          {/* Platform links */}
-          <div>
-            <h4 style={{ color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 14 }}>Platform</h4>
-            {[["Features", "features"], ["How It Works", "how"], ["About Us", "about"]].map(([label, id]) => (
-              <button key={id} onClick={() => scrollTo(id)} style={{ display: "block", background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 14, padding: "4px 0", cursor: "pointer", transition: "color 0.2s" }}
-                onMouseEnter={(e) => { e.target.style.color = "rgba(255,255,255,0.75)"; }}
-                onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.4)"; }}>
-                {label}
-              </button>
-            ))}
+        </FadeUp>
+        <FadeUp delay={0.2} distance={20}>
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 24, textAlign: "center" }}>
+            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>© 2026 AptitudeX. All rights reserved.</span>
           </div>
-          {/* Account */}
-          <div>
-            <h4 style={{ color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 14 }}>Account</h4>
-            {[["Log In", "/login"], ["Sign Up", "/register"]].map(([label, path]) => (
-              <Link key={path} to={path} style={{ display: "block", color: "rgba(255,255,255,0.4)", fontSize: 14, textDecoration: "none", padding: "4px 0", transition: "color 0.2s" }}
-                onMouseEnter={(e) => { e.target.style.color = "rgba(255,255,255,0.75)"; }}
-                onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.4)"; }}>
-                {label}
-              </Link>
-            ))}
-          </div>
-          {/* Tech */}
-          <div>
-            <h4 style={{ color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 14 }}>Tech Stack</h4>
-            {["React", "Node.js", "MongoDB", "FastAPI", "spaCy"].map(t => (
-              <div key={t} style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, padding: "4px 0" }}>{t}</div>
-            ))}
-          </div>
-        </div>
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-          <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 13 }}>© 2026 AptitudeX &middot; AI-Driven Career Intelligence System</span>
-          <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 13 }}>Built with <Heart size={13} className="inline text-red-400" /> using MERN + FastAPI</span>
-        </div>
+        </FadeUp>
       </div>
     </footer>
   );
 }
 
 /* ════════════════════════════════════════════
-   KEYFRAME STYLES (injected once)
+   KEYFRAMES & RESPONSIVE STYLES
 ════════════════════════════════════════════ */
-const KEYFRAMES = `
-@keyframes float1 {
-  0%,100% { transform: translate(0,0) scale(1); }
-  50% { transform: translate(20px,-30px) scale(1.05); }
+const STYLES = `
+html {
+  scroll-behavior: smooth;
 }
-@keyframes float2 {
-  0%,100% { transform: translate(0,0) scale(1); }
-  50% { transform: translate(-25px,20px) scale(0.95); }
+
+@keyframes logoGlow {
+  0% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.5), 0 0 40px rgba(124, 58, 237, 0.3), 0 4px 16px rgba(124, 58, 237, 0.4); }
+  100% { box-shadow: 0 0 30px rgba(124, 58, 237, 0.6), 0 0 60px rgba(124, 58, 237, 0.4), 0 4px 20px rgba(124, 58, 237, 0.5); }
 }
+
+@keyframes textGlow {
+  0%, 100% { background-position: 0% 50%; filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.4)); }
+  50% { background-position: 100% 50%; filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.6)); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
 @keyframes pulse {
-  0%,100% { opacity:1; }
-  50% { opacity:0.5; }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
-@keyframes fadeInDown {
-  from { opacity:0; transform:translateY(-20px); }
-  to   { opacity:1; transform:translateY(0); }
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
-@keyframes fadeInUp {
-  from { opacity:0; transform:translateY(30px); }
-  to   { opacity:1; transform:translateY(0); }
+
+.step-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(99,102,241,0.1) 50%, transparent 60%);
+  background-size: 200% 200%;
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
-@keyframes bounce {
-  0%,100% { transform:translateX(-50%) translateY(0); }
-  50% { transform:translateX(-50%) translateY(-10px); }
+
+.step-card:hover::before {
+  opacity: 1;
+  animation: shimmer 1.5s ease infinite;
 }
-@keyframes scrollDot {
-  0% { transform:translateY(0); opacity:1; }
-  100% { transform:translateY(14px); opacity:0; }
+
+@media (max-width: 1024px) {
+  .steps-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
-@keyframes growBar {
-  from { width:0; }
+
+@media (max-width: 768px) {
+  .steps-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .features-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .benefits-grid {
+    grid-template-columns: 1fr !important;
+    gap: 40px !important;
+  }
+  .footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 28px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 `;
 
 /* ════════════════════════════════════════════
-   ROOT COMPONENT
+   ROOT
 ════════════════════════════════════════════ */
 export default function WelcomePage() {
-  // Inject keyframes once (hook must be called before any early return)
   useEffect(() => {
-    if (!document.getElementById("welcome-keyframes")) {
+    if (!document.getElementById("welcome-styles")) {
       const style = document.createElement("style");
-      style.id = "welcome-keyframes";
-      style.textContent = KEYFRAMES;
+      style.id = "welcome-styles";
+      style.textContent = STYLES;
       document.head.appendChild(style);
     }
-    return () => {};
   }, []);
 
-  // Redirect already-authenticated users to their dashboard
-  const user  = localStorage.getItem("user");
-  const role  = localStorage.getItem("role");
-  if (user && role) {
-    if (role === "ADMIN") return <Navigate to="/admin" replace />;
-    if (role === "STAFF") return <Navigate to="/staff" replace />;
-    return <Navigate to="/dashboard" replace />;
-  }
+  const user = localStorage.getItem("user");
+  const role = localStorage.getItem("role");
+  const isLoggedIn = !!(user && role);
 
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif", background: "#0a0a1e" }}>
-      <Navbar />
+    <div style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif" }}>
+      <Navbar isLoggedIn={isLoggedIn} role={role} />
       <Hero />
-      <Features />
       <HowItWorks />
-      <AboutUs />
+      <Features />
+      <Benefits />
       <CTA />
       <Footer />
     </div>

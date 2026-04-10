@@ -3,8 +3,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Zap, Users, UserCheck, BarChart2, ClipboardList, Map, Home, FileText,
   Folder, Target, TrendingUp, Briefcase, Flame, LogOut, HeartPulse,
-  ArrowLeft, RefreshCw, Check, X, ChevronDown, ChevronRight, ClipboardCheck,
-  ShieldCheck,
+  ArrowLeft, RefreshCw, Check, X, ChevronDown, ChevronRight,
+  ShieldCheck, ListChecks, Activity,
 } from 'lucide-react';
 import api from '../api/api';
 import { useSSE } from '../context/SSEContext';
@@ -347,7 +347,6 @@ function LogoutConfirmModal({ onConfirm, onCancel }) {
           border: '1px solid rgba(239,68,68,0.3)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 20px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}><LogOut size={26} /></div>
 
         <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 800, margin: '0 0 8px', letterSpacing: -0.3 }}>
@@ -417,9 +416,10 @@ const ROLE_NAV = {
     { path: '/compare-job',        label: 'Compare Job',        Icon: Target },
     { path: '/my-roadmap',         label: 'My Roadmaps',        Icon: Map },
     { path: '/analytics',          label: 'Analytics',          Icon: TrendingUp },
+    { path: '/trends',             label: 'Industry Trends',    Icon: Activity },
     { path: '/job-postings',       label: 'Job Postings',       Icon: Briefcase },
     { path: '/skills-in-demand',   label: 'Skills in Demand',   Icon: Flame },
-    { path: '/job-tracker',        label: 'Job Tracker',        Icon: ClipboardCheck },
+    { path: '/progress',           label: 'Progress Tracking',  Icon: ListChecks },
   ],
 };
 
@@ -964,7 +964,7 @@ export default function Layout({ children }) {
         )}
 
         {/* Main content area */}
-        <main style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
+        <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', minWidth: 0 }}>
           <div style={{ padding: '32px' }}>
             {children}
           </div>

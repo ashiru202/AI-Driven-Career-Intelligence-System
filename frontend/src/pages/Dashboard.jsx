@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { FileText, Folder, Target, Briefcase, TrendingUp, Map } from "lucide-react";
+import { FileText, Folder, Target, Briefcase, TrendingUp, Map, BarChart3, Trophy, Award } from "lucide-react";
 
 const USER_CARDS = [
   {
@@ -56,13 +55,13 @@ const USER_CARDS = [
 ];
 
 const COLOR_MAP = {
-  blue:   { heading: "text-blue-600",   icon: "bg-blue-100 text-blue-600",   bar: "bg-blue-500" },
-  violet: { heading: "text-violet-600", icon: "bg-violet-100 text-violet-600", bar: "bg-violet-500" },
-  orange: { heading: "text-orange-600", icon: "bg-orange-100 text-orange-600", bar: "bg-orange-500" },
-  indigo: { heading: "text-indigo-600", icon: "bg-indigo-100 text-indigo-600", bar: "bg-indigo-500" },
-  green:  { heading: "text-green-600",  icon: "bg-green-100 text-green-600",  bar: "bg-green-500" },
-  purple: { heading: "text-purple-600", icon: "bg-purple-100 text-purple-600", bar: "bg-purple-500" },
-  rose:   { heading: "text-rose-600",   icon: "bg-rose-100 text-rose-600",   bar: "bg-rose-500" },
+  blue:   { heading: "text-blue-400",   icon: "bg-blue-500/10 text-blue-400 border border-blue-500/20",   cta: "text-blue-400" },
+  violet: { heading: "text-violet-400", icon: "bg-violet-500/10 text-violet-400 border border-violet-500/20", cta: "text-violet-400" },
+  orange: { heading: "text-orange-400", icon: "bg-orange-500/10 text-orange-400 border border-orange-500/20", cta: "text-orange-400" },
+  indigo: { heading: "text-indigo-400", icon: "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20", cta: "text-indigo-400" },
+  green:  { heading: "text-green-400",  icon: "bg-green-500/10 text-green-400 border border-green-500/20",  cta: "text-green-400" },
+  purple: { heading: "text-purple-400", icon: "bg-purple-500/10 text-purple-400 border border-purple-500/20", cta: "text-purple-400" },
+  rose:   { heading: "text-rose-400",   icon: "bg-rose-500/10 text-rose-400 border border-rose-500/20",   cta: "text-rose-400" },
 };
 
 export default function Dashboard() {
@@ -93,36 +92,94 @@ export default function Dashboard() {
 
         {/* User feature cards */}
         {user.role === 'USER' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {USER_CARDS.map(({ title, description, link, cta, Icon, color }) => {
-              const c = COLOR_MAP[color];
-              return (
-                <Link
-                  key={link}
-                  to={link}
-                  className="group relative rounded-2xl border border-gray-100 bg-white p-5 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex flex-col gap-4 text-left no-underline"
-                  style={{ textDecoration: "none" }}
-                >
-                  {/* Icon badge */}
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${c.icon}`}>
-                    <Icon size={22} />
-                  </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {USER_CARDS.map(({ title, description, link, cta, Icon, color }) => {
+                const c = COLOR_MAP[color];
+                return (
+                  <Link
+                    key={link}
+                    to={link}
+                    className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/20 hover:bg-white/8 transition-all duration-200 flex flex-col gap-4 text-left no-underline"
+                    style={{ textDecoration: "none" }}
+                  >
+                    {/* Icon badge */}
+                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${c.icon}`}>
+                      <Icon size={26} />
+                    </div>
 
-                  {/* Text */}
-                  <div className="flex-1">
-                    <p className={`font-semibold text-base ${c.heading} group-hover:opacity-90`}>{title}</p>
-                    <p className="text-gray-500 text-xs mt-1 leading-relaxed">{description}</p>
-                  </div>
+                    {/* Text */}
+                    <div className="flex-1">
+                      <p className={`font-bold text-lg ${c.heading} group-hover:opacity-90 mb-2`}>{title}</p>
+                      <p className="text-slate-400 text-sm leading-relaxed">{description}</p>
+                    </div>
 
-                  {/* CTA */}
-                  <span className={`text-xs font-medium ${c.heading}`}>{cta}</span>
+                    {/* CTA */}
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm font-semibold ${c.cta}`}>{cta} →</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
 
-                  {/* Bottom colour strip */}
-                  <div className={`absolute bottom-0 left-0 right-0 h-0.5 rounded-b-2xl ${c.bar} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                </Link>
-              );
-            })}
-          </div>
+            {/* Additional Dashboard Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {/* Industry Trends Card */}
+              <Link
+                to="/industry-trends"
+                className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/20 hover:bg-white/8 transition-all duration-200 flex flex-col gap-4 text-left no-underline"
+                style={{ textDecoration: "none" }}
+              >
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                  <BarChart3 size={26} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-lg text-orange-400 group-hover:opacity-90 mb-2">Industry Trends</p>
+                  <p className="text-slate-400 text-sm leading-relaxed">Track emerging skills and market trends</p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-orange-400">View Trends →</span>
+                </div>
+              </Link>
+
+              {/* Skills in Demand Card */}
+              <Link
+                to="/skills-in-demand"
+                className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/20 hover:bg-white/8 transition-all duration-200 flex flex-col gap-4 text-left no-underline"
+                style={{ textDecoration: "none" }}
+              >
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                  <Trophy size={26} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-lg text-rose-400 group-hover:opacity-90 mb-2">Skills in Demand</p>
+                  <p className="text-slate-400 text-sm leading-relaxed">Discover the most sought-after skills in the market</p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-rose-400">View Skills →</span>
+                </div>
+              </Link>
+
+              {/* Your Progress Card */}
+              <Link
+                to="/progress"
+                className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/20 hover:bg-white/8 transition-all duration-200 flex flex-col gap-4 text-left no-underline"
+                style={{ textDecoration: "none" }}
+              >
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-green-500/10 text-green-400 border border-green-500/20">
+                  <Award size={26} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-lg text-green-400 group-hover:opacity-90 mb-2">Your Progress</p>
+                  <p className="text-slate-400 text-sm leading-relaxed">Monitor your learning journey and achievements</p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-green-400">View Progress →</span>
+                </div>
+              </Link>
+            </div>
+          </>
         )}
       </div>
     </Layout>

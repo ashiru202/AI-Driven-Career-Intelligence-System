@@ -25,6 +25,7 @@ function mockUser(overrides = {}) {
     email: 'test@example.com',
     role: 'USER',
     active: true,
+    emailVerified: true,
     ...overrides
   };
 }

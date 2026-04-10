@@ -117,7 +117,11 @@ const schemas = {
       jobTitle: z.string().max(200).transform(stripHtml).optional(),
       jobSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional(),
       missingSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional(),
-      resumeSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional()
+      resumeSkills: z.array(z.string().max(100).transform(stripHtml)).max(100).optional(),
+      comparisonId: z.string()
+        .regex(/^[0-9a-fA-F]{24}$/, 'Invalid comparison ID')
+        .optional()
+        .nullable()
     })
   }),
 
@@ -145,6 +149,24 @@ const schemas = {
         .email('Invalid email address')
         .max(254, 'Email too long')
         .toLowerCase()
+    })
+  }),
+
+  // Extension API schemas
+  extensionQuickCompare: z.object({
+    body: z.object({
+      jobTitle: z.string()
+        .min(2, 'Job title too short')
+        .max(200, 'Job title too long')
+        .transform(stripHtml),
+      jobDescription: z.string()
+        .min(10, 'Job description must be at least 10 characters')
+        .max(10000, 'Job description too long')
+        .transform(stripHtml),
+      resumeId: z.string()
+        .regex(/^[0-9a-fA-F]{24}$/, 'Invalid resume ID')
+        .optional()
+        .nullable()
     })
   })
 };

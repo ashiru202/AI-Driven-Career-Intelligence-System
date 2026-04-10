@@ -10,6 +10,11 @@ const {
   deleteUser,
   getAuditLogs,
 } = require("../controllers/adminController");
+const {
+  triggerScrape,
+  triggerForecast,
+  getScrapeStatus,
+} = require("../controllers/trendController");
 
 // All routes require admin role
 router.use(requireAuth, requireRole('ADMIN'));
@@ -31,5 +36,10 @@ router.delete("/users/:userId", deleteUser);
 
 // Activity audit log
 router.get("/audit-logs", getAuditLogs);
+
+// Industry Trends — admin controls
+router.post("/trends/trigger-scrape",   triggerScrape);
+router.post("/trends/trigger-forecast", triggerForecast);
+router.get("/trends/scrape-status",     getScrapeStatus);
 
 module.exports = router;
