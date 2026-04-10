@@ -47,7 +47,12 @@ const comparisonSchema = new mongoose.Schema({
   },
   matchingMethod: {
     type: String,
-    default: 'keyword'   // 'all-MiniLM-L6-v2' | 'keyword-fallback'
+    default: 'keyword'   // 'all-MiniLM-L6-v2' | 'keyword-fallback' | 'keyword'
+  },
+  source: {
+    type: String,
+    enum: ['web', 'extension', 'api'],
+    default: 'web'
   },
   semanticMatches: {
     type: [{

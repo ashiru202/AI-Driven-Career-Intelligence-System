@@ -1,21 +1,18 @@
-const normalize = (arr) =>
-  [...new Set((arr || []).map(s => String(s).trim().toLowerCase()).filter(Boolean))];
+const { compareSkills, normalizeSkillList } = require('../utils/skillNormalizer');
 
 function computeSkillGap(resumeSkills, jobSkills) {
-  const r = new Set(normalize(resumeSkills));
-  const j = normalize(jobSkills);
+  const normalizedResumeSkills = normalizeSkillList(resumeSkills);
+  const normalizedJobSkills = normalizeSkillList(jobSkills);
 
-  const commonSkills = [];
-  const missingSkills = [];
+  const result = compareSkills(normalizedResumeSkills, normalizedJobSkills);
 
-  for (const s of j) {
-    if (r.has(s)) commonSkills.push(s);
-    else missingSkills.push(s);
-  }
-
-  const matchScore = j.length ? Math.round((commonSkills.length / j.length) * 100) : 0;
-
-  return { commonSkills, missingSkills, matchScore };
+  return {
+    resumeSkills: normalizedResumeSkills,
+    jobSkills: normalizedJobSkills,
+    commonSkills: result.common,
+    missingSkills: result.missing,
+    matchScore: result.matchScore,
+  };
 }
 
 module.exports = { computeSkillGap };

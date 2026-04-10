@@ -7,7 +7,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const { errorHandler } = require("./middleware/errorMiddleware");
-const { authLimiter, generalLimiter, uploadLimiter } = require("./middleware/rateLimitMiddleware");
+const { authLimiter, generalLimiter, uploadLimiter, extensionLimiter } = require("./middleware/rateLimitMiddleware");
 
 const app = express();
 
@@ -15,12 +15,38 @@ const app = express();
 app.use(helmet());
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true  // required for cross-origin httpOnly cookies
-}));
+const allowedOrigins = [
+  'http://localhost:3000', // Frontend dev
+  'http://localhost:3001', // Frontend staging
+  process.env.CORS_ORIGIN, // Frontend prod (from env)
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Check if origin is in allowlist
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow any chrome-extension:// URL (extension can get actual ID later)
+    if (origin.startsWith('chrome-extension://')) {
+      return callback(null, true);
+    }
+
+    // Reject all other origins
+    callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true, // required for cross-origin httpOnly cookies
+};
+
+app.use(cors(corsOptions));
 
 // ── Cookie parser ─────────────────────────────────────────────────────────────
 app.use(cookieParser());
@@ -72,6 +98,7 @@ const analyticsRoutes       = require("./routes/analyticsRoutes");
 const reportRoutes          = require("./routes/reportRoutes");
 const notificationsRoutes   = require("./routes/notificationsRoutes");
 const trendRoutes           = require("./routes/trendRoutes");
+const extensionRoutes       = require("./routes/extensionRoutes");
 
 app.use("/api",            healthRoutes);
 
@@ -84,6 +111,14 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use("/api/resumes",    resumeRoutes);
 app.use("/api/comparisons", comparisonRoutes);
+
+// Extension: custom rate limit in non-test envs
+if (process.env.NODE_ENV !== "test") {
+  app.use("/api/extension", extensionLimiter, extensionRoutes);
+} else {
+  app.use("/api/extension", extensionRoutes);
+}
+
 app.use("/api/roadmaps-new", newRoadmapRoutes);
 app.use("/api/analytics",  analyticsRoutes);
 app.use("/api/reports",        reportRoutes);

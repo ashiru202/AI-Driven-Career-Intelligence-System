@@ -16,6 +16,14 @@ function hashToken(raw) {
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
 
+function signAccessToken(userLike) {
+  return jwt.sign(
+    { id: userLike.id || userLike._id, role: userLike.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+}
+
 // POST /api/auth/register
 exports.register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -72,11 +80,7 @@ exports.login = asyncHandler(async (req, res) => {
     throw AppError.unauthorized('Invalid credentials');
   }
 
-  const token = jwt.sign(
-    { id: user._id, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+  const token = signAccessToken(user);
 
   // Set JWT as an httpOnly cookie — JS cannot read this, eliminating XSS token theft
   res.cookie("jwt", token, {
@@ -89,6 +93,21 @@ exports.login = asyncHandler(async (req, res) => {
   res.json(successResponse({
     user: { id: user._id, name: user.name, email: user.email, role: user.role }
   }));
+});
+
+// GET /api/auth/extension-token
+exports.issueExtensionToken = asyncHandler(async (req, res) => {
+  if (!req.user?.id || !req.user?.role) {
+    throw AppError.unauthorized('Authentication required');
+  }
+
+  const token = signAccessToken(req.user);
+
+  res.json(successResponse({
+    token,
+    tokenType: 'Bearer',
+    expiresIn: '7d',
+  }, 'Extension token issued successfully'));
 });
 
 // GET /api/auth/verify-email?token=...
