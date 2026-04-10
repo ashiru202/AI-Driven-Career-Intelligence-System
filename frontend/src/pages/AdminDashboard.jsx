@@ -302,6 +302,29 @@ export default function AdminDashboard() {
     });
   }, [userSample]);
 
+  const fourteenDaySignups = useMemo(
+    () => registrationTimeline.reduce((sum, day) => sum + Number(day.signups || 0), 0),
+    [registrationTimeline]
+  );
+
+  const todaySignups = registrationTimeline.length
+    ? Number(registrationTimeline[registrationTimeline.length - 1].signups || 0)
+    : 0;
+
+  const yesterdaySignups = registrationTimeline.length > 1
+    ? Number(registrationTimeline[registrationTimeline.length - 2].signups || 0)
+    : 0;
+
+  const signupDelta = todaySignups - yesterdaySignups;
+
+  const signupYMax = useMemo(() => {
+    const maxVal = registrationTimeline.reduce(
+      (currentMax, day) => Math.max(currentMax, Number(day.signups || 0)),
+      0
+    );
+    return Math.max(2, maxVal + 1);
+  }, [registrationTimeline]);
+
   const getDelta = useCallback(
     (key) => {
       if (!stats || !previousStats) return null;
@@ -377,19 +400,7 @@ export default function AdminDashboard() {
 
   return (
     <Layout>
-      <div className="space-y-8 pb-10 relative">
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: "-20px -16px auto -16px",
-            height: 260,
-            background:
-              "radial-gradient(circle at 5% 20%, rgba(239,68,68,0.22), transparent 45%), radial-gradient(circle at 85% 0%, rgba(56,189,248,0.16), transparent 50%)",
-            pointerEvents: "none",
-            zIndex: 0,
-          }}
-        />
+      <div className="space-y-8 pb-10">
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div>
@@ -540,28 +551,55 @@ export default function AdminDashboard() {
               <p className="text-xs text-slate-400">14-day signup trend and role distribution</p>
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2 h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={registrationTimeline} margin={{ top: 6, right: 8, left: -16, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="signupGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.55} />
-                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0.03} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.18)" />
-                      <XAxis dataKey="date" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-                      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
-                      <Tooltip content={<ChartTooltip />} />
-                      <Area type="monotone" dataKey="signups" name="New Users" stroke="#ef4444" fill="url(#signupGradient)" strokeWidth={2.2} />
-                      <Line type="monotone" dataKey="cumulative" name="Cumulative" stroke="#22c55e" strokeWidth={2} dot={{ r: 2 }} />
-                    </AreaChart>
-                  </ResponsiveContainer>
+              <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
+                <div className="xl:col-span-3">
+                  <div className="h-64 relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={registrationTimeline} margin={{ top: 6, right: 8, left: -16, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="signupGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.55} />
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0.03} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.18)" />
+                        <XAxis dataKey="date" tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                        <YAxis domain={[0, signupYMax]} tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                        <Tooltip content={<ChartTooltip />} />
+                        <Area type="monotone" dataKey="signups" name="New Users" stroke="#ef4444" fill="url(#signupGradient)" strokeWidth={2.2} />
+                        <Line type="monotone" dataKey="cumulative" name="Cumulative" stroke="#22c55e" strokeWidth={2} dot={{ r: 2 }} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+
+                    {fourteenDaySignups === 0 && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <p className="text-xs text-slate-400 bg-slate-900/70 border border-white/10 rounded-md px-3 py-1">
+                          No new signups in the last 14 days
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                      <p className="text-[11px] text-slate-400">Today</p>
+                      <p className="text-base font-bold text-white">{todaySignups}</p>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                      <p className="text-[11px] text-slate-400">14-Day Total</p>
+                      <p className="text-base font-bold text-white">{fourteenDaySignups}</p>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                      <p className="text-[11px] text-slate-400">Day-over-Day</p>
+                      <p className={`text-base font-bold ${signupDelta > 0 ? "text-emerald-300" : signupDelta < 0 ? "text-red-300" : "text-slate-200"}`}>
+                        {signupDelta > 0 ? `+${signupDelta}` : signupDelta}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="h-72 flex flex-col">
-                  <div className="h-48">
+                <div className="xl:col-span-2 flex flex-col gap-3">
+                  <div className="h-44">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -583,7 +621,7 @@ export default function AdminDashboard() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="mt-2 space-y-1">
+                  <div className="space-y-1">
                     {roleDistribution.map((item, idx) => (
                       <div key={item.name} className="flex items-center justify-between text-xs">
                         <span className="flex items-center gap-2 text-slate-300">
@@ -594,15 +632,22 @@ export default function AdminDashboard() {
                       </div>
                     ))}
                   </div>
+
+                  <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 mt-auto">
+                    <p className="text-[11px] text-slate-400">Live Status</p>
+                    <p className="text-sm text-slate-200 mt-1">
+                      {isLive ? "Auto-refreshing every 15s" : "Live updates paused"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="relative z-10 grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="relative z-10 grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
           <Card
-            className="xl:col-span-2"
+            className="xl:col-span-2 h-full"
             style={{ border: "1px solid rgba(255,255,255,0.1)", background: "rgba(14,18,33,0.9)" }}
           >
             <CardHeader className="border-b border-white/10 pb-3">
@@ -647,70 +692,102 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card style={{ border: "1px solid rgba(255,255,255,0.1)", background: "rgba(14,18,33,0.9)" }}>
+          <Card className="h-full flex flex-col" style={{ border: "1px solid rgba(255,255,255,0.1)", background: "rgba(14,18,33,0.9)" }}>
             <CardHeader className="border-b border-white/10 pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <AlertTriangle size={16} className="text-amber-300" /> Common Skill Gaps
               </CardTitle>
               <p className="text-xs text-slate-400">Most frequently missing skills by users</p>
             </CardHeader>
-            <CardContent className="pt-4 space-y-3">
-              {(stats?.commonGaps || []).length > 0 ? (
-                (stats.commonGaps || []).map((item) => {
-                  const max = Number(stats.commonGaps?.[0]?.count || 1);
-                  const pct = Math.round((Number(item.count || 0) / max) * 100);
-                  return (
-                    <div key={item.skill}>
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm text-slate-100 capitalize">{item.skill}</p>
-                        <span className="text-xs text-amber-300 font-semibold">{item.count}</span>
+            <CardContent className="pt-4 h-full flex flex-col gap-4">
+              <div className="space-y-3">
+                {(stats?.commonGaps || []).length > 0 ? (
+                  (stats.commonGaps || []).map((item) => {
+                    const max = Number(stats.commonGaps?.[0]?.count || 1);
+                    const pct = Math.round((Number(item.count || 0) / max) * 100);
+                    return (
+                      <div key={item.skill}>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm text-slate-100 capitalize">{item.skill}</p>
+                          <span className="text-xs text-amber-300 font-semibold">{item.count}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg, #f59e0b, #ef4444)" }} />
+                        </div>
                       </div>
-                      <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg, #f59e0b, #ef4444)" }} />
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-slate-400">No gap data available yet.</p>
+                )}
+              </div>
+
+              <div className="border-t border-white/10 pt-3 grid grid-cols-2 gap-3 mt-auto">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">Top Demand</p>
+                  <div className="space-y-1 mt-2">
+                    {(stats?.topSkills || []).slice(0, 3).map((item) => (
+                      <div key={`top-${item.skill}`} className="flex items-center justify-between text-xs">
+                        <span className="text-slate-200 capitalize">{item.skill}</span>
+                        <span className="text-red-300 font-semibold">{item.count}</span>
                       </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-sm text-slate-400">No gap data available yet.</p>
-              )}
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">Low Demand</p>
+                  <div className="space-y-1 mt-2">
+                    {(stats?.leastSkills || []).slice(0, 3).map((item) => (
+                      <div key={`least-${item.skill}`} className="flex items-center justify-between text-xs">
+                        <span className="text-slate-200 capitalize">{item.skill}</span>
+                        <span className="text-sky-300 font-semibold">{item.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Link to="/staff-management">
-            <Card className="hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-sky-400/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)" }}>
-              <CardContent className="pt-4">
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
+          <Link to="/staff-management" className="h-full">
+            <Card className="h-full hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-sky-400/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)" }}>
+              <CardContent className="pt-4 h-full flex flex-col">
                 <p className="font-semibold text-sky-300 flex items-center gap-2"><Shield size={14} /> Staff Management</p>
                 <p className="text-sm text-slate-400 mt-1">Create, monitor, and manage staff accounts</p>
+                <p className="text-xs text-slate-500 mt-auto pt-3">Live: {formatNumber(stats?.totalStaff)} staff accounts</p>
               </CardContent>
             </Card>
           </Link>
 
-          <Link to="/users">
-            <Card className="hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-emerald-400/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)" }}>
-              <CardContent className="pt-4">
+          <Link to="/users" className="h-full">
+            <Card className="h-full hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-emerald-400/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)" }}>
+              <CardContent className="pt-4 h-full flex flex-col">
                 <p className="font-semibold text-emerald-300 flex items-center gap-2"><Users size={14} /> Job Seekers</p>
                 <p className="text-sm text-slate-400 mt-1">Search and manage user accounts</p>
+                <p className="text-xs text-slate-500 mt-auto pt-3">Live: {formatNumber(stats?.totalUsers)} users • {activeRate}% active</p>
               </CardContent>
             </Card>
           </Link>
 
-          <Link to="/admin-report">
-            <Card className="hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-red-400/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)" }}>
-              <CardContent className="pt-4">
+          <Link to="/admin-report" className="h-full">
+            <Card className="h-full hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-red-400/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)" }}>
+              <CardContent className="pt-4 h-full flex flex-col">
                 <p className="font-semibold text-red-300 flex items-center gap-2"><FileText size={14} /> Platform Report</p>
                 <p className="text-sm text-slate-400 mt-1">View and export platform-level reports</p>
+                <p className="text-xs text-slate-500 mt-auto pt-3">Live: Avg match {Number(stats?.avgMatchScore || 0).toFixed(1)}%</p>
               </CardContent>
             </Card>
           </Link>
 
-          <Link to="/admin/audit-logs">
-            <Card className="hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-amber-300/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)" }}>
-              <CardContent className="pt-4">
+          <Link to="/admin/audit-logs" className="h-full">
+            <Card className="h-full hover:shadow-md transition-all cursor-pointer border-white/10 hover:border-amber-300/60 hover:-translate-y-0.5" style={{ background: "rgba(20,26,44,0.88)" }}>
+              <CardContent className="pt-4 h-full flex flex-col">
                 <p className="font-semibold text-amber-200 flex items-center gap-2"><Search size={14} /> Audit Log</p>
                 <p className="text-sm text-slate-400 mt-1">Review admin operations and events</p>
+                <p className="text-xs text-slate-500 mt-auto pt-3">Live sync: {isLive ? "On" : "Off"} • 15s cycle</p>
               </CardContent>
             </Card>
           </Link>
