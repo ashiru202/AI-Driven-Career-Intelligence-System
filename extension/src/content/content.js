@@ -126,7 +126,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
-export function bootstrapContentScript() {
+function bootstrapContentScript() {
   return {
     ready: true,
     url: window.location.href,

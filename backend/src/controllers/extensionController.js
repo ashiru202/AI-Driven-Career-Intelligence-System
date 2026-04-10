@@ -3,7 +3,7 @@ const Comparison = require('../models/Comparison');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const { AppError } = require('../utils/AppError');
 const asyncHandler = require('../middleware/asyncHandler');
-const aiSkillExtractorService = require('../services/aiSkillExtractorService');
+const { extractSkillsWithAI } = require('../services/aiSkillExtractorService');
 const skillGapService = require('../services/skillGapService');
 
 class ExtensionController {
@@ -56,7 +56,7 @@ class ExtensionController {
     }
 
     // Extract skills from job description
-    const jobSkillsResult = await aiSkillExtractorService.extractSkills(jobDescription);
+    const jobSkillsResult = await extractSkillsWithAI(jobDescription);
     const jobSkills = jobSkillsResult.skills || [];
 
     // Get resume skills

@@ -103,6 +103,32 @@ function sendMessageToTab(tabId, message) {
   });
 }
 
+function isMissingReceiverError(errorText) {
+  const value = String(errorText || "").toLowerCase();
+  return (
+    value.includes("receiving end does not exist") ||
+    value.includes("could not establish connection") ||
+    value.includes("no receiving end")
+  );
+}
+
+function isRestrictedTabUrl(url) {
+  const value = String(url || "").toLowerCase();
+  return (
+    value.startsWith("chrome://") ||
+    value.startsWith("edge://") ||
+    value.startsWith("about:") ||
+    value.startsWith("chrome-extension://")
+  );
+}
+
+async function injectExtractionScript(tabId) {
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ["src/content/content.js"],
+  });
+}
+
 async function handleJobExtractionRequest() {
   const activeTab = await getActiveTab();
 
@@ -110,9 +136,29 @@ async function handleJobExtractionRequest() {
     return buildResponse(false, null, "No active tab found.");
   }
 
-  const extractionResult = await sendMessageToTab(activeTab.id, {
+  let extractionResult = await sendMessageToTab(activeTab.id, {
     type: MESSAGE_TYPES.CONTENT_EXTRACT_JOB,
   });
+
+  if (!extractionResult.ok && isMissingReceiverError(extractionResult.error)) {
+    if (isRestrictedTabUrl(activeTab.url)) {
+      return buildResponse(
+        false,
+        null,
+        "This tab does not allow extraction. Open a regular LinkedIn or Indeed job page and retry."
+      );
+    }
+
+    try {
+      await injectExtractionScript(activeTab.id);
+      extractionResult = await sendMessageToTab(activeTab.id, {
+        type: MESSAGE_TYPES.CONTENT_EXTRACT_JOB,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to inject extractor script.";
+      return buildResponse(false, null, errorMessage);
+    }
+  }
 
   if (!extractionResult.ok) {
     return extractionResult;
