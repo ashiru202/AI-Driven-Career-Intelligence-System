@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/api";
-import { ArrowLeft, User, Mail, Lock, CheckCircle } from "lucide-react";
+import { ArrowLeft, User, Mail, Lock } from "lucide-react";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -108,15 +108,6 @@ export default function Register() {
             </footer>
           </blockquote>
 
-          {/* Feature highlights */}
-          <div style={{ margin: '48px auto 0', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
-            {["Free forever tier", "No credit card required", "Cancel anytime"].map((text, i) => (
-              <div key={i} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 10, color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'left' }}>
-                <CheckCircle size={14} color="#6366f1" />
-                {text}
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 

@@ -113,15 +113,6 @@ export default function Login() {
             </footer>
           </blockquote>
 
-          {/* Feature highlights */}
-          <div style={{ margin: '48px auto 0', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
-            {["AI-powered skill analysis", "Personalized roadmaps", "Track your progress"].map((text, i) => (
-              <div key={i} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 10, color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'left' }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#6366f1' }} />
-                {text}
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
