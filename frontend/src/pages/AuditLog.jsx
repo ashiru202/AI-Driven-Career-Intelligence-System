@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { X, ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
+import { X, ArrowLeft, ArrowRight } from "lucide-react";
 
 const ACTION_LABELS = {
   CREATE_STAFF:        { label: "Create Staff",       color: "bg-green-100 text-green-700" },
@@ -74,6 +74,7 @@ export default function AuditLog() {
   useEffect(() => { loadLogs(); }, [loadLogs]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const uniqueAdmins = new Set(logs.map((log) => log.actorEmail).filter(Boolean)).size;
 
   function applyFilters() {
     setPage(1);
@@ -93,23 +94,37 @@ export default function AuditLog() {
 
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <ShieldCheck size={24} className="text-indigo-500" />
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-white">Activity Audit Log</h2>
             <p className="text-slate-400 text-sm mt-0.5">All admin actions recorded in chronological order</p>
           </div>
+
+          <div className="flex flex-wrap gap-2">
+            <span
+              className="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "rgba(14,165,233,0.18)", color: "#bae6fd", border: "1px solid rgba(14,165,233,0.35)" }}
+            >
+              {total} entries
+            </span>
+            <span
+              className="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "rgba(34,197,94,0.16)", color: "#bbf7d0", border: "1px solid rgba(34,197,94,0.35)" }}
+            >
+              {uniqueAdmins} admins
+            </span>
+          </div>
         </div>
 
         {/* Filters */}
-        <Card>
+        <Card className="border-white/10" style={{ background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
           <CardContent className="pt-4">
             <div className="flex flex-wrap gap-3 items-end">
               {/* Action type */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-500 font-medium">Action</label>
+                <label className="text-xs text-slate-400 font-medium">Action</label>
                 <select
-                  className="border rounded-md px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="border border-white/15 rounded-md px-3 py-2 text-sm bg-slate-900/80 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={filters.action}
                   onChange={(e) => setFilters((f) => ({ ...f, action: e.target.value }))}
                 >
@@ -122,7 +137,7 @@ export default function AuditLog() {
 
               {/* Actor email */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-500 font-medium">Admin email</label>
+                <label className="text-xs text-slate-400 font-medium">Admin email</label>
                 <Input
                   placeholder="Search by email..."
                   className="w-52 text-sm"
@@ -133,7 +148,7 @@ export default function AuditLog() {
 
               {/* Date from */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-500 font-medium">From</label>
+                <label className="text-xs text-slate-400 font-medium">From</label>
                 <Input
                   type="date"
                   className="text-sm"
@@ -144,7 +159,7 @@ export default function AuditLog() {
 
               {/* Date to */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-500 font-medium">To</label>
+                <label className="text-xs text-slate-400 font-medium">To</label>
                 <Input
                   type="date"
                   className="text-sm"
@@ -156,7 +171,7 @@ export default function AuditLog() {
               <Button onClick={applyFilters} className="bg-indigo-600 text-white hover:bg-indigo-700">
                 Apply
               </Button>
-              <Button variant="outline" onClick={resetFilters}>
+              <Button className="bg-slate-700 text-white hover:bg-slate-600 border border-white/10" onClick={resetFilters}>
                 Reset
               </Button>
             </div>
@@ -164,41 +179,40 @@ export default function AuditLog() {
         </Card>
 
         {/* Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
+        <Card className="border-white/10" style={{ background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
+          <CardHeader className="border-b border-white/10">
+            <CardTitle className="text-base text-white">
               {total} log{total !== 1 ? "s" : ""} found
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="py-12 text-center text-gray-400 text-sm">Loading…</div>
+              <div className="py-12 text-center text-slate-400 text-sm">Loading…</div>
             ) : logs.length === 0 ? (
-              <div className="py-12 text-center text-gray-400 text-sm">No audit log entries match your filters.</div>
+              <div className="py-12 text-center text-slate-400 text-sm">No audit log entries match your filters.</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-gray-500 border-b">
+                    <tr className="text-left text-slate-400 border-b border-white/10">
                       <th className="pb-2 pr-4 whitespace-nowrap">Timestamp</th>
                       <th className="pb-2 pr-4">Admin</th>
                       <th className="pb-2 pr-4">Action</th>
                       <th className="pb-2 pr-4">Target</th>
                       <th className="pb-2 pr-4">Details</th>
-                      <th className="pb-2">IP</th>
                     </tr>
                   </thead>
                   <tbody>
                     {logs.map((log) => {
                       const actionMeta = ACTION_LABELS[log.action] || { label: log.action, color: "bg-gray-100 text-gray-600" };
                       return (
-                        <tr key={log._id} className="border-b last:border-0 hover:bg-gray-50/5">
-                          <td className="py-2 pr-4 whitespace-nowrap text-gray-400 text-xs">
+                        <tr key={log._id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.04]">
+                          <td className="py-2 pr-4 whitespace-nowrap text-slate-400 text-xs">
                             {new Date(log.createdAt).toLocaleString()}
                           </td>
                           <td className="py-2 pr-4">
-                            <p className="font-medium">{log.actorName}</p>
-                            <p className="text-xs text-gray-400">{log.actorEmail}</p>
+                            <p className="font-medium text-white/90">{log.actorName}</p>
+                            <p className="text-xs text-slate-400">{log.actorEmail}</p>
                           </td>
                           <td className="py-2 pr-4">
                             <Badge className={actionMeta.color}>{actionMeta.label}</Badge>
@@ -210,13 +224,12 @@ export default function AuditLog() {
                                 <p className="text-xs text-gray-400">{log.targetEmail}</p>
                               </>
                             ) : (
-                              <span className="text-gray-400">—</span>
+                              <span className="text-slate-400">—</span>
                             )}
                           </td>
                           <td className="py-2 pr-4">
                             <MetadataCell metadata={log.metadata} />
                           </td>
-                          <td className="py-2 text-xs text-gray-400">{log.ipAddress || "—"}</td>
                         </tr>
                       );
                     })}

@@ -177,6 +177,8 @@ const exportCSV = () => {
     return list;
   }, [roadmaps, search, minCompletion, sortBy]);
 
+  const completedRoadmaps = filtered.filter((r) => completionOf(r) === 100).length;
+
   const statusColor = (status) => {
     if (status === "COMPLETED") return { bg: "rgba(16,185,129,0.15)", color: "#6ee7b7", border: "rgba(16,185,129,0.3)" };
     if (status === "IN_PROGRESS") return { bg: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "rgba(99,102,241,0.3)" };
@@ -185,9 +187,17 @@ const exportCSV = () => {
 
   return (
     <Layout>
-      <div className="space-y-1" style={{ marginBottom: 20 }}>
-        <h2 className="text-3xl font-bold text-white">All Roadmaps</h2>
-        <p className="text-slate-400 text-sm">Management - view and filter all user roadmaps</p>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" style={{ marginBottom: 20 }}>
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold text-white">All Roadmaps</h2>
+          <p className="text-slate-400 text-sm">View, filter, and export user roadmap progress</p>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <span style={{ ...chipBlue }}>{roadmaps.length} total</span>
+          <span style={{ ...chipGreen }}>{completedRoadmaps} completed</span>
+          <span style={{ ...chipAmber }}>{filtered.length} filtered</span>
+        </div>
       </div>
 
       {err && <p style={{ marginTop: 12, color: "#fca5a5" }}>{err}</p>}
@@ -196,14 +206,14 @@ const exportCSV = () => {
       <div
         style={{
           marginTop: 16,
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 10,
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 12,
           padding: 14,
           display: "grid",
           gridTemplateColumns: "1fr 160px 180px auto",
           gap: 12,
           alignItems: "end",
-          background: "rgba(255,255,255,0.03)",
+          background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))",
         }}
       >
         <div>
@@ -248,10 +258,10 @@ const exportCSV = () => {
       </div>
 
       {/* Table */}
-      <div style={{ marginTop: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, overflow: "hidden", background: "rgba(255,255,255,0.02)" }}>
+      <div style={{ marginTop: 12, border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, overflow: "hidden", background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "rgba(255,255,255,0.05)" }}>
+            <tr style={{ background: "rgba(255,255,255,0.06)" }}>
               <th style={th}>Actions</th>
               <th style={th}>User</th>
               <th style={th}>Email</th>
@@ -284,7 +294,7 @@ const exportCSV = () => {
                           style={{
                             width: `${completion}%`,
                             height: 8,
-                            background: "linear-gradient(90deg,#6366f1,#8b5cf6)",
+                            background: "linear-gradient(90deg,#0ea5e9,#22c55e)",
                             borderRadius: 999,
                           }}
                         />
@@ -427,8 +437,12 @@ const modalBox = {
 
 const label = { display: "block", fontSize: 12, opacity: 0.7, marginBottom: 6, color: "rgba(255,255,255,0.7)" };
 const input = { width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "#fff" };
-const btn = { padding: "10px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 14 };
-const btnSmall = { padding: "6px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", cursor: "pointer", fontWeight: 500, fontSize: 13 };
+const btn = { padding: "10px 16px", borderRadius: 8, border: "1px solid rgba(14,165,233,0.45)", background: "linear-gradient(135deg,#0284c7,#0369a1)", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 14 };
+const btnSmall = { padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(14,165,233,0.45)", background: "linear-gradient(135deg,#0284c7,#0369a1)", color: "#fff", cursor: "pointer", fontWeight: 500, fontSize: 13 };
+
+const chipBlue = { fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 999, color: "#bae6fd", background: "rgba(14,165,233,0.18)", border: "1px solid rgba(14,165,233,0.35)" };
+const chipGreen = { fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 999, color: "#bbf7d0", background: "rgba(34,197,94,0.16)", border: "1px solid rgba(34,197,94,0.35)" };
+const chipAmber = { fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 999, color: "#fde68a", background: "rgba(245,158,11,0.18)", border: "1px solid rgba(245,158,11,0.35)" };
 
 const th = { textAlign: "left", padding: "12px 10px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: 13, color: "rgba(255,255,255,0.6)" };
 const td = { padding: "12px 10px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 14, color: "#e2e8f0" };

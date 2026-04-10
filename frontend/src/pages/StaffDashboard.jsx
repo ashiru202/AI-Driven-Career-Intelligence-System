@@ -300,8 +300,7 @@ export default function StaffDashboard() {
       <div className="space-y-6 pb-10">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/80">Admin Intelligence</p>
-            <h2 className="text-3xl font-bold text-white mt-1">User Reports</h2>
+            <h2 className="text-3xl font-bold text-white">User Reports</h2>
             <p className="text-slate-300 mt-2 text-sm max-w-2xl">
               Explore each candidate profile with CV quality, skill-gap diagnostics, and action-ready guidance in one clean view.
             </p>

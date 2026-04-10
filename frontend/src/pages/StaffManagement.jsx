@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Check, X, AlertTriangle, Trash2 } from "lucide-react";
+import { Check, X, AlertTriangle, Trash2, Users, Activity } from "lucide-react";
 
 function Toast({ message, type, onClose }) {
   useEffect(() => {
@@ -40,6 +40,7 @@ export default function StaffManagement() {
 
   const showToast = (message, type = "success") => setToast({ message, type });
   const closeToast = () => setToast(null);
+  const activeStaff = staff.filter((member) => member.active).length;
 
   const loadStaff = () => {
     setLoading(true);
@@ -137,21 +138,37 @@ export default function StaffManagement() {
 
       <div className="space-y-8">
         {/* Header */}
-        <div>
-          <h2 className="text-3xl font-bold text-white">Staff Management</h2>
-          <p className="text-slate-400 mt-1 text-sm">Create and manage staff accounts</p>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-white">Staff Management</h2>
+            <p className="text-slate-400 mt-1 text-sm">Create and manage staff accounts</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "rgba(14,165,233,0.18)", color: "#bae6fd", border: "1px solid rgba(14,165,233,0.35)" }}
+            >
+              <Users size={13} /> {staff.length} staff
+            </span>
+            <span
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "rgba(34,197,94,0.16)", color: "#bbf7d0", border: "1px solid rgba(34,197,94,0.35)" }}
+            >
+              <Activity size={13} /> {activeStaff} active
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Create Staff Form */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle>Create Staff Account</CardTitle>
+          <Card className="lg:col-span-1 border-white/10" style={{ background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
+            <CardHeader className="border-b border-white/10">
+              <CardTitle className="text-white">Create Staff Account</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
                     Full Name
                   </label>
                   <Input
@@ -167,7 +184,7 @@ export default function StaffManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
                     Email Address
                   </label>
                   <Input
@@ -183,7 +200,7 @@ export default function StaffManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
                     Password
                   </label>
                   <Input
@@ -201,7 +218,7 @@ export default function StaffManagement() {
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-purple-600 text-white hover:bg-purple-700"
+                  className="w-full bg-blue-600 text-white hover:bg-blue-700"
                 >
                   {submitting ? "Creating..." : "Create Staff Account"}
                 </Button>
@@ -210,15 +227,15 @@ export default function StaffManagement() {
           </Card>
 
           {/* Staff List */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Staff Accounts ({staff.length})</CardTitle>
+          <Card className="lg:col-span-2 border-white/10" style={{ background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
+            <CardHeader className="border-b border-white/10">
+              <CardTitle className="text-white">Staff Accounts ({staff.length})</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <p className="text-sm text-gray-400">Loading staff...</p>
+                <p className="text-sm text-slate-400">Loading staff...</p>
               ) : staff.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-slate-400">
                   <p>No staff accounts found.</p>
                   <p className="text-sm mt-1">Use the form to create the first staff account.</p>
                 </div>
