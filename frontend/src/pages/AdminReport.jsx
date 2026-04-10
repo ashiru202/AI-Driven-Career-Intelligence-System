@@ -49,21 +49,21 @@ export default function AdminReport() {
 
   const downloadPDF = async () => {
     try {
-      const res = await fetch(
-        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/reports/summary/pdf`,
-        {
-          credentials: "include",  // send httpOnly JWT cookie
-        }
-      );
-      if (!res.ok) throw new Error("PDF generation failed");
-      const blob = await res.blob();
+      const res = await api.get("/api/reports/summary/pdf", {
+        responseType: "blob",
+      });
+      const contentType = res.headers?.["content-type"] || "application/pdf";
+      const blob = new Blob([res.data], { type: contentType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `platform-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
       a.click();
+      a.remove();
       URL.revokeObjectURL(url);
-    } catch {
+    } catch (err) {
+      console.error("Failed to download platform report PDF", err);
       alert("Failed to download PDF. Please try again.");
     }
   };

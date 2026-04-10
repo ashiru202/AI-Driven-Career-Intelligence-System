@@ -7,8 +7,6 @@ import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { Users, AlertTriangle, PenLine, ArrowRight, Lightbulb, Check, Map } from "lucide-react";
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
-
 function ScoreRing({ score, size = 80 }) {
   const r = (size - 10) / 2;
   const circ = 2 * Math.PI * r;
@@ -101,18 +99,21 @@ export default function StaffDashboard() {
 
   const downloadPDF = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/reports/user/${selectedUser._id}/pdf`, {
-        credentials: "include",  // send httpOnly JWT cookie
+      const res = await api.get(`/api/reports/user/${selectedUser._id}/pdf`, {
+        responseType: "blob",
       });
-      if (!res.ok) throw new Error("PDF failed");
-      const blob = await res.blob();
+      const contentType = res.headers?.["content-type"] || "application/pdf";
+      const blob = new Blob([res.data], { type: contentType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `user-report-${selectedUser.email}-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
       a.click();
+      a.remove();
       URL.revokeObjectURL(url);
-    } catch {
+    } catch (err) {
+      console.error("Failed to download user report PDF", err);
       alert("Failed to download PDF. Please try again.");
     }
   };
