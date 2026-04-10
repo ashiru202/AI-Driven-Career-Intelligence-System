@@ -52,7 +52,7 @@ function setupResume(skills = ['javascript', 'nodejs', 'react']) {
 }
 
 function setupSkillServices() {
-  aiSkillExtractorService.extractSkills = jest.fn().mockResolvedValue({
+  aiSkillExtractorService.extractSkillsWithAI = jest.fn().mockResolvedValue({
     skills: ['javascript', 'react', 'nodejs', 'typescript', 'docker']
   });
 
@@ -82,7 +82,9 @@ describe('GET /api/extension/resumes/list', () => {
   it('returns empty array if user has no resumes', async () => {
     Resume.find = jest.fn().mockReturnValue({
       select: jest.fn().mockReturnValue({
-        sort: jest.fn().mockResolvedValue([])
+        sort: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue([])
+        })
       })
     });
 
@@ -98,20 +100,22 @@ describe('GET /api/extension/resumes/list', () => {
   it('returns list of resumes with id, name, date, sizeKB', async () => {
     Resume.find = jest.fn().mockReturnValue({
       select: jest.fn().mockReturnValue({
-        sort: jest.fn().mockResolvedValue([
-          {
-            _id: 'cccccccccccccccccccccccc',
-            fileName: 'Resume_Jan2026.pdf',
-            createdAt: new Date('2026-01-15'),
-            fileSize: 245000
-          },
-          {
-            _id: 'dddddddddddddddddddddddd',
-            fileName: 'Resume_Feb2026.pdf',
-            createdAt: new Date('2026-02-20'),
-            fileSize: 312000
-          }
-        ])
+        sort: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue([
+            {
+              _id: 'cccccccccccccccccccccccc',
+              fileName: 'Resume_Jan2026.pdf',
+              createdAt: new Date('2026-01-15'),
+              fileSize: 245000
+            },
+            {
+              _id: 'dddddddddddddddddddddddd',
+              fileName: 'Resume_Feb2026.pdf',
+              createdAt: new Date('2026-02-20'),
+              fileSize: 312000
+            }
+          ])
+        })
       })
     });
 
@@ -262,15 +266,15 @@ describe('POST /api/extension/compare', () => {
 
   it('successfully compares job with specified resume', async () => {
     Resume.findOne = jest.fn().mockResolvedValue({
-      _id: 'gggggggggggggggggggggggg',
+      _id: 'aaaaaaaaaaaaaaaaaaaaaaaa',
       fileName: 'Resume_Mar2026.pdf',
       extractedSkills: ['python', 'django', 'react']
     });
 
     Comparison.prototype.save = jest.fn().mockResolvedValue({
-      _id: 'hhhhhhhhhhhhhhhhhhhhhhhh',
+      _id: 'bbbbbbbbbbbbbbbbbbbbbbbb',
       user: USER_ID,
-      resume: 'gggggggggggggggggggggggg',
+      resume: 'aaaaaaaaaaaaaaaaaaaaaaaa',
       source: 'extension'
     });
 
@@ -280,7 +284,7 @@ describe('POST /api/extension/compare', () => {
       .send({
         jobTitle: 'Full Stack Developer',
         jobDescription: 'Looking for a full stack developer with Python, React, and Docker skills',
-        resumeId: 'gggggggggggggggggggggggg'
+        resumeId: 'aaaaaaaaaaaaaaaaaaaaaaaa'
       });
 
     expect(res.status).toBe(200);

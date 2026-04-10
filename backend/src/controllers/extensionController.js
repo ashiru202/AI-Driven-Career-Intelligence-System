@@ -1,9 +1,9 @@
 const Resume = require('../models/Resume');
 const Comparison = require('../models/Comparison');
-const { successResponse, errorResponse } = require('../utils/responseHelper');
-const { AppError } = require('../utils/AppError');
+const { successResponse } = require('../utils/responseHelper');
+const AppError = require('../utils/AppError');
 const asyncHandler = require('../middleware/asyncHandler');
-const { extractSkillsWithAI } = require('../services/aiSkillExtractorService');
+const aiSkillExtractorService = require('../services/aiSkillExtractorService');
 const skillGapService = require('../services/skillGapService');
 
 class ExtensionController {
@@ -56,7 +56,7 @@ class ExtensionController {
     }
 
     // Extract skills from job description
-    const jobSkillsResult = await extractSkillsWithAI(jobDescription);
+    const jobSkillsResult = await aiSkillExtractorService.extractSkillsWithAI(jobDescription);
     const jobSkills = jobSkillsResult.skills || [];
 
     // Get resume skills
@@ -81,11 +81,14 @@ class ExtensionController {
       source: 'extension', // Track that this came from extension
     });
 
-    await comparison.save();
+    const savedComparison = await comparison.save();
+    const resolvedComparisonId =
+      (savedComparison && savedComparison._id ? savedComparison._id : comparison._id)?.toString() ||
+      null;
 
     // Return lightweight response for extension popup
     const response = {
-      comparisonId: comparison._id.toString(),
+      comparisonId: resolvedComparisonId,
       matchScore: gap.matchScore,
       commonSkills: gap.commonSkills,
       missingSkills: gap.missingSkills,
