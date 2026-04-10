@@ -568,10 +568,6 @@ function createHeader() {
 
 function createFooter() {
   const footer = createElement("footer", "popup-footer");
-  footer.append(
-    createElement("span", "footer-chip", "Task 16 Error Recovery"),
-    createElement("span", "footer-chip", "Timeout/auth/retry handling")
-  );
   return footer;
 }
 
