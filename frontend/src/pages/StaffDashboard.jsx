@@ -179,6 +179,15 @@ export default function StaffDashboard() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!users.length) return;
+
+    const selectedStillExists = selectedUser && users.some((u) => u._id === selectedUser._id);
+    if (!selectedStillExists) {
+      selectUser(users[0]);
+    }
+  }, [users, selectedUser, selectUser]);
+
   const downloadPDF = async () => {
     if (!selectedUser?._id) return;
 
@@ -289,51 +298,34 @@ export default function StaffDashboard() {
   return (
     <Layout>
       <div className="space-y-6 pb-10">
-        <div
-          className="relative overflow-hidden rounded-2xl border border-white/10"
-          style={{ background: "linear-gradient(120deg, rgba(12,17,30,0.96), rgba(17,30,48,0.94) 55%, rgba(7,66,94,0.5))" }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              width: 260,
-              height: 260,
-              borderRadius: 999,
-              background: "radial-gradient(circle, rgba(34,211,238,0.24) 0%, rgba(34,211,238,0) 70%)",
-              top: -90,
-              right: -30,
-              pointerEvents: "none",
-            }}
-          />
-          <div className="relative z-10 p-6 md:p-7 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-            <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/80">Admin Intelligence</p>
-              <h2 className="text-3xl font-bold text-white mt-1">User Reports</h2>
-              <p className="text-slate-300 mt-2 text-sm max-w-2xl">
-                Explore each candidate profile with CV quality, skill-gap diagnostics, and action-ready guidance in one clean view.
-              </p>
-            </div>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/80">Admin Intelligence</p>
+            <h2 className="text-3xl font-bold text-white mt-1">User Reports</h2>
+            <p className="text-slate-300 mt-2 text-sm max-w-2xl">
+              Explore each candidate profile with CV quality, skill-gap diagnostics, and action-ready guidance in one clean view.
+            </p>
+          </div>
 
-            <div className="flex flex-wrap gap-2">
-              <span
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
-                style={{ background: "rgba(14,165,233,0.18)", color: "#bae6fd", border: "1px solid rgba(14,165,233,0.35)" }}
-              >
-                <Users size={13} /> {users.length} users
-              </span>
-              <span
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
-                style={{ background: "rgba(34,197,94,0.16)", color: "#bbf7d0", border: "1px solid rgba(34,197,94,0.35)" }}
-              >
-                <Activity size={13} /> {activeUsers} active
-              </span>
-              <span
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
-                style={{ background: "rgba(245,158,11,0.18)", color: "#fde68a", border: "1px solid rgba(245,158,11,0.35)" }}
-              >
-                <Sparkles size={13} /> {selectedUser ? "Profile Selected" : "Awaiting Selection"}
-              </span>
-            </div>
+          <div className="flex flex-wrap gap-2">
+            <span
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "rgba(14,165,233,0.18)", color: "#bae6fd", border: "1px solid rgba(14,165,233,0.35)" }}
+            >
+              <Users size={13} /> {users.length} users
+            </span>
+            <span
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "rgba(34,197,94,0.16)", color: "#bbf7d0", border: "1px solid rgba(34,197,94,0.35)" }}
+            >
+              <Activity size={13} /> {activeUsers} active
+            </span>
+            <span
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "rgba(245,158,11,0.18)", color: "#fde68a", border: "1px solid rgba(245,158,11,0.35)" }}
+            >
+              <Sparkles size={13} /> {selectedUser ? "Profile Selected" : "Awaiting Selection"}
+            </span>
           </div>
         </div>
 
