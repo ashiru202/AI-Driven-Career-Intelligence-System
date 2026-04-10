@@ -410,6 +410,42 @@ async function loadResumesForPopup(forceRefresh = false) {
   }
 }
 
+function shouldRetryApiRequest(error) {
+  if (!(error instanceof ApiRequestError)) {
+    return false;
+  }
+
+  return error.status === 0 || error.status === 408 || error.status === 429 || error.status >= 500;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function withApiRetry(run, options = {}) {
+  const retries = Number.isFinite(options.retries) ? Math.max(0, Math.floor(options.retries)) : 0;
+  const baseDelayMs = Number.isFinite(options.baseDelayMs) ? Math.max(0, Math.floor(options.baseDelayMs)) : 250;
+
+  let lastError;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await run();
+    } catch (error) {
+      lastError = error;
+      if (attempt >= retries || !shouldRetryApiRequest(error)) {
+        break;
+      }
+
+      await sleep(baseDelayMs * (attempt + 1));
+    }
+  }
+
+  throw lastError;
+}
+
 async function runQuickComparison({ resumeId, jobContext }) {
   const activeResumeId = sanitizePlainText(resumeId, 120);
   const title = sanitizePlainText(jobContext?.jobTitle, 220) || "Untitled Role";
@@ -429,10 +465,14 @@ async function runQuickComparison({ resumeId, jobContext }) {
     jobDescription: description,
   };
 
-  const response = await requestWithAuth(EXTENSION_API_ROUTES.QUICK_COMPARE, {
-    method: "POST",
-    body: payload,
-  });
+  const response = await withApiRetry(
+    () =>
+      requestWithAuth(EXTENSION_API_ROUTES.QUICK_COMPARE, {
+        method: "POST",
+        body: payload,
+      }),
+    { retries: 1, baseDelayMs: 300 }
+  );
 
   if (response?.ok === false) {
     const code = String(response?.error?.code || "COMPARE_FAILED").trim().toUpperCase();
@@ -462,6 +502,45 @@ async function runQuickComparison({ resumeId, jobContext }) {
   popupRuntime.comparisonError = "";
 
   return comparison;
+}
+
+async function createRoadmapFromComparison(comparison) {
+  const comparisonId = sanitizePlainText(comparison?.comparisonId, 120);
+  if (!comparisonId) {
+    throw new Error("No comparison ID is available yet. Analyze a job first.");
+  }
+
+  const targetRole =
+    sanitizePlainText(comparison?.jobTitle, 200) ||
+    sanitizePlainText(comparison?.resumeFileName, 200) ||
+    "Career Roadmap";
+
+  const payload = {
+    targetRole,
+    comparisonId,
+  };
+
+  const response = await withApiRetry(
+    () =>
+      requestWithAuth(EXTENSION_API_ROUTES.CREATE_ROADMAP, {
+        method: "POST",
+        body: payload,
+      }),
+    { retries: 1, baseDelayMs: 450 }
+  );
+
+  if (response?.ok === false) {
+    const code = String(response?.error?.code || "ROADMAP_CREATE_FAILED").trim().toUpperCase();
+    const message = response?.error?.message || "Failed to create roadmap from this comparison.";
+    throw new ApiRequestError(message, 400, {
+      error: {
+        code,
+        message,
+      },
+    });
+  }
+
+  return sanitizePlainText(response?.data?.roadmapId || response?.roadmapId, 120) || null;
 }
 
 function createElement(tagName, className, textContent) {
@@ -597,7 +676,7 @@ function createComparisonSummary(options = {}) {
     }
 
     roadmapButton.disabled = true;
-    roadmapButton.textContent = "Opening...";
+    roadmapButton.textContent = "Generating...";
     await options.onGenerateRoadmap(comparison);
   });
   actionBar.append(roadmapButton);
@@ -1042,23 +1121,42 @@ async function handleRetryComparison({ resumeId }) {
 }
 
 async function handleGenerateRoadmap(comparison) {
-  const comparisonId = sanitizePlainText(comparison?.comparisonId, 120);
-  if (!comparisonId) {
-    popupRuntime.comparisonError = "No comparison ID is available yet. Analyze a job first.";
-    renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
-    return;
-  }
-
-  const query = new URLSearchParams({
-    from: "extension",
-    comparisonId,
-  });
+  let createdRoadmapId = null;
 
   try {
+    createdRoadmapId = await createRoadmapFromComparison(comparison);
+
+    const query = new URLSearchParams({
+      from: "extension",
+    });
+
+    if (createdRoadmapId) {
+      query.set("roadmapId", createdRoadmapId);
+    }
+
     await openMainApp(`/my-roadmap?${query.toString()}`);
     popupRuntime.comparisonError = "";
   } catch (error) {
-    popupRuntime.comparisonError = getErrorMessage(error, COPY.roadmapFailed);
+    if (isAuthFailure(error)) {
+      renderAuthRequiredState(getErrorMessage(error, COPY.authMessage));
+      return;
+    }
+
+    const baseMessage = getErrorMessage(error, COPY.roadmapFailed);
+    popupRuntime.comparisonError = createdRoadmapId
+      ? `${baseMessage} Roadmap was created successfully. Open My Roadmaps from the app menu.`
+      : baseMessage;
+
+    if (createdRoadmapId) {
+      try {
+        await openMainApp("/my-roadmap");
+      } catch {
+        // Ignore secondary open failure; primary message is already shown.
+      }
+    }
+
+    renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
+    return;
   }
 
   renderReadyState(popupRuntime.resumeData || { resumes: [], selectedResumeId: "" });
@@ -1176,6 +1274,16 @@ async function handleAnalyzeCurrentTab({ resumeId }) {
     popupRuntime.extractionError = "";
     popupRuntime.comparisonError = "";
   } catch (error) {
+    await setToStorage(
+      {
+        [STORAGE_KEYS.LAST_ANALYSIS]: null,
+        [STORAGE_KEYS.LAST_COMPARISON]: null,
+      },
+      { area: STORAGE_AREAS.SYNC }
+    );
+
+    popupRuntime.lastExtraction = null;
+    popupRuntime.lastComparison = null;
     popupRuntime.extractionError = getErrorMessage(error, "Could not extract job details from this page.");
     popupRuntime.manualDraft = {
       ...popupRuntime.manualDraft,

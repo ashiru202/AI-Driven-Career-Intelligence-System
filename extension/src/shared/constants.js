@@ -35,4 +35,5 @@ export const EXTENSION_API_ROUTES = Object.freeze({
 	QUICK_COMPARE: "/api/extension/compare",
 	HEALTH: "/api/extension/health",
 	AUTH_ME: "/api/users/me",
+	CREATE_ROADMAP: "/api/roadmaps-new",
 });
