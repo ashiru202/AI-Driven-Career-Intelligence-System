@@ -53,5 +53,24 @@ const uploadLimiter = rateLimit({
   }
 });
 
-module.exports = { authLimiter, generalLimiter, uploadLimiter };
+/**
+ * Extension limiter — for browser extension API endpoints.
+ * Allow frequent comparisons but prevent abuse.
+ */
+const extensionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,                   // 30 requests per 15 minutes (2 per minute)
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    ok: false,
+    error: {
+      code: 'RATE_LIMITED',
+      message: 'Too many comparison requests. Please try again after 15 minutes'
+    }
+  },
+  skip: (req) => process.env.NODE_ENV === 'test'
+});
+
+module.exports = { authLimiter, generalLimiter, uploadLimiter, extensionLimiter };
 
