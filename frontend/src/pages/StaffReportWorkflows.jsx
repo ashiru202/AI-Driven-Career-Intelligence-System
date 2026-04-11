@@ -247,7 +247,6 @@ export default function StaffReportWorkflows() {
                   const currentState = item.state || "NEW";
                   const currentNotes = item.notes || "";
                   const hasChanges = nextState !== currentState || nextNotes !== currentNotes;
-                  const isFocused = selectedUserId === userId;
 
                   return (
                     <div
@@ -272,12 +271,6 @@ export default function StaffReportWorkflows() {
                           <Badge className="border" style={{ background: tone.bg, borderColor: tone.border, color: tone.text }}>
                             {tone.label}
                           </Badge>
-                          <Button
-                            onClick={() => setFocusedUser(isFocused ? "" : userId)}
-                            className={isFocused ? "bg-cyan-700 hover:bg-cyan-600 text-white" : "bg-slate-700 hover:bg-slate-600 text-white"}
-                          >
-                            {isFocused ? "Focused" : "Focus User"}
-                          </Button>
                         </div>
                       </div>
 
