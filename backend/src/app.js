@@ -99,6 +99,7 @@ const reportRoutes          = require("./routes/reportRoutes");
 const notificationsRoutes   = require("./routes/notificationsRoutes");
 const trendRoutes           = require("./routes/trendRoutes");
 const extensionRoutes       = require("./routes/extensionRoutes");
+const staffRoutes           = require("./routes/staffRoutes");
 
 app.use("/api",            healthRoutes);
 
@@ -124,6 +125,7 @@ app.use("/api/analytics",  analyticsRoutes);
 app.use("/api/reports",        reportRoutes);
 app.use("/api/notifications",  notificationsRoutes);
 app.use("/api/trends",           trendRoutes);
+app.use("/api/staff",         staffRoutes);
 app.use("/api/roadmap",        roadmapRoutes);
 app.use("/api/roadmaps",   roadmapRoutes);
 app.use("/api/admin",      adminRoutes);

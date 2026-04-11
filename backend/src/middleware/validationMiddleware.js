@@ -168,6 +168,18 @@ const schemas = {
         .optional()
         .nullable()
     })
+  }),
+
+  staffSetManualPriority: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID')
+    }),
+    body: z.object({
+      manualPriority: z.union([
+        z.number().min(0, 'Priority must be at least 0').max(100, 'Priority must be at most 100'),
+        z.null()
+      ])
+    })
   })
 };
 

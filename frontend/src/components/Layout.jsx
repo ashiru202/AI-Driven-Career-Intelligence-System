@@ -406,6 +406,7 @@ const ROLE_NAV = {
   ],
   STAFF: [
     { path: '/staff-home',       label: 'Dashboard',        Icon: Zap },
+    { path: '/staff/priority-queue', label: 'Priority Queue', Icon: Target },
     { path: '/staff',            label: 'User Reports',     Icon: ClipboardList },
     { path: '/all-roadmaps',     label: 'All Roadmaps',     Icon: Map },
   ],

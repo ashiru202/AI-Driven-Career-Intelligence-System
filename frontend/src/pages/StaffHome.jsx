@@ -12,6 +12,7 @@ import {
   Flame,
   Map as MapIcon,
   RefreshCw,
+  ShieldAlert,
   Target,
   UserCheck,
   Users,
@@ -141,6 +142,7 @@ export default function StaffHome() {
   const [users, setUsers] = useState([]);
   const [gaps, setGaps] = useState([]);
   const [skillDemand, setSkillDemand] = useState({ topSkills: [], bottomSkills: [] });
+  const [priorityQueue, setPriorityQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -150,10 +152,11 @@ export default function StaffHome() {
     if (silent) setRefreshing(true);
 
     try {
-      const [usersRes, gapsRes, demandRes] = await Promise.all([
+      const [usersRes, gapsRes, demandRes, queueRes] = await Promise.all([
         api.get("/api/analytics/users?role=USER"),
         api.get("/api/analytics/common-gaps?limit=8"),
         api.get("/api/analytics/skill-demand"),
+        api.get("/api/staff/priority-queue", { params: { page: 1, limit: 80 } }),
       ]);
 
       if (usersRes.data.ok) setUsers(usersRes.data.data.users || []);
@@ -161,6 +164,9 @@ export default function StaffHome() {
       if (demandRes.data.ok) {
         const nextDemand = demandRes.data.data || {};
         setSkillDemand({ topSkills: nextDemand.top || [], bottomSkills: nextDemand.least || [] });
+      }
+      if (queueRes.data.ok) {
+        setPriorityQueue(queueRes.data.data?.items || []);
       }
       setError("");
     } catch {
@@ -247,6 +253,16 @@ export default function StaffHome() {
     [activeUsers, inactiveUsers]
   );
 
+  const highPriorityCases = useMemo(
+    () => priorityQueue.filter((item) => Number(item.effectivePriority || 0) >= 70).length,
+    [priorityQueue]
+  );
+
+  const topPriorityCases = useMemo(
+    () => [...priorityQueue].sort((a, b) => Number(b.effectivePriority || 0) - Number(a.effectivePriority || 0)).slice(0, 4),
+    [priorityQueue]
+  );
+
   const recentUsers = useMemo(
     () =>
       [...users]
@@ -283,6 +299,13 @@ export default function StaffHome() {
       subtitle: `${formatNumber(topSkillDemandData[0]?.count || 0)} demand mentions`,
       Icon: Flame,
       accent: "#f97316",
+    },
+    {
+      title: "Priority Cases",
+      value: formatNumber(highPriorityCases),
+      subtitle: "Users with urgency score 70+",
+      Icon: ShieldAlert,
+      accent: "#ef4444",
     },
   ];
 
@@ -353,6 +376,46 @@ export default function StaffHome() {
             <div key={tile.title}>{metricCard(tile)}</div>
           ))}
         </div>
+
+        <Card
+          style={{
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 16,
+            background: "linear-gradient(145deg, rgba(18,22,38,0.88), rgba(12,14,27,0.92))",
+          }}
+        >
+          <CardHeader className="pb-2">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <CardTitle className="text-white flex items-center gap-2 text-base">
+                <ShieldAlert size={16} className="text-red-300" /> Top Priority Queue
+              </CardTitle>
+              <Link to="/staff/priority-queue" className="text-sm text-cyan-300 hover:text-cyan-200">
+                Open full queue
+              </Link>
+            </div>
+            <p className="text-xs text-slate-400">Urgent users ranked by CV score, progress, inactivity, and gaps</p>
+          </CardHeader>
+          <CardContent>
+            {topPriorityCases.length === 0 ? (
+              <p className="text-sm text-slate-400">No priority cases available.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                {topPriorityCases.map((item) => (
+                  <div
+                    key={item._id}
+                    className="rounded-lg px-3 py-3"
+                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+                  >
+                    <p className="text-sm font-semibold text-white truncate">{item.user?.name}</p>
+                    <p className="text-xs text-slate-400 truncate mt-1">{item.user?.email}</p>
+                    <p className="text-xs text-red-300 mt-2">Priority: {formatNumber(item.effectivePriority)}</p>
+                    <p className="text-xs text-slate-400 mt-1">CV {formatNumber(item.factors?.cvScore)} · Gaps {formatNumber(item.factors?.gapCount)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
           <Card
@@ -539,6 +602,23 @@ export default function StaffHome() {
                   <ClipboardList size={14} /> User Reports
                 </p>
                 <p className="text-sm text-slate-400 mt-1">Open profile-level CV and skill-gap diagnostics</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/staff/priority-queue" className="h-full">
+            <Card
+              className="h-full transition-all hover:-translate-y-0.5"
+              style={{
+                border: "1px solid rgba(239,68,68,0.25)",
+                borderRadius: 14,
+                background: "linear-gradient(145deg, rgba(11,20,34,0.95), rgba(8,16,28,0.95))",
+              }}
+            >
+              <CardContent className="pt-4">
+                <p className="font-semibold text-red-300 flex items-center gap-2">
+                  <ShieldAlert size={14} /> Priority Queue
+                </p>
+                <p className="text-sm text-slate-400 mt-1">Review and override urgency scores for high-risk users</p>
               </CardContent>
             </Card>
           </Link>

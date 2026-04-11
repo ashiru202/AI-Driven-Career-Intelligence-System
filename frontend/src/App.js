@@ -11,6 +11,7 @@ import Logout from "./pages/Logout";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffHome from "./pages/StaffHome";
+import StaffPriorityQueue from "./pages/StaffPriorityQueue";
 import RoleRoute from "./auth/RoleRoute";
 import Health from "./pages/Health";
 
@@ -183,6 +184,17 @@ export default function App() {
             <ProtectedRoute>
               <RoleRoute roles={["STAFF", "ADMIN"]}>
                 <StaffDashboard />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/staff/priority-queue"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["STAFF", "ADMIN"]}>
+                <StaffPriorityQueue />
               </RoleRoute>
             </ProtectedRoute>
           }
