@@ -11,6 +11,17 @@ import { AlertTriangle, Save, Workflow } from "lucide-react";
 
 const STATE_OPTIONS = ["NEW", "IN_REVIEW", "FOLLOW_UP_REQUIRED", "RESOLVED"];
 const FILTER_STATES = ["ALL", ...STATE_OPTIONS];
+const STATE_LABELS = {
+  NEW: "New",
+  IN_REVIEW: "In Review",
+  FOLLOW_UP_REQUIRED: "Follow-up Required",
+  RESOLVED: "Resolved",
+  ALL: "All States",
+};
+
+function stateLabel(state) {
+  return STATE_LABELS[state] || "New";
+}
 
 function stateTone(state) {
   if (state === "RESOLVED") {
@@ -205,11 +216,15 @@ export default function StaffReportWorkflows() {
                 }}
               >
                 {FILTER_STATES.map((state) => (
-                  <option key={state} value={state}>{state}</option>
+                  <option key={state} value={state}>{stateLabel(state)}</option>
                 ))}
               </select>
-              <Button onClick={() => setFocusedUser("")} className="bg-slate-700 hover:bg-slate-600 text-white">
-                Show All Users
+              <Button
+                onClick={() => setFocusedUser("")}
+                disabled={!selectedUserId}
+                className="bg-slate-700 hover:bg-slate-600 text-white"
+              >
+                Clear User Filter
               </Button>
               <Button onClick={fetchWorkflows} className="bg-slate-700 hover:bg-slate-600 text-white">
                 Refresh
@@ -223,10 +238,17 @@ export default function StaffReportWorkflows() {
             ) : visibleItems.length === 0 ? (
               <p className="text-sm text-slate-400">No report workflow items found.</p>
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {visibleItems.map((item) => {
                   const userId = item.user?._id;
                   const tone = stateTone(item.state);
+                  const nextState = draftStates[userId] || "NEW";
+                  const nextNotes = draftNotes[userId] || "";
+                  const currentState = item.state || "NEW";
+                  const currentNotes = item.notes || "";
+                  const hasChanges = nextState !== currentState || nextNotes !== currentNotes;
+                  const isFocused = selectedUserId === userId;
+
                   return (
                     <div
                       key={userId}
@@ -251,61 +273,72 @@ export default function StaffReportWorkflows() {
                             {tone.label}
                           </Badge>
                           <Button
-                            onClick={() => setFocusedUser(userId)}
-                            className="bg-slate-700 hover:bg-slate-600 text-white"
+                            onClick={() => setFocusedUser(isFocused ? "" : userId)}
+                            className={isFocused ? "bg-cyan-700 hover:bg-cyan-600 text-white" : "bg-slate-700 hover:bg-slate-600 text-white"}
                           >
-                            Focus User
+                            {isFocused ? "Focused" : "Focus User"}
                           </Button>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr_auto] gap-2 mt-3 items-start">
-                        <select
-                          value={draftStates[userId] || "NEW"}
-                          onChange={(e) =>
-                            setDraftStates((prev) => ({
-                              ...prev,
-                              [userId]: e.target.value,
-                            }))
-                          }
-                          style={{
-                            width: "100%",
-                            background: "rgba(255,255,255,0.06)",
-                            border: "1px solid rgba(255,255,255,0.1)",
-                            borderRadius: 10,
-                            color: "#fff",
-                            fontSize: 13,
-                            padding: "10px 12px",
-                          }}
-                        >
-                          {STATE_OPTIONS.map((state) => (
-                            <option key={state} value={state}>{state}</option>
-                          ))}
-                        </select>
+                      <div className="grid grid-cols-1 gap-3 mt-3 items-start">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-slate-400 mb-1">Workflow State</p>
+                          <select
+                            value={nextState}
+                            onChange={(e) =>
+                              setDraftStates((prev) => ({
+                                ...prev,
+                                [userId]: e.target.value,
+                              }))
+                            }
+                            style={{
+                              width: "100%",
+                              background: "rgba(255,255,255,0.06)",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              borderRadius: 10,
+                              color: "#fff",
+                              fontSize: 13,
+                              padding: "10px 12px",
+                            }}
+                          >
+                            {STATE_OPTIONS.map((state) => (
+                              <option key={state} value={state}>{stateLabel(state)}</option>
+                            ))}
+                          </select>
+                        </div>
 
-                        <Textarea
-                          value={draftNotes[userId] || ""}
-                          onChange={(e) =>
-                            setDraftNotes((prev) => ({
-                              ...prev,
-                              [userId]: e.target.value,
-                            }))
-                          }
-                          placeholder="Optional workflow note"
-                          style={{
-                            background: "rgba(255,255,255,0.06)",
-                            border: "1px solid rgba(255,255,255,0.1)",
-                            color: "#fff",
-                          }}
-                        />
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-slate-400 mb-1">Workflow Note</p>
+                          <Textarea
+                            value={nextNotes}
+                            onChange={(e) =>
+                              setDraftNotes((prev) => ({
+                                ...prev,
+                                [userId]: e.target.value,
+                              }))
+                            }
+                            placeholder="Add a short note about current review status"
+                            style={{
+                              background: "rgba(255,255,255,0.06)",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              color: "#fff",
+                            }}
+                          />
+                        </div>
+                      </div>
 
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <p className={`text-xs ${hasChanges ? "text-amber-300" : "text-slate-500"}`}>
+                          {hasChanges ? "Unsaved changes" : "No changes"}
+                        </p>
                         <Button
                           onClick={() => saveWorkflow(userId)}
-                          disabled={savingUserId === userId}
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                          disabled={savingUserId === userId || !hasChanges}
+                          className="bg-blue-600 hover:bg-blue-700 text-white min-w-[110px]"
                         >
                           <Save size={13} className="mr-1" />
-                          {savingUserId === userId ? "Saving..." : "Save"}
+                          {savingUserId === userId ? "Saving..." : "Save Changes"}
                         </Button>
                       </div>
                     </div>
