@@ -78,31 +78,6 @@ button[class*="hover:bg-indigo"]:hover {
   background: linear-gradient(90deg,#8678ff,#6a5fff) !important;
 }
 
-/* Global fallback for native action buttons (non-icon-only, non-text-link controls) */
-button:not(:has(> svg:only-child)):not([style*="background: none"]):not([style*="background:none"]) {
-  background: linear-gradient(90deg,#7a6cff,#5f54f7) !important;
-  border: 1px solid rgba(154,144,255,0.45) !important;
-  color: #fff !important;
-  border-radius: 10px !important;
-  font-weight: 700 !important;
-  box-shadow: 0 10px 24px rgba(95,84,247,0.35) !important;
-}
-
-button:not(:has(> svg:only-child)):not([style*="background: none"]):not([style*="background:none"]):hover {
-  background: linear-gradient(90deg,#8678ff,#6a5fff) !important;
-  box-shadow: 0 14px 28px rgba(95,84,247,0.45) !important;
-}
-
-button:not(:has(> svg:only-child)):not([style*="background: none"]):not([style*="background:none"]):focus-visible {
-  outline: none !important;
-  box-shadow: 0 0 0 3px rgba(159,150,255,0.28), 0 10px 24px rgba(95,84,247,0.35) !important;
-}
-
-button:not(:has(> svg:only-child)):not([style*="background: none"]):not([style*="background:none"]):disabled {
-  opacity: 0.55 !important;
-  box-shadow: none !important;
-}
-
 /* Tables */
 table thead tr { border-color: rgba(255,255,255,0.08) !important; }
 table thead th { color: rgba(255,255,255,0.45) !important; }
