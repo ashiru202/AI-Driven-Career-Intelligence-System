@@ -465,25 +465,28 @@ body::-webkit-scrollbar-thumb {
 }
 
 .primary-button {
-  background: linear-gradient(135deg, var(--teal-600), var(--teal-700));
-  color: white;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+  background: linear-gradient(90deg, #7a6cff, #5f54f7);
+  color: #ffffff;
+  border: 1px solid rgba(154, 144, 255, 0.45);
+  box-shadow: 0 10px 24px rgba(95, 84, 247, 0.35);
 }
 
 .primary-button:hover {
-  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+  background: linear-gradient(90deg, #8678ff, #6a5fff);
+  box-shadow: 0 14px 28px rgba(95, 84, 247, 0.45);
   transform: translateY(-1px);
 }
 
 .secondary-button {
-  background: var(--surface);
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
+  background: linear-gradient(90deg, #7a6cff, #5f54f7);
+  color: #ffffff;
+  border: 1px solid rgba(154, 144, 255, 0.45);
+  box-shadow: 0 10px 24px rgba(95, 84, 247, 0.35);
 }
 
 .secondary-button:hover {
-  background: var(--bg);
-  border-color: var(--text-muted);
+  background: linear-gradient(90deg, #8678ff, #6a5fff);
+  box-shadow: 0 14px 28px rgba(95, 84, 247, 0.45);
   transform: translateY(-1px);
 }
 
@@ -491,7 +494,7 @@ body::-webkit-scrollbar-thumb {
 .secondary-button:focus-visible,
 .roadmap-button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--focus);
+  box-shadow: 0 0 0 3px rgba(159, 150, 255, 0.3), 0 10px 24px rgba(95, 84, 247, 0.35);
 }
 
 .primary-button[disabled],

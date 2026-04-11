@@ -60,20 +60,47 @@ select option {
 /* Buttons (shadcn default variant) */
 button[class*="bg-blue"], a[class*="bg-blue"],
 button[class*="bg-indigo"], a[class*="bg-indigo"] {
-  background: linear-gradient(135deg,#6366f1,#8b5cf6) !important;
-  border: none !important;
+  background: linear-gradient(90deg,#7a6cff,#5f54f7) !important;
+  border: 1px solid rgba(154,144,255,0.45) !important;
   color: #fff !important;
+  box-shadow: 0 10px 24px rgba(95,84,247,0.35) !important;
 }
 button[class*="bg-gray-8"], button[class*="bg-gray-9"],
 a[class*="bg-gray-8"], a[class*="bg-gray-9"] {
-  background: rgba(255,255,255,0.08) !important;
-  border: 1px solid rgba(255,255,255,0.15) !important;
+  background: linear-gradient(90deg,#7a6cff,#5f54f7) !important;
+  border: 1px solid rgba(154,144,255,0.45) !important;
   color: #fff !important;
+  box-shadow: 0 10px 24px rgba(95,84,247,0.35) !important;
 }
 /* Ensure hover states work on gradient buttons */
 button[class*="hover:bg-blue"]:hover,
 button[class*="hover:bg-indigo"]:hover {
-  background: linear-gradient(135deg,#4f46e5,#7c3aed) !important;
+  background: linear-gradient(90deg,#8678ff,#6a5fff) !important;
+}
+
+/* Global fallback for native action buttons (non-icon-only, non-text-link controls) */
+button:not(:has(> svg:only-child)):not([style*="background: none"]):not([style*="background:none"]) {
+  background: linear-gradient(90deg,#7a6cff,#5f54f7) !important;
+  border: 1px solid rgba(154,144,255,0.45) !important;
+  color: #fff !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 10px 24px rgba(95,84,247,0.35) !important;
+}
+
+button:not(:has(> svg:only-child)):not([style*="background: none"]):not([style*="background:none"]):hover {
+  background: linear-gradient(90deg,#8678ff,#6a5fff) !important;
+  box-shadow: 0 14px 28px rgba(95,84,247,0.45) !important;
+}
+
+button:not(:has(> svg:only-child)):not([style*="background: none"]):not([style*="background:none"]):focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(159,150,255,0.28), 0 10px 24px rgba(95,84,247,0.35) !important;
+}
+
+button:not(:has(> svg:only-child)):not([style*="background: none"]):not([style*="background:none"]):disabled {
+  opacity: 0.55 !important;
+  box-shadow: none !important;
 }
 
 /* Tables */
