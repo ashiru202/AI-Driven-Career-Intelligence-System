@@ -11,6 +11,7 @@ const staffCaseSchema = new mongoose.Schema(
     computedPriority: { type: Number, default: 0, min: 0, max: 100 },
     manualPriority: { type: Number, default: null, min: 0, max: 100 },
     effectivePriority: { type: Number, default: 0, min: 0, max: 100 },
+    tags: { type: [String], default: [] },
     reasons: { type: [String], default: [] },
     factors: {
       cvScore: { type: Number, default: 0 },

@@ -180,6 +180,58 @@ const schemas = {
         z.null()
       ])
     })
+  }),
+
+  staffCaseUserParam: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID')
+    })
+  }),
+
+  staffCaseNoteParam: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID'),
+      noteId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid note ID')
+    })
+  }),
+
+  staffCreateCaseNote: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID')
+    }),
+    body: z.object({
+      content: z.string()
+        .min(2, 'Note content must be at least 2 characters')
+        .max(2000, 'Note content must be at most 2000 characters')
+        .transform(stripHtml)
+    })
+  }),
+
+  staffUpdateCaseNote: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID'),
+      noteId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid note ID')
+    }),
+    body: z.object({
+      content: z.string()
+        .min(2, 'Note content must be at least 2 characters')
+        .max(2000, 'Note content must be at most 2000 characters')
+        .transform(stripHtml)
+    })
+  }),
+
+  staffUpdateCaseTags: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID')
+    }),
+    body: z.object({
+      tags: z.array(
+        z.string()
+          .min(1, 'Tag cannot be empty')
+          .max(30, 'Tag must be at most 30 characters')
+          .transform(stripHtml)
+      ).max(20, 'At most 20 tags are allowed')
+    })
   })
 };
 

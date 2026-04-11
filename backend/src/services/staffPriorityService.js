@@ -162,6 +162,7 @@ async function buildQueueItemForUser(user, existingCase) {
     computedPriority: caseDoc.computedPriority,
     manualPriority: caseDoc.manualPriority,
     effectivePriority: caseDoc.effectivePriority,
+    tags: caseDoc.tags || [],
     reasons: caseDoc.reasons || [],
     factors: caseDoc.factors || {},
     updatedAt: caseDoc.updatedAt,

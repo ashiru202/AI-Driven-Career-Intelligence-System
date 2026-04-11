@@ -12,6 +12,7 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffHome from "./pages/StaffHome";
 import StaffPriorityQueue from "./pages/StaffPriorityQueue";
+import StaffCaseNotes from "./pages/StaffCaseNotes";
 import RoleRoute from "./auth/RoleRoute";
 import Health from "./pages/Health";
 
@@ -195,6 +196,17 @@ export default function App() {
             <ProtectedRoute>
               <RoleRoute roles={["STAFF", "ADMIN"]}>
                 <StaffPriorityQueue />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/staff/case-notes"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["STAFF", "ADMIN"]}>
+                <StaffCaseNotes />
               </RoleRoute>
             </ProtectedRoute>
           }
