@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
-import { AlertTriangle, ClipboardList, RefreshCw, Save, Search, Target } from "lucide-react";
+import { AlertTriangle, ClipboardList, RefreshCw, Search, Target } from "lucide-react";
 
 function formatNumber(value) {
   return new Intl.NumberFormat("en-US").format(Number(value || 0));
@@ -20,15 +20,13 @@ function priorityTone(value) {
   return { bg: "rgba(34,197,94,0.18)", border: "rgba(34,197,94,0.35)", text: "#bbf7d0", label: "Low" };
 }
 
-const actionLinkBase = "inline-flex items-center justify-center rounded-md border px-2.5 py-1 text-xs font-semibold transition";
+const actionLinkBase = "inline-flex min-w-[96px] items-center justify-center rounded-md border px-2.5 py-1.5 text-xs font-semibold transition whitespace-nowrap";
 
 export default function StaffPriorityQueue() {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [savingUserId, setSavingUserId] = useState("");
-  const [manualValues, setManualValues] = useState({});
   const [error, setError] = useState("");
 
   const fetchQueue = useCallback(async ({ silent = false } = {}) => {
@@ -41,14 +39,6 @@ export default function StaffPriorityQueue() {
       });
       const nextItems = res.data?.data?.items || [];
       setItems(nextItems);
-      setManualValues(
-        nextItems.reduce((acc, item) => {
-          acc[item.user._id] = item.manualPriority === null || item.manualPriority === undefined
-            ? ""
-            : String(item.manualPriority);
-          return acc;
-        }, {})
-      );
       setError("");
     } catch (err) {
       setError(err.response?.data?.error?.message || "Failed to load priority queue");
@@ -61,36 +51,6 @@ export default function StaffPriorityQueue() {
   useEffect(() => {
     fetchQueue();
   }, [fetchQueue]);
-
-  const saveManualPriority = async (userId) => {
-    const raw = manualValues[userId];
-    const manualPriority = raw === "" ? null : Number(raw);
-
-    if (manualPriority !== null && (Number.isNaN(manualPriority) || manualPriority < 0 || manualPriority > 100)) {
-      setError("Manual priority must be between 0 and 100.");
-      return;
-    }
-
-    setSavingUserId(userId);
-    try {
-      const res = await api.patch(`/api/staff/priority-queue/${userId}/manual-priority`, {
-        manualPriority,
-      });
-      const updated = res.data?.data?.item;
-      if (updated) {
-        setItems((prev) =>
-          prev
-            .map((item) => (item.user._id === userId ? updated : item))
-            .sort((a, b) => Number(b.effectivePriority || 0) - Number(a.effectivePriority || 0))
-        );
-      }
-      setError("");
-    } catch (err) {
-      setError(err.response?.data?.error?.message || "Failed to update manual priority");
-    } finally {
-      setSavingUserId("");
-    }
-  };
 
   const criticalCount = useMemo(
     () => items.filter((item) => Number(item.effectivePriority || 0) >= 80).length,
@@ -188,7 +148,7 @@ export default function StaffPriorityQueue() {
               <p className="text-sm text-slate-400">No users found for this queue filter.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[920px]">
+                <table className="w-full text-sm min-w-[840px]">
                   <thead>
                     <tr className="text-left border-b border-white/10 text-slate-400">
                       <th className="pb-3">User</th>
@@ -197,7 +157,6 @@ export default function StaffPriorityQueue() {
                       <th className="pb-3">Roadmap</th>
                       <th className="pb-3">Gaps</th>
                       <th className="pb-3">Inactive Days</th>
-                      <th className="pb-3">Manual Override</th>
                       <th className="pb-3">Action</th>
                     </tr>
                   </thead>
@@ -243,53 +202,20 @@ export default function StaffPriorityQueue() {
                           <td className="py-3 text-slate-200">{formatNumber(item.factors?.gapCount)}</td>
                           <td className="py-3 text-slate-200">{formatNumber(item.factors?.inactiveDays)}</td>
                           <td className="py-3">
-                            <Input
-                              type="number"
-                              min={0}
-                              max={100}
-                              value={manualValues[item.user._id] ?? ""}
-                              placeholder="auto"
-                              onChange={(e) =>
-                                setManualValues((prev) => ({
-                                  ...prev,
-                                  [item.user._id]: e.target.value,
-                                }))
-                              }
-                              style={{
-                                width: 110,
-                                background: "rgba(255,255,255,0.06)",
-                                border: "1px solid rgba(255,255,255,0.1)",
-                                color: "#fff",
-                                fontSize: 13,
-                              }}
-                            />
-                          </td>
-                          <td className="py-3">
-                            <div className="flex min-w-[300px] flex-col gap-2">
-                              <div className="flex items-center gap-2">
-                                <Link
-                                  to="/staff"
-                                  className={`${actionLinkBase} text-cyan-200 hover:text-cyan-100`}
-                                  style={{
-                                    background: "rgba(34,211,238,0.14)",
-                                    borderColor: "rgba(34,211,238,0.35)",
-                                  }}
-                                >
-                                  Open Report
-                                </Link>
-                              <Button
-                                onClick={() => saveManualPriority(item.user._id)}
-                                disabled={savingUserId === item.user._id}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                            <div className="flex min-w-[420px] flex-wrap items-center gap-2">
+                              <Link
+                                to="/staff"
+                                className={`${actionLinkBase} min-w-[110px] text-cyan-200 hover:text-cyan-100`}
+                                style={{
+                                  background: "rgba(34,211,238,0.14)",
+                                  borderColor: "rgba(34,211,238,0.35)",
+                                }}
                               >
-                                <Save size={13} className="mr-1" />
-                                {savingUserId === item.user._id ? "Saving..." : "Save"}
-                              </Button>
-                              </div>
-                              <div className="flex flex-wrap gap-2">
+                                Open Report
+                              </Link>
                               <Link
                                 to={`/staff/case-notes?userId=${item.user._id}`}
-                                className={`${actionLinkBase} text-amber-200 hover:text-amber-100`}
+                                className={`${actionLinkBase} min-w-[104px] text-amber-200 hover:text-amber-100`}
                                 style={{
                                   background: "rgba(245,158,11,0.14)",
                                   borderColor: "rgba(245,158,11,0.35)",
@@ -299,7 +225,7 @@ export default function StaffPriorityQueue() {
                               </Link>
                               <Link
                                 to={`/staff/follow-ups?userId=${item.user._id}`}
-                                className={`${actionLinkBase} text-indigo-200 hover:text-indigo-100`}
+                                className={`${actionLinkBase} min-w-[104px] text-indigo-200 hover:text-indigo-100`}
                                 style={{
                                   background: "rgba(99,102,241,0.14)",
                                   borderColor: "rgba(99,102,241,0.35)",
@@ -309,7 +235,7 @@ export default function StaffPriorityQueue() {
                               </Link>
                               <Link
                                 to={`/staff/report-workflows?userId=${item.user._id}`}
-                                className={`${actionLinkBase} text-emerald-200 hover:text-emerald-100`}
+                                className={`${actionLinkBase} min-w-[104px] text-emerald-200 hover:text-emerald-100`}
                                 style={{
                                   background: "rgba(16,185,129,0.14)",
                                   borderColor: "rgba(16,185,129,0.35)",
@@ -317,7 +243,6 @@ export default function StaffPriorityQueue() {
                               >
                                 Workflow
                               </Link>
-                              </div>
                             </div>
                           </td>
                         </tr>
