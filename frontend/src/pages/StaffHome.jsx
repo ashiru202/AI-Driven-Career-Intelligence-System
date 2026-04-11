@@ -1,30 +1,133 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/api";
 import Layout from "../components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { Flame, AlertTriangle, ClipboardList, Map, Clock } from "lucide-react";
+import { Button } from "../components/ui/button";
+import {
+  Activity,
+  AlertTriangle,
+  ClipboardList,
+  Flame,
+  Map as MapIcon,
+  RefreshCw,
+  ShieldAlert,
+  Target,
+  UserCheck,
+  Users,
+} from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
-// ── Mini progress bar ─────────────────────────────────────────────────────────
-function Bar({ pct, color = "#6366f1" }) {
+const LIVE_INTERVAL_MS = 20000;
+const STATUS_COLORS = ["#22c55e", "#f59e0b"];
+
+function formatNumber(value) {
+  return new Intl.NumberFormat("en-US").format(Number(value || 0));
+}
+
+function titleizeSkill(skill) {
+  if (!skill) return "Unknown";
+  return String(skill)
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function chartTooltip({ active, payload, label }) {
+  if (!active || !payload || payload.length === 0) return null;
+
   return (
-    <div className="h-1.5 rounded-full overflow-hidden bg-white/5">
-      <div
-        style={{ width: `${Math.min(pct, 100)}%`, background: color, transition: "width 0.6s ease" }}
-        className="h-full rounded-full"
-      />
+    <div
+      style={{
+        background: "rgba(10, 13, 24, 0.96)",
+        border: "1px solid rgba(255,255,255,0.14)",
+        borderRadius: 10,
+        padding: "9px 12px",
+        fontSize: 12,
+      }}
+    >
+      <p style={{ color: "#cbd5e1", marginBottom: 6, fontWeight: 600 }}>{label}</p>
+      {payload.map((entry, idx) => (
+        <p key={`${entry.name}-${idx}`} style={{ color: entry.color || "#e2e8f0", marginBottom: 2 }}>
+          {entry.name}: {formatNumber(entry.value)}
+        </p>
+      ))}
     </div>
   );
 }
 
-// ── User avatar initials ──────────────────────────────────────────────────────
+function metricCard({ title, value, subtitle, Icon, accent }) {
+  return (
+    <Card
+      style={{
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: 16,
+        background: "linear-gradient(145deg, rgba(18,22,38,0.88), rgba(12,14,27,0.92))",
+        boxShadow: "0 14px 35px rgba(0,0,0,0.28)",
+      }}
+    >
+      <CardContent className="pt-4 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.45)" }}>
+              {title}
+            </p>
+            <p className="text-3xl font-extrabold mt-1" style={{ color: "#f8fafc" }}>
+              {value}
+            </p>
+            <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.42)" }}>
+              {subtitle}
+            </p>
+          </div>
+
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 11,
+              background: `${accent}26`,
+              border: `1px solid ${accent}44`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon size={20} style={{ color: accent }} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function UserAvatar({ name, size = 34 }) {
   const initials = name
-    ? name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+    ? name
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
     : "?";
-  const palette = ["#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"];
+  const palette = ["#0ea5e9", "#22c55e", "#f59e0b", "#f97316", "#14b8a6", "#3b82f6"];
   const bg = palette[name ? name.charCodeAt(0) % palette.length : 0];
+
   return (
     <div
       style={{ width: size, height: size, background: bg, fontSize: size * 0.38 }}
@@ -35,57 +138,186 @@ function UserAvatar({ name, size = 34 }) {
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
 export default function StaffHome() {
-  const [users, setUsers]           = useState([]);
-  const [gaps, setGaps]             = useState([]);
+  const [users, setUsers] = useState([]);
+  const [gaps, setGaps] = useState([]);
   const [skillDemand, setSkillDemand] = useState({ topSkills: [], bottomSkills: [] });
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState("");
+  const [priorityQueue, setPriorityQueue] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    Promise.all([
-      api.get("/api/analytics/users?role=USER"),
-      api.get("/api/analytics/common-gaps?limit=8"),
-      api.get("/api/analytics/skill-demand"),
-    ])
-      .then(([usersRes, gapsRes, demandRes]) => {
-        if (usersRes.data.ok)  setUsers(usersRes.data.data.users || []);
-        if (gapsRes.data.ok)   setGaps(gapsRes.data.data || []);
-        if (demandRes.data.ok) {
-          const d = demandRes.data.data;
-          setSkillDemand({ topSkills: d.top || [], bottomSkills: d.least || [] });
-        }
-      })
-      .catch(() => setError("Failed to load dashboard data"))
-      .finally(() => setLoading(false));
+  const fetchDashboard = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    if (silent) setRefreshing(true);
+
+    try {
+      const [usersRes, gapsRes, demandRes, queueRes] = await Promise.all([
+        api.get("/api/analytics/users?role=USER"),
+        api.get("/api/analytics/common-gaps?limit=8"),
+        api.get("/api/analytics/skill-demand"),
+        api.get("/api/staff/priority-queue", { params: { page: 1, limit: 80 } }),
+      ]);
+
+      if (usersRes.data.ok) setUsers(usersRes.data.data.users || []);
+      if (gapsRes.data.ok) setGaps(gapsRes.data.data || []);
+      if (demandRes.data.ok) {
+        const nextDemand = demandRes.data.data || {};
+        setSkillDemand({ topSkills: nextDemand.top || [], bottomSkills: nextDemand.least || [] });
+      }
+      if (queueRes.data.ok) {
+        setPriorityQueue(queueRes.data.data?.items || []);
+      }
+      setError("");
+    } catch {
+      setError("Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
-  const staffUser = (() => {
-    try { return JSON.parse(localStorage.getItem("user") || "{}"); }
-    catch { return {}; }
-  })();
+  useEffect(() => {
+    fetchDashboard();
+  }, [fetchDashboard]);
 
-  const totalUsers  = users.length;
+  useEffect(() => {
+    const timer = setInterval(() => {
+      fetchDashboard({ silent: true });
+    }, LIVE_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [fetchDashboard]);
+
+  const staffUser = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
+  }, []);
+
+  const totalUsers = users.length;
   const activeUsers = users.filter((u) => u.active).length;
-  const recentUsers = users.slice(0, 6);
+  const inactiveUsers = Math.max(0, totalUsers - activeUsers);
+  const activationRate = totalUsers ? Math.round((activeUsers / totalUsers) * 100) : 0;
 
-  const maxGapCount   = gaps[0]?.count   || 1;
-  const maxSkillCount = skillDemand.topSkills[0]?.count || 1;
+  const signupTrendData = useMemo(() => {
+    const dayBuckets = new Map();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 13; i >= 0; i -= 1) {
+      const day = new Date(today);
+      day.setDate(today.getDate() - i);
+      const key = day.toISOString().slice(0, 10);
+      dayBuckets.set(key, {
+        day: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        signups: 0,
+      });
+    }
+
+    users.forEach((user) => {
+      if (!user.createdAt) return;
+      const dayKey = new Date(user.createdAt).toISOString().slice(0, 10);
+      if (dayBuckets.has(dayKey)) {
+        dayBuckets.get(dayKey).signups += 1;
+      }
+    });
+
+    return [...dayBuckets.values()];
+  }, [users]);
+
+  const topSkillDemandData = useMemo(
+    () =>
+      (skillDemand.topSkills || []).slice(0, 7).map((item) => ({
+        skill: titleizeSkill(item.skill),
+        count: Number(item.count || 0),
+      })),
+    [skillDemand]
+  );
+
+  const commonGapsData = useMemo(
+    () =>
+      (gaps || []).slice(0, 7).map((item) => ({
+        skill: titleizeSkill(item.skill),
+        count: Number(item.count || 0),
+      })),
+    [gaps]
+  );
+
+  const activitySplit = useMemo(
+    () => [
+      { name: "Active", value: activeUsers },
+      { name: "Inactive", value: inactiveUsers },
+    ],
+    [activeUsers, inactiveUsers]
+  );
+
+  const highPriorityCases = useMemo(
+    () => priorityQueue.filter((item) => Number(item.effectivePriority || 0) >= 70).length,
+    [priorityQueue]
+  );
+
+  const topPriorityCases = useMemo(
+    () => [...priorityQueue].sort((a, b) => Number(b.effectivePriority || 0) - Number(a.effectivePriority || 0)).slice(0, 4),
+    [priorityQueue]
+  );
+
+  const recentUsers = useMemo(
+    () =>
+      [...users]
+        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+        .slice(0, 6),
+    [users]
+  );
 
   const statCards = [
-    { label: "Total Job Seekers",  value: totalUsers,                              color: "text-blue-400"   },
-    { label: "Active Users",       value: activeUsers,                             color: "text-green-400"  },
-    { label: "Inactive Users",     value: totalUsers - activeUsers,                color: "text-yellow-400" },
-    { label: "Top Demanded Skill", value: skillDemand.topSkills[0]?.skill ?? "—", color: "text-orange-400" },
-    { label: "Top Skill Gap",      value: gaps[0]?.skill ?? "—",                  color: "text-red-400"    },
+    {
+      title: "Total Job Seekers",
+      value: formatNumber(totalUsers),
+      subtitle: "Registered user profiles",
+      Icon: Users,
+      accent: "#38bdf8",
+    },
+    {
+      title: "Active Accounts",
+      value: formatNumber(activeUsers),
+      subtitle: `${activationRate}% activity rate`,
+      Icon: UserCheck,
+      accent: "#22c55e",
+    },
+    {
+      title: "Skill Gaps",
+      value: formatNumber(commonGapsData.reduce((acc, item) => acc + item.count, 0)),
+      subtitle: "Across top gap categories",
+      Icon: AlertTriangle,
+      accent: "#f59e0b",
+    },
+    {
+      title: "Top Demand Skill",
+      value: topSkillDemandData[0]?.skill || "-",
+      subtitle: `${formatNumber(topSkillDemandData[0]?.count || 0)} demand mentions`,
+      Icon: Flame,
+      accent: "#f97316",
+    },
+    {
+      title: "Priority Cases",
+      value: formatNumber(highPriorityCases),
+      subtitle: "Users with urgency score 70+",
+      Icon: ShieldAlert,
+      accent: "#ef4444",
+    },
   ];
 
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          Loading staff dashboard…
+        <div
+          className="rounded-xl border border-white/10 p-10 text-center"
+          style={{ background: "linear-gradient(145deg, rgba(18,22,38,0.88), rgba(12,14,27,0.92))" }}
+        >
+          <p className="text-sm font-semibold text-slate-200">Building your live staff dashboard...</p>
+          <p className="text-xs text-slate-400 mt-2">Loading analytics snapshots and trend visuals.</p>
         </div>
       </Layout>
     );
@@ -93,152 +325,381 @@ export default function StaffHome() {
 
   return (
     <Layout>
-      <div className="space-y-8">
+      <div className="space-y-6 pb-10">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-white">Staff Dashboard</h2>
+            <p className="text-slate-300 mt-2 text-sm max-w-2xl">
+              Welcome back{staffUser.name ? `, ${staffUser.name}` : ""}. Monitor user growth, skill demand, and platform learning gaps in one place.
+            </p>
+          </div>
 
-        {/* ── Header ── */}
-        <div>
-          <h2 className="text-3xl font-bold text-white">Staff Dashboard</h2>
-          <p className="text-slate-400 mt-1 text-sm">
-            Welcome back{staffUser.name ? `, ${staffUser.name}` : ""}! Here's your platform overview.
-          </p>
+          <div className="flex flex-wrap gap-2">
+            <span
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "rgba(14,165,233,0.18)", color: "#bae6fd", border: "1px solid rgba(14,165,233,0.35)" }}
+            >
+              <Users size={13} /> {formatNumber(totalUsers)} users
+            </span>
+            <span
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "rgba(34,197,94,0.16)", color: "#bbf7d0", border: "1px solid rgba(34,197,94,0.35)" }}
+            >
+              <Activity size={13} /> {activationRate}% active
+            </span>
+            <Button onClick={() => fetchDashboard({ silent: true })} className="bg-slate-700 hover:bg-slate-600 text-white">
+              <RefreshCw size={14} className={`mr-2 ${refreshing ? "animate-spin" : ""}`} /> Refresh
+            </Button>
+          </div>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">{error}</div>
+          <div
+            style={{
+              background: "rgba(239,68,68,0.12)",
+              border: "1px solid rgba(239,68,68,0.25)",
+              color: "#fca5a5",
+              borderRadius: 12,
+              padding: "12px 18px",
+              fontSize: 14,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <AlertTriangle size={14} /> {error}
+          </div>
         )}
 
-        {/* ── Stat Cards ── */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {statCards.map((s) => (
-            <Card key={s.label}>
-              <CardContent className="pt-4">
-                <p className="text-sm text-gray-500">{s.label}</p>
-                <p className={`text-2xl font-bold mt-1 capitalize truncate ${s.color}`}>{s.value}</p>
-              </CardContent>
-            </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+          {statCards.map((tile) => (
+            <div key={tile.title}>{metricCard(tile)}</div>
           ))}
         </div>
 
-        {/* ── Skill demand + Common gaps ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          {/* Top Skills in Demand */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2"><Flame size={16} className="text-orange-400" /> Top Skills in Demand</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {skillDemand.topSkills.length === 0 ? (
-                <p className="text-sm text-gray-400">No data yet</p>
-              ) : (
-                <ul className="space-y-3">
-                  {skillDemand.topSkills.slice(0, 8).map((item, i) => (
-                    <li key={item.skill}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium capitalize">
-                          {i + 1}. {item.skill}
-                        </span>
-                        <Badge className="bg-blue-100 text-blue-700">{item.count}</Badge>
-                      </div>
-                      <Bar pct={(item.count / maxSkillCount) * 100} color="#6366f1" />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Common Skill Gaps */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2"><AlertTriangle size={16} className="text-yellow-400" /> Common Skill Gaps</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {gaps.length === 0 ? (
-                <p className="text-sm text-gray-400">No gap data yet</p>
-              ) : (
-                <ul className="space-y-3">
-                  {gaps.slice(0, 8).map((item, i) => (
-                    <li key={item.skill}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium capitalize">
-                          {i + 1}. {item.skill}
-                        </span>
-                        <Badge className="bg-red-100 text-red-600">{item.count}</Badge>
-                      </div>
-                      <Bar pct={(item.count / maxGapCount) * 100} color="#ef4444" />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ── Quick Links ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link to="/staff">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer border-indigo-200">
-              <CardContent className="pt-4">
-                <p className="font-semibold text-indigo-400 flex items-center gap-1"><ClipboardList size={14} /> User Reports</p>
-                <p className="text-sm text-gray-500 mt-1">View skill gaps & CV scores per user</p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/all-roadmaps">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer border-purple-200">
-              <CardContent className="pt-4">
-                <p className="font-semibold text-purple-400 flex items-center gap-1"><Map size={14} /> All Roadmaps</p>
-                <p className="text-sm text-gray-500 mt-1">Browse all user learning roadmaps</p>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
-
-        {/* ── Recent Job Seekers ── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Clock size={16} /> Recently Registered Job Seekers</CardTitle>
+        <Card
+          style={{
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 16,
+            background: "linear-gradient(145deg, rgba(18,22,38,0.88), rgba(12,14,27,0.92))",
+          }}
+        >
+          <CardHeader className="pb-2">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <CardTitle className="text-white flex items-center gap-2 text-base">
+                <ShieldAlert size={16} className="text-red-300" /> Top Priority Queue
+              </CardTitle>
+              <Link to="/staff/priority-queue" className="text-sm text-cyan-300 hover:text-cyan-200">
+                Open full queue
+              </Link>
+            </div>
+            <p className="text-xs text-slate-400">Urgent users ranked by CV score, progress, inactivity, and gaps</p>
           </CardHeader>
           <CardContent>
-            {recentUsers.length === 0 ? (
-              <p className="text-sm text-gray-400">No users registered yet.</p>
+            {topPriorityCases.length === 0 ? (
+              <p className="text-sm text-slate-400">No priority cases available.</p>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-500 border-b">
-                    <th className="pb-2">Name</th>
-                    <th className="pb-2">Email</th>
-                    <th className="pb-2">Status</th>
-                    <th className="pb-2">Joined</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentUsers.map((u) => (
-                    <tr key={u._id} className="border-b last:border-0">
-                      <td className="py-2">
-                        <div className="flex items-center gap-2">
-                          <UserAvatar name={u.name} size={28} />
-                          <span className="font-medium">{u.name}</span>
-                        </div>
-                      </td>
-                      <td className="py-2 text-gray-600">{u.email}</td>
-                      <td className="py-2">
-                        <Badge className={u.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}>
-                          {u.active ? "Active" : "Disabled"}
-                        </Badge>
-                      </td>
-                      <td className="py-2 text-gray-500">
-                        {new Date(u.createdAt).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                {topPriorityCases.map((item) => (
+                  <div
+                    key={item._id}
+                    className="rounded-lg px-3 py-3"
+                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+                  >
+                    <p className="text-sm font-semibold text-white truncate">{item.user?.name}</p>
+                    <p className="text-xs text-slate-400 truncate mt-1">{item.user?.email}</p>
+                    <p className="text-xs text-red-300 mt-2">Priority: {formatNumber(item.effectivePriority)}</p>
+                    <p className="text-xs text-slate-400 mt-1">CV {formatNumber(item.factors?.cvScore)} · Gaps {formatNumber(item.factors?.gapCount)}</p>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
 
+        <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
+          <Card
+            className="2xl:col-span-2"
+            style={{
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 16,
+              background: "linear-gradient(145deg, rgba(18,22,38,0.88), rgba(12,14,27,0.92))",
+            }}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white flex items-center gap-2 text-base">
+                <Activity size={16} className="text-cyan-300" /> New Registrations (14 days)
+              </CardTitle>
+              <p className="text-xs text-slate-400">Daily user signup trend</p>
+            </CardHeader>
+            <CardContent style={{ height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={signupTrendData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                  <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="4 4" />
+                  <XAxis dataKey="day" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
+                  <Tooltip content={chartTooltip} />
+                  <Line
+                    type="monotone"
+                    dataKey="signups"
+                    name="Signups"
+                    stroke="#38bdf8"
+                    strokeWidth={3}
+                    dot={{ r: 3, fill: "#38bdf8" }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card
+            style={{
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 16,
+              background: "linear-gradient(145deg, rgba(18,22,38,0.88), rgba(12,14,27,0.92))",
+            }}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white flex items-center gap-2 text-base">
+                <UserCheck size={16} className="text-emerald-300" /> Activity Split
+              </CardTitle>
+              <p className="text-xs text-slate-400">Active vs inactive accounts</p>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-3" style={{ minHeight: 300 }}>
+              <div style={{ width: "100%", height: 180 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={activitySplit}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={45}
+                      outerRadius={75}
+                      paddingAngle={3}
+                      stroke="rgba(15,23,42,0.8)"
+                      strokeWidth={2}
+                    >
+                      {activitySplit.map((entry, idx) => (
+                        <Cell key={`${entry.name}-${idx}`} fill={STATUS_COLORS[idx % STATUS_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={chartTooltip} />
+                    <Legend wrapperStyle={{ color: "#94a3b8", fontSize: 12 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {activitySplit.map((item, idx) => (
+                  <div
+                    key={item.name}
+                    className="rounded-lg px-3 py-2"
+                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+                  >
+                    <p className="text-xs text-slate-400">{item.name}</p>
+                    <p className="text-lg font-semibold text-white flex items-center gap-2">
+                      <span style={{ width: 8, height: 8, borderRadius: 999, background: STATUS_COLORS[idx] }} />
+                      {formatNumber(item.value)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
+          <Card
+            style={{
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 16,
+              background: "linear-gradient(145deg, rgba(18,22,38,0.88), rgba(12,14,27,0.92))",
+            }}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white flex items-center gap-2 text-base">
+                <Flame size={16} className="text-orange-300" /> Top Skills In Demand
+              </CardTitle>
+              <p className="text-xs text-slate-400">Most requested skills in current market analytics</p>
+            </CardHeader>
+            <CardContent style={{ height: 300 }}>
+              {topSkillDemandData.length === 0 ? (
+                <p className="text-sm text-slate-400">No demand data available yet.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topSkillDemandData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                    <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="4 4" />
+                    <XAxis
+                      dataKey="skill"
+                      tick={{ fill: "#94a3b8", fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={0}
+                      angle={-20}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis allowDecimals={false} tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
+                    <Tooltip content={chartTooltip} />
+                    <Bar dataKey="count" name="Demand" fill="#38bdf8" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card
+            style={{
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 16,
+              background: "linear-gradient(145deg, rgba(18,22,38,0.88), rgba(12,14,27,0.92))",
+            }}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white flex items-center gap-2 text-base">
+                <Target size={16} className="text-red-300" /> Most Common Skill Gaps
+              </CardTitle>
+              <p className="text-xs text-slate-400">Frequent skill deficiencies among users</p>
+            </CardHeader>
+            <CardContent style={{ height: 300 }}>
+              {commonGapsData.length === 0 ? (
+                <p className="text-sm text-slate-400">No skill-gap data available yet.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={commonGapsData} layout="vertical" margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                    <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="4 4" />
+                    <XAxis type="number" allowDecimals={false} tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis
+                      type="category"
+                      dataKey="skill"
+                      width={110}
+                      tick={{ fill: "#94a3b8", fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip content={chartTooltip} />
+                    <Bar dataKey="count" name="Gap Count" fill="#f59e0b" radius={[0, 8, 8, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <Link to="/staff" className="h-full">
+            <Card
+              className="h-full transition-all hover:-translate-y-0.5"
+              style={{
+                border: "1px solid rgba(56,189,248,0.25)",
+                borderRadius: 14,
+                background: "linear-gradient(145deg, rgba(11,20,34,0.95), rgba(8,16,28,0.95))",
+              }}
+            >
+              <CardContent className="pt-4">
+                <p className="font-semibold text-sky-300 flex items-center gap-2">
+                  <ClipboardList size={14} /> User Reports
+                </p>
+                <p className="text-sm text-slate-400 mt-1">Open profile-level CV and skill-gap diagnostics</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/staff/priority-queue" className="h-full">
+            <Card
+              className="h-full transition-all hover:-translate-y-0.5"
+              style={{
+                border: "1px solid rgba(239,68,68,0.25)",
+                borderRadius: 14,
+                background: "linear-gradient(145deg, rgba(11,20,34,0.95), rgba(8,16,28,0.95))",
+              }}
+            >
+              <CardContent className="pt-4">
+                <p className="font-semibold text-red-300 flex items-center gap-2">
+                  <ShieldAlert size={14} /> Priority Queue
+                </p>
+                <p className="text-sm text-slate-400 mt-1">Review and override urgency scores for high-risk users</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/all-roadmaps" className="h-full">
+            <Card
+              className="h-full transition-all hover:-translate-y-0.5"
+              style={{
+                border: "1px solid rgba(34,197,94,0.25)",
+                borderRadius: 14,
+                background: "linear-gradient(145deg, rgba(11,20,34,0.95), rgba(8,16,28,0.95))",
+              }}
+            >
+              <CardContent className="pt-4">
+                <p className="font-semibold text-emerald-300 flex items-center gap-2">
+                  <MapIcon size={14} /> All Roadmaps
+                </p>
+                <p className="text-sm text-slate-400 mt-1">Browse and track all user learning journeys</p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
+        <Card
+          style={{
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 16,
+            background: "linear-gradient(145deg, rgba(18,22,38,0.88), rgba(12,14,27,0.92))",
+          }}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-white flex items-center gap-2 text-base">
+              <Users size={16} className="text-sky-300" /> Recently Registered Job Seekers
+            </CardTitle>
+            <p className="text-xs text-slate-400">Latest user accounts across the platform</p>
+          </CardHeader>
+          <CardContent>
+            {recentUsers.length === 0 ? (
+              <p className="text-sm text-slate-400">No users registered yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left border-b border-white/10 text-slate-400">
+                      <th className="pb-2">Name</th>
+                      <th className="pb-2">Email</th>
+                      <th className="pb-2">Status</th>
+                      <th className="pb-2">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentUsers.map((user) => (
+                      <tr key={user._id} className="border-b border-white/5 last:border-0">
+                        <td className="py-3 text-white">
+                          <div className="flex items-center gap-2">
+                            <UserAvatar name={user.name} size={30} />
+                            <span className="font-medium">{user.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 text-slate-300">{user.email}</td>
+                        <td className="py-3">
+                          <Badge
+                            className={
+                              user.active
+                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
+                                : "bg-amber-500/20 text-amber-300 border border-amber-400/30"
+                            }
+                          >
+                            {user.active ? "Active" : "Inactive"}
+                          </Badge>
+                        </td>
+                        <td className="py-3 text-slate-400">
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

@@ -185,7 +185,7 @@ function Navbar({ isLoggedIn, role }) {
 
   const getDashboardPath = () => {
     if (role === "ADMIN") return "/admin";
-    if (role === "STAFF") return "/staff";
+    if (role === "STAFF") return "/staff-home";
     return "/dashboard";
   };
 

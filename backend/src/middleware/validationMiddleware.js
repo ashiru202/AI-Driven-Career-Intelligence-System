@@ -168,6 +168,147 @@ const schemas = {
         .optional()
         .nullable()
     })
+  }),
+
+  staffSetManualPriority: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID')
+    }),
+    body: z.object({
+      manualPriority: z.union([
+        z.number().min(0, 'Priority must be at least 0').max(100, 'Priority must be at most 100'),
+        z.null()
+      ])
+    })
+  }),
+
+  staffCaseUserParam: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID')
+    })
+  }),
+
+  staffCaseNoteParam: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID'),
+      noteId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid note ID')
+    })
+  }),
+
+  staffCreateCaseNote: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID')
+    }),
+    body: z.object({
+      content: z.string()
+        .min(2, 'Note content must be at least 2 characters')
+        .max(2000, 'Note content must be at most 2000 characters')
+        .transform(stripHtml)
+    })
+  }),
+
+  staffUpdateCaseNote: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID'),
+      noteId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid note ID')
+    }),
+    body: z.object({
+      content: z.string()
+        .min(2, 'Note content must be at least 2 characters')
+        .max(2000, 'Note content must be at most 2000 characters')
+        .transform(stripHtml)
+    })
+  }),
+
+  staffUpdateCaseTags: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID')
+    }),
+    body: z.object({
+      tags: z.array(
+        z.string()
+          .min(1, 'Tag cannot be empty')
+          .max(30, 'Tag must be at most 30 characters')
+          .transform(stripHtml)
+      ).max(20, 'At most 20 tags are allowed')
+    })
+  }),
+
+  staffFollowUpQuery: z.object({
+    query: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID').optional(),
+      status: z.enum(['PENDING', 'COMPLETED']).optional(),
+      reminder: z.enum(['UPCOMING', 'DUE_SOON', 'OVERDUE']).optional(),
+      search: z.string().max(120, 'Search text too long').optional()
+    })
+  }),
+
+  staffFollowUpTaskParam: z.object({
+    params: z.object({
+      taskId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid task ID')
+    })
+  }),
+
+  staffCreateFollowUpTask: z.object({
+    body: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID'),
+      title: z.string()
+        .min(2, 'Title must be at least 2 characters')
+        .max(180, 'Title must be at most 180 characters')
+        .transform(stripHtml),
+      description: z.string()
+        .max(2000, 'Description must be at most 2000 characters')
+        .optional()
+        .default('')
+        .transform(stripHtml),
+      dueDate: z.coerce.date(),
+      priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional().default('MEDIUM')
+    })
+  }),
+
+  staffUpdateFollowUpTask: z.object({
+    params: z.object({
+      taskId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid task ID')
+    }),
+    body: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID').optional(),
+      title: z.string()
+        .min(2, 'Title must be at least 2 characters')
+        .max(180, 'Title must be at most 180 characters')
+        .transform(stripHtml)
+        .optional(),
+      description: z.string()
+        .max(2000, 'Description must be at most 2000 characters')
+        .transform(stripHtml)
+        .optional(),
+      dueDate: z.coerce.date().optional(),
+      priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+      status: z.enum(['PENDING', 'COMPLETED']).optional(),
+    }).refine((value) => Object.keys(value).length > 0, {
+      message: 'At least one field is required to update follow-up task'
+    })
+  }),
+
+  staffReportWorkflowQuery: z.object({
+    query: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID').optional(),
+      state: z.enum(['NEW', 'IN_REVIEW', 'FOLLOW_UP_REQUIRED', 'RESOLVED']).optional(),
+      search: z.string().max(120, 'Search text too long').optional(),
+    })
+  }),
+
+  staffUpdateReportWorkflow: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID')
+    }),
+    body: z.object({
+      state: z.enum(['NEW', 'IN_REVIEW', 'FOLLOW_UP_REQUIRED', 'RESOLVED']),
+      notes: z.string()
+        .max(2000, 'Notes must be at most 2000 characters')
+        .optional()
+        .default('')
+        .transform(stripHtml),
+    })
   })
 };
 

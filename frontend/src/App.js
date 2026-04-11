@@ -11,6 +11,10 @@ import Logout from "./pages/Logout";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffHome from "./pages/StaffHome";
+import StaffPriorityQueue from "./pages/StaffPriorityQueue";
+import StaffCaseNotes from "./pages/StaffCaseNotes";
+import StaffFollowUpTasks from "./pages/StaffFollowUpTasks";
+import StaffReportWorkflows from "./pages/StaffReportWorkflows";
 import RoleRoute from "./auth/RoleRoute";
 import Health from "./pages/Health";
 
@@ -183,6 +187,50 @@ export default function App() {
             <ProtectedRoute>
               <RoleRoute roles={["STAFF", "ADMIN"]}>
                 <StaffDashboard />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/staff/priority-queue"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["STAFF", "ADMIN"]}>
+                <StaffPriorityQueue />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/staff/case-notes"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["STAFF", "ADMIN"]}>
+                <StaffCaseNotes />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/staff/follow-ups"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["STAFF", "ADMIN"]}>
+                <StaffFollowUpTasks />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/staff/report-workflows"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["STAFF", "ADMIN"]}>
+                <StaffReportWorkflows />
               </RoleRoute>
             </ProtectedRoute>
           }
