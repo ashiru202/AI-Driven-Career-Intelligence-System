@@ -57,9 +57,9 @@ export default function Login() {
         await syncExtensionSession();
 
         const role = res.data.data.user.role;
-        if (role === 'ADMIN')       navigate('/admin',     { replace: true });
-        else if (role === 'STAFF')  navigate('/staff',     { replace: true });
-        else                        navigate('/dashboard', { replace: true });
+        if (role === 'ADMIN')       navigate('/admin',      { replace: true });
+        else if (role === 'STAFF')  navigate('/staff-home', { replace: true });
+        else                        navigate('/dashboard',  { replace: true });
       } else {
         setError("Login response was not successful");
       }
