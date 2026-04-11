@@ -371,7 +371,7 @@ export default function StaffHome() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           {statCards.map((tile) => (
             <div key={tile.title}>{metricCard(tile)}</div>
           ))}
@@ -587,7 +587,7 @@ export default function StaffHome() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <Link to="/staff" className="h-full">
             <Card
               className="h-full transition-all hover:-translate-y-0.5"
