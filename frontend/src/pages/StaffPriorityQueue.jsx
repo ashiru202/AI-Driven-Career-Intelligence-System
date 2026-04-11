@@ -278,6 +278,12 @@ export default function StaffPriorityQueue() {
                               >
                                 Case notes
                               </Link>
+                              <Link
+                                to={`/staff/follow-ups?userId=${item.user._id}`}
+                                className="text-indigo-300 text-xs hover:text-indigo-200"
+                              >
+                                Follow-ups
+                              </Link>
                               <Link to="/staff" className="text-cyan-300 text-xs hover:text-cyan-200">Open report</Link>
                             </div>
                           </td>

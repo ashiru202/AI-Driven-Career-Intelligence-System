@@ -6,6 +6,7 @@ const staffPriorityService = require("../services/staffPriorityService");
 const User = require("../models/User");
 const CaseNote = require("../models/CaseNote");
 const StaffCase = require("../models/StaffCase");
+const StaffFollowUpTask = require("../models/StaffFollowUpTask");
 
 async function assertTargetUser(userId) {
   const user = await User.findOne({ _id: userId, role: "USER" })
@@ -15,6 +16,24 @@ async function assertTargetUser(userId) {
     throw AppError.notFound("Target user not found");
   }
   return user;
+}
+
+function getReminderState(task) {
+  if (!task || task.status === "COMPLETED") return "NONE";
+  const now = Date.now();
+  const dueAt = new Date(task.dueDate).getTime();
+  if (Number.isNaN(dueAt)) return "NONE";
+  if (dueAt < now) return "OVERDUE";
+  const diffHours = (dueAt - now) / 3600000;
+  if (diffHours <= 48) return "DUE_SOON";
+  return "UPCOMING";
+}
+
+function enrichFollowUpTask(task) {
+  return {
+    ...task,
+    reminderState: getReminderState(task),
+  };
 }
 
 exports.getPriorityQueue = asyncHandler(async (req, res) => {
@@ -155,4 +174,139 @@ exports.updateCaseTags = asyncHandler(async (req, res) => {
   );
 
   res.json(successResponse({ tags: caseDoc.tags || [] }, "Case tags updated successfully"));
+});
+
+exports.getFollowUpTasks = asyncHandler(async (req, res) => {
+  const { userId, status, reminder, search } = req.query;
+
+  const query = {};
+  if (userId) query.user = userId;
+  if (status) query.status = status;
+  if (search) {
+    query.$or = [
+      { title: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  const tasks = await StaffFollowUpTask.find(query)
+    .sort({ dueDate: 1, createdAt: -1 })
+    .populate("user", "name email active")
+    .populate("createdBy", "name email role")
+    .lean();
+
+  const enriched = tasks.map(enrichFollowUpTask);
+  const filtered = reminder ? enriched.filter((task) => task.reminderState === reminder) : enriched;
+
+  const stats = {
+    total: filtered.length,
+    pending: filtered.filter((task) => task.status === "PENDING").length,
+    completed: filtered.filter((task) => task.status === "COMPLETED").length,
+    dueSoon: filtered.filter((task) => task.reminderState === "DUE_SOON").length,
+    overdue: filtered.filter((task) => task.reminderState === "OVERDUE").length,
+  };
+
+  res.json(successResponse({ items: filtered, stats }, "Follow-up tasks retrieved successfully"));
+});
+
+exports.createFollowUpTask = asyncHandler(async (req, res) => {
+  const { userId, title, description, dueDate, priority } = req.body;
+  const targetUser = await assertTargetUser(userId);
+
+  const created = await StaffFollowUpTask.create({
+    user: userId,
+    createdBy: req.user.id,
+    title,
+    description,
+    dueDate,
+    priority,
+  });
+
+  const task = await StaffFollowUpTask.findById(created._id)
+    .populate("user", "name email active")
+    .populate("createdBy", "name email role")
+    .lean();
+
+  logActivity(
+    req,
+    "CREATE_FOLLOWUP_TASK",
+    { type: "User", id: userId, email: targetUser.email, name: targetUser.name },
+    { taskId: String(created._id), dueDate, priority }
+  );
+
+  res
+    .status(201)
+    .json(successResponse({ item: enrichFollowUpTask(task) }, "Follow-up task created successfully"));
+});
+
+exports.updateFollowUpTask = asyncHandler(async (req, res) => {
+  const { taskId } = req.params;
+  const { userId, title, description, dueDate, priority, status } = req.body;
+
+  const taskDoc = await StaffFollowUpTask.findById(taskId);
+  if (!taskDoc) {
+    throw AppError.notFound("Follow-up task not found");
+  }
+
+  let targetUser = null;
+  if (userId && String(taskDoc.user) !== String(userId)) {
+    targetUser = await assertTargetUser(userId);
+    taskDoc.user = userId;
+  }
+
+  if (title !== undefined) taskDoc.title = title;
+  if (description !== undefined) taskDoc.description = description;
+  if (dueDate !== undefined) taskDoc.dueDate = dueDate;
+  if (priority !== undefined) taskDoc.priority = priority;
+  if (status !== undefined) {
+    taskDoc.status = status;
+    taskDoc.completedAt = status === "COMPLETED" ? new Date() : null;
+  }
+
+  await taskDoc.save();
+
+  const task = await StaffFollowUpTask.findById(taskDoc._id)
+    .populate("user", "name email active")
+    .populate("createdBy", "name email role")
+    .lean();
+
+  logActivity(
+    req,
+    "UPDATE_FOLLOWUP_TASK",
+    {
+      type: "User",
+      id: String(task.user?._id || userId || taskDoc.user),
+      email: task.user?.email || targetUser?.email,
+      name: task.user?.name || targetUser?.name,
+    },
+    { taskId: String(taskDoc._id), status: task.status, priority: task.priority, dueDate: task.dueDate }
+  );
+
+  res.json(successResponse({ item: enrichFollowUpTask(task) }, "Follow-up task updated successfully"));
+});
+
+exports.deleteFollowUpTask = asyncHandler(async (req, res) => {
+  const { taskId } = req.params;
+
+  const task = await StaffFollowUpTask.findByIdAndDelete(taskId)
+    .populate("user", "name email active")
+    .lean();
+
+  if (!task) {
+    throw AppError.notFound("Follow-up task not found");
+  }
+
+  logActivity(
+    req,
+    "DELETE_FOLLOWUP_TASK",
+    {
+      type: "User",
+      id: String(task.user?._id || task.user),
+      email: task.user?.email,
+      name: task.user?.name,
+    },
+    { taskId: String(taskId), title: task.title }
+  );
+
+  res.json(successResponse(null, "Follow-up task deleted successfully"));
 });

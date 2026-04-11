@@ -232,6 +232,61 @@ const schemas = {
           .transform(stripHtml)
       ).max(20, 'At most 20 tags are allowed')
     })
+  }),
+
+  staffFollowUpQuery: z.object({
+    query: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID').optional(),
+      status: z.enum(['PENDING', 'COMPLETED']).optional(),
+      reminder: z.enum(['UPCOMING', 'DUE_SOON', 'OVERDUE']).optional(),
+      search: z.string().max(120, 'Search text too long').optional()
+    })
+  }),
+
+  staffFollowUpTaskParam: z.object({
+    params: z.object({
+      taskId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid task ID')
+    })
+  }),
+
+  staffCreateFollowUpTask: z.object({
+    body: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID'),
+      title: z.string()
+        .min(2, 'Title must be at least 2 characters')
+        .max(180, 'Title must be at most 180 characters')
+        .transform(stripHtml),
+      description: z.string()
+        .max(2000, 'Description must be at most 2000 characters')
+        .optional()
+        .default('')
+        .transform(stripHtml),
+      dueDate: z.coerce.date(),
+      priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional().default('MEDIUM')
+    })
+  }),
+
+  staffUpdateFollowUpTask: z.object({
+    params: z.object({
+      taskId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid task ID')
+    }),
+    body: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID').optional(),
+      title: z.string()
+        .min(2, 'Title must be at least 2 characters')
+        .max(180, 'Title must be at most 180 characters')
+        .transform(stripHtml)
+        .optional(),
+      description: z.string()
+        .max(2000, 'Description must be at most 2000 characters')
+        .transform(stripHtml)
+        .optional(),
+      dueDate: z.coerce.date().optional(),
+      priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+      status: z.enum(['PENDING', 'COMPLETED']).optional(),
+    }).refine((value) => Object.keys(value).length > 0, {
+      message: 'At least one field is required to update follow-up task'
+    })
   })
 };
 

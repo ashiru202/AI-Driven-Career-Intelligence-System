@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Zap, Users, UserCheck, BarChart2, ClipboardList, Map, Home, FileText,
-  Folder, Target, TrendingUp, Briefcase, Flame, LogOut, HeartPulse,
+  Folder, Target, TrendingUp, Briefcase, Flame, LogOut, HeartPulse, BellRing,
   ArrowLeft, RefreshCw, Check, X, ChevronDown, ChevronRight,
   ShieldCheck, ListChecks, Activity,
 } from 'lucide-react';
@@ -408,6 +408,7 @@ const ROLE_NAV = {
     { path: '/staff-home',       label: 'Dashboard',        Icon: Zap },
     { path: '/staff/priority-queue', label: 'Priority Queue', Icon: Target },
     { path: '/staff/case-notes', label: 'Case Notes',      Icon: FileText },
+    { path: '/staff/follow-ups', label: 'Follow-up Tasks', Icon: BellRing },
     { path: '/staff',            label: 'User Reports',     Icon: ClipboardList },
     { path: '/all-roadmaps',     label: 'All Roadmaps',     Icon: Map },
   ],

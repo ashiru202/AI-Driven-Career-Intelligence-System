@@ -10,6 +10,10 @@ const {
   updateCaseNote,
   deleteCaseNote,
   updateCaseTags,
+  getFollowUpTasks,
+  createFollowUpTask,
+  updateFollowUpTask,
+  deleteFollowUpTask,
 } = require("../controllers/staffController");
 
 router.use(requireAuth, requireRole("STAFF", "ADMIN"));
@@ -49,6 +53,30 @@ router.patch(
   "/cases/:userId/tags",
   validate(schemas.staffUpdateCaseTags),
   updateCaseTags
+);
+
+router.get(
+  "/follow-up-tasks",
+  validate(schemas.staffFollowUpQuery),
+  getFollowUpTasks
+);
+
+router.post(
+  "/follow-up-tasks",
+  validate(schemas.staffCreateFollowUpTask),
+  createFollowUpTask
+);
+
+router.patch(
+  "/follow-up-tasks/:taskId",
+  validate(schemas.staffUpdateFollowUpTask),
+  updateFollowUpTask
+);
+
+router.delete(
+  "/follow-up-tasks/:taskId",
+  validate(schemas.staffFollowUpTaskParam),
+  deleteFollowUpTask
 );
 
 module.exports = router;
