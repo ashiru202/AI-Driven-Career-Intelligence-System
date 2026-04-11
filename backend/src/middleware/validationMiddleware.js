@@ -287,6 +287,28 @@ const schemas = {
     }).refine((value) => Object.keys(value).length > 0, {
       message: 'At least one field is required to update follow-up task'
     })
+  }),
+
+  staffReportWorkflowQuery: z.object({
+    query: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID').optional(),
+      state: z.enum(['NEW', 'IN_REVIEW', 'FOLLOW_UP_REQUIRED', 'RESOLVED']).optional(),
+      search: z.string().max(120, 'Search text too long').optional(),
+    })
+  }),
+
+  staffUpdateReportWorkflow: z.object({
+    params: z.object({
+      userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID')
+    }),
+    body: z.object({
+      state: z.enum(['NEW', 'IN_REVIEW', 'FOLLOW_UP_REQUIRED', 'RESOLVED']),
+      notes: z.string()
+        .max(2000, 'Notes must be at most 2000 characters')
+        .optional()
+        .default('')
+        .transform(stripHtml),
+    })
   })
 };
 

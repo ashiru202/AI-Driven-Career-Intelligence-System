@@ -284,6 +284,12 @@ export default function StaffPriorityQueue() {
                               >
                                 Follow-ups
                               </Link>
+                              <Link
+                                to={`/staff/report-workflows?userId=${item.user._id}`}
+                                className="text-emerald-300 text-xs hover:text-emerald-200"
+                              >
+                                Workflow
+                              </Link>
                               <Link to="/staff" className="text-cyan-300 text-xs hover:text-cyan-200">Open report</Link>
                             </div>
                           </td>

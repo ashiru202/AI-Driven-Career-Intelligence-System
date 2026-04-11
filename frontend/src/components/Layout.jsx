@@ -409,6 +409,7 @@ const ROLE_NAV = {
     { path: '/staff/priority-queue', label: 'Priority Queue', Icon: Target },
     { path: '/staff/case-notes', label: 'Case Notes',      Icon: FileText },
     { path: '/staff/follow-ups', label: 'Follow-up Tasks', Icon: BellRing },
+    { path: '/staff/report-workflows', label: 'Report Workflow', Icon: Activity },
     { path: '/staff',            label: 'User Reports',     Icon: ClipboardList },
     { path: '/all-roadmaps',     label: 'All Roadmaps',     Icon: Map },
   ],

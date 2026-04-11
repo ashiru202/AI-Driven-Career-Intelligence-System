@@ -14,6 +14,8 @@ const {
   createFollowUpTask,
   updateFollowUpTask,
   deleteFollowUpTask,
+  getReportWorkflows,
+  updateReportWorkflow,
 } = require("../controllers/staffController");
 
 router.use(requireAuth, requireRole("STAFF", "ADMIN"));
@@ -77,6 +79,18 @@ router.delete(
   "/follow-up-tasks/:taskId",
   validate(schemas.staffFollowUpTaskParam),
   deleteFollowUpTask
+);
+
+router.get(
+  "/report-workflows",
+  validate(schemas.staffReportWorkflowQuery),
+  getReportWorkflows
+);
+
+router.patch(
+  "/report-workflows/:userId",
+  validate(schemas.staffUpdateReportWorkflow),
+  updateReportWorkflow
 );
 
 module.exports = router;

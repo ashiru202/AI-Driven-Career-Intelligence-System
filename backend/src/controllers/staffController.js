@@ -7,6 +7,7 @@ const User = require("../models/User");
 const CaseNote = require("../models/CaseNote");
 const StaffCase = require("../models/StaffCase");
 const StaffFollowUpTask = require("../models/StaffFollowUpTask");
+const StaffReportWorkflow = require("../models/StaffReportWorkflow");
 
 async function assertTargetUser(userId) {
   const user = await User.findOne({ _id: userId, role: "USER" })
@@ -309,4 +310,117 @@ exports.deleteFollowUpTask = asyncHandler(async (req, res) => {
   );
 
   res.json(successResponse(null, "Follow-up task deleted successfully"));
+});
+
+exports.getReportWorkflows = asyncHandler(async (req, res) => {
+  const { search, state, userId } = req.query;
+
+  const userQuery = { role: "USER" };
+  if (userId) userQuery._id = userId;
+  if (search) {
+    userQuery.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  const users = await User.find(userQuery)
+    .select("name email active createdAt")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  if (!users.length) {
+    return res.json(
+      successResponse(
+        {
+          items: [],
+          stats: { NEW: 0, IN_REVIEW: 0, FOLLOW_UP_REQUIRED: 0, RESOLVED: 0, total: 0 },
+        },
+        "Report workflows retrieved successfully"
+      )
+    );
+  }
+
+  const workflowDocs = await StaffReportWorkflow.find({ user: { $in: users.map((u) => u._id) } })
+    .populate("updatedBy", "name email role")
+    .lean();
+
+  const workflowMap = new Map(workflowDocs.map((doc) => [String(doc.user), doc]));
+
+  let items = users.map((user) => {
+    const workflow = workflowMap.get(String(user._id));
+    return {
+      user,
+      state: workflow?.state || "NEW",
+      notes: workflow?.notes || "",
+      updatedBy: workflow?.updatedBy || null,
+      lastUpdatedAt: workflow?.lastUpdatedAt || workflow?.updatedAt || user.createdAt,
+      workflowId: workflow?._id ? String(workflow._id) : null,
+    };
+  });
+
+  if (state) {
+    items = items.filter((item) => item.state === state);
+  }
+
+  const stats = {
+    NEW: items.filter((item) => item.state === "NEW").length,
+    IN_REVIEW: items.filter((item) => item.state === "IN_REVIEW").length,
+    FOLLOW_UP_REQUIRED: items.filter((item) => item.state === "FOLLOW_UP_REQUIRED").length,
+    RESOLVED: items.filter((item) => item.state === "RESOLVED").length,
+    total: items.length,
+  };
+
+  items.sort((a, b) => new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime());
+
+  res.json(successResponse({ items, stats }, "Report workflows retrieved successfully"));
+});
+
+exports.updateReportWorkflow = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const { state, notes = "" } = req.body;
+  const user = await assertTargetUser(userId);
+
+  const workflow = await StaffReportWorkflow.findOneAndUpdate(
+    { user: userId },
+    {
+      user: userId,
+      state,
+      notes,
+      updatedBy: req.user.id,
+      lastUpdatedAt: new Date(),
+    },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  )
+    .populate("updatedBy", "name email role")
+    .lean();
+
+  logActivity(
+    req,
+    "UPDATE_REPORT_WORKFLOW_STATE",
+    { type: "User", id: userId, email: user.email, name: user.name },
+    { state, notesLength: String(notes || "").length }
+  );
+
+  res.json(
+    successResponse(
+      {
+        item: {
+          user: {
+            _id: String(user._id),
+            name: user.name,
+            email: user.email,
+            active: Boolean(user.active),
+            createdAt: user.createdAt,
+          },
+          state: workflow.state,
+          notes: workflow.notes || "",
+          updatedBy: workflow.updatedBy || null,
+          lastUpdatedAt: workflow.lastUpdatedAt || workflow.updatedAt,
+          workflowId: String(workflow._id),
+        },
+      },
+      "Report workflow updated successfully"
+    )
+  );
 });
