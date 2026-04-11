@@ -226,9 +226,6 @@ export default function StaffReportWorkflows() {
               >
                 Clear User Filter
               </Button>
-              <Button onClick={fetchWorkflows} className="bg-slate-700 hover:bg-slate-600 text-white">
-                Refresh
-              </Button>
             </div>
           </CardHeader>
 

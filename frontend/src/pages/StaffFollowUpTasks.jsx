@@ -395,10 +395,6 @@ export default function StaffFollowUpTasks() {
                     ))}
                   </select>
                 </div>
-                <div className="flex gap-2 mt-2">
-                  <Button onClick={fetchUsers} className="bg-slate-700 hover:bg-slate-600 text-white">Refresh Users</Button>
-                  <Button onClick={fetchTasks} className="bg-slate-700 hover:bg-slate-600 text-white">Refresh Tasks</Button>
-                </div>
               </CardHeader>
 
               <CardContent className="pt-4">

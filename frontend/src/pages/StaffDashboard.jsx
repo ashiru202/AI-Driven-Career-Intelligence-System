@@ -16,7 +16,6 @@ import {
   Sparkles,
   Activity,
   Target,
-  RefreshCw,
   UserCircle2,
 } from "lucide-react";
 
@@ -477,9 +476,6 @@ export default function StaffDashboard() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button onClick={() => selectUser(selectedUser)} className="bg-slate-700 hover:bg-slate-600 text-white">
-                      <RefreshCw size={14} className="mr-2" /> Refresh
-                    </Button>
                     <Button onClick={downloadPDF} className="bg-blue-600 hover:bg-blue-700 text-white">
                       <Download size={14} className="mr-2" /> Download PDF
                     </Button>

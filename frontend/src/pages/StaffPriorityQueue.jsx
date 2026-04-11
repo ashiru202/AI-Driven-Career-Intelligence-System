@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
-import { AlertTriangle, ClipboardList, RefreshCw, Search, Target } from "lucide-react";
+import { AlertTriangle, ClipboardList, Search, Target } from "lucide-react";
 
 function formatNumber(value) {
   return new Intl.NumberFormat("en-US").format(Number(value || 0));
@@ -26,12 +26,10 @@ export default function StaffPriorityQueue() {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchQueue = useCallback(async ({ silent = false } = {}) => {
-    if (!silent) setLoading(true);
-    if (silent) setRefreshing(true);
+  const fetchQueue = useCallback(async () => {
+    setLoading(true);
 
     try {
       const res = await api.get("/api/staff/priority-queue", {
@@ -44,7 +42,6 @@ export default function StaffPriorityQueue() {
       setError(err.response?.data?.error?.message || "Failed to load priority queue");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [search]);
 
@@ -86,9 +83,6 @@ export default function StaffPriorityQueue() {
             >
               <Target size={13} /> Avg priority {averagePriority}
             </span>
-            <Button onClick={() => fetchQueue({ silent: true })} className="bg-slate-700 hover:bg-slate-600 text-white">
-              <RefreshCw size={14} className={`mr-2 ${refreshing ? "animate-spin" : ""}`} /> Refresh
-            </Button>
           </div>
         </div>
 

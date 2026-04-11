@@ -345,9 +345,6 @@ export default function MyRoadmap() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-3xl font-bold text-white">My Learning Roadmaps</h2>
-          <Button onClick={loadRoadmaps} disabled={loading}>
-            {loading ? "Refreshing..." : "Refresh"}
-          </Button>
         </div>
 
         {error && (

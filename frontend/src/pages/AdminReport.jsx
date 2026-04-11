@@ -10,7 +10,6 @@ import {
   Flame,
   Layers3,
   PenLine,
-  RefreshCw,
   Search,
   Shield,
   Target,
@@ -152,16 +151,12 @@ export default function AdminReport() {
   const [report, setReport] = useState(null);
   const [previousReport, setPreviousReport] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [focusedSkill, setFocusedSkill] = useState("");
 
   const fetchReport = useCallback(async ({ silent = false } = {}) => {
     if (!silent && !reportRef.current) {
       setLoading(true);
-    }
-    if (silent) {
-      setRefreshing(true);
     }
 
     try {
@@ -180,7 +175,6 @@ export default function AdminReport() {
       setError(err.response?.data?.error?.message || "Failed to load platform report");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
@@ -365,15 +359,6 @@ export default function AdminReport() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => fetchReport({ silent: true })}
-              disabled={refreshing}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              <RefreshCw size={14} className={refreshing ? "mr-2 animate-spin" : "mr-2"} />
-              {refreshing ? "Refreshing..." : "Refresh"}
-            </Button>
-
             <Button onClick={downloadPDF} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Download size={14} className="mr-2" />
               Download PDF

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import Layout from "../components/Layout";
 import api from "../api/api";
-import { Trophy, Hash, Briefcase, TrendingUp, AlertTriangle, BarChart2, RefreshCw } from "lucide-react";
+import { Trophy, Hash, Briefcase, TrendingUp, AlertTriangle, BarChart2 } from "lucide-react";
 
 // ─── Bar Chart Component ──────────────────────────────────────────────────────
 function BarChart({ data, isFirstRender }) {
@@ -167,14 +167,12 @@ function StatCard({ Icon, label, value, color }) {
 export default function SkillsInDemand() {
   const [skillDemand, setSkillDemand] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const isFirstRender = useRef(true);
 
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-    else setRefreshing(true);
 
     try {
       const res = await api.get("/api/analytics/skill-demand");
@@ -188,7 +186,6 @@ export default function SkillsInDemand() {
       );
     } finally {
       setLoading(false);
-      setRefreshing(false);
       if (isFirstRender.current) isFirstRender.current = false;
     }
   }, []);
@@ -226,40 +223,6 @@ export default function SkillsInDemand() {
               )}
             </p>
           </div>
-          {!loading && (
-            <button
-              onClick={() => fetchData(true)}
-              disabled={refreshing}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "10px 18px",
-                borderRadius: 10,
-                background: refreshing ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.12)",
-                border: "1px solid rgba(99,102,241,0.3)",
-                color: "#a5b4fc",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: refreshing ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
-                opacity: refreshing ? 0.6 : 1,
-              }}
-              onMouseEnter={(e) => {
-                if (!refreshing) {
-                  e.currentTarget.style.background = "rgba(99,102,241,0.2)";
-                  e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(99,102,241,0.12)";
-                e.currentTarget.style.borderColor = "rgba(99,102,241,0.3)";
-              }}
-            >
-              <RefreshCw size={14} style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
-              {refreshing ? "Refreshing..." : "Refresh"}
-            </button>
-          )}
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 

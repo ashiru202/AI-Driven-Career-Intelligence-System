@@ -11,7 +11,6 @@ import {
   ClipboardList,
   Flame,
   Map as MapIcon,
-  RefreshCw,
   ShieldAlert,
   Target,
   UserCheck,
@@ -144,12 +143,10 @@ export default function StaffHome() {
   const [skillDemand, setSkillDemand] = useState({ topSkills: [], bottomSkills: [] });
   const [priorityQueue, setPriorityQueue] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   const fetchDashboard = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
-    if (silent) setRefreshing(true);
 
     try {
       const [usersRes, gapsRes, demandRes, queueRes] = await Promise.all([
@@ -173,7 +170,6 @@ export default function StaffHome() {
       setError("Failed to load dashboard data");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
@@ -347,9 +343,6 @@ export default function StaffHome() {
             >
               <Activity size={13} /> {activationRate}% active
             </span>
-            <Button onClick={() => fetchDashboard({ silent: true })} className="bg-slate-700 hover:bg-slate-600 text-white">
-              <RefreshCw size={14} className={`mr-2 ${refreshing ? "animate-spin" : ""}`} /> Refresh
-            </Button>
           </div>
         </div>
 

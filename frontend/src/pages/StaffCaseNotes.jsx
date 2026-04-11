@@ -244,9 +244,6 @@ export default function StaffCaseNotes() {
                   fontSize: 13,
                 }}
               />
-              <Button onClick={fetchUsers} className="mt-2 bg-slate-700 hover:bg-slate-600 text-white">
-                Refresh Users
-              </Button>
             </CardHeader>
             <CardContent className="pt-3">
               {loadingUsers ? (

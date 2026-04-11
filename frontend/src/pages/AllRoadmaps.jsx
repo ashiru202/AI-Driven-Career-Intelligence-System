@@ -247,7 +247,6 @@ const exportCSV = () => {
         </div>
 
         <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-          <button onClick={load} style={btn}>Refresh</button>
           <button onClick={exportCSV} style={btn}>Export CSV</button>
         </div>
       </div>

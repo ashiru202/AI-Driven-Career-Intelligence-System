@@ -9,7 +9,6 @@ import {
   Activity,
   AlertTriangle,
   Flame,
-  RefreshCw,
   Search,
   Shield,
   Target,
@@ -167,16 +166,12 @@ export default function AdminDashboard() {
   const [previousStats, setPreviousStats] = useState(null);
   const [userSample, setUserSample] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [focusedSkill, setFocusedSkill] = useState("");
 
   const fetchDashboard = useCallback(async ({ silent = false } = {}) => {
     if (!silent && !statsRef.current) {
       setLoading(true);
-    }
-    if (silent) {
-      setRefreshing(true);
     }
 
     try {
@@ -200,7 +195,6 @@ export default function AdminDashboard() {
       setError(message);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
@@ -405,15 +399,6 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => fetchDashboard({ silent: true })}
-              disabled={refreshing}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              <RefreshCw size={14} className={refreshing ? "mr-2 animate-spin" : "mr-2"} />
-              {refreshing ? "Refreshing..." : "Refresh"}
-            </Button>
-
             <Link to="/admin-report">
               <Button className="bg-blue-600 text-white hover:bg-blue-700">
                 View Platform Report
