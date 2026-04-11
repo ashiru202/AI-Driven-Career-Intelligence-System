@@ -20,6 +20,8 @@ function priorityTone(value) {
   return { bg: "rgba(34,197,94,0.18)", border: "rgba(34,197,94,0.35)", text: "#bbf7d0", label: "Low" };
 }
 
+const actionLinkBase = "inline-flex items-center justify-center rounded-md border px-2.5 py-1 text-xs font-semibold transition";
+
 export default function StaffPriorityQueue() {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
@@ -263,7 +265,18 @@ export default function StaffPriorityQueue() {
                             />
                           </td>
                           <td className="py-3">
-                            <div className="flex items-center gap-2">
+                            <div className="flex min-w-[300px] flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <Link
+                                  to="/staff"
+                                  className={`${actionLinkBase} text-cyan-200 hover:text-cyan-100`}
+                                  style={{
+                                    background: "rgba(34,211,238,0.14)",
+                                    borderColor: "rgba(34,211,238,0.35)",
+                                  }}
+                                >
+                                  Open Report
+                                </Link>
                               <Button
                                 onClick={() => saveManualPriority(item.user._id)}
                                 disabled={savingUserId === item.user._id}
@@ -272,25 +285,39 @@ export default function StaffPriorityQueue() {
                                 <Save size={13} className="mr-1" />
                                 {savingUserId === item.user._id ? "Saving..." : "Save"}
                               </Button>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
                               <Link
                                 to={`/staff/case-notes?userId=${item.user._id}`}
-                                className="text-amber-300 text-xs hover:text-amber-200"
+                                className={`${actionLinkBase} text-amber-200 hover:text-amber-100`}
+                                style={{
+                                  background: "rgba(245,158,11,0.14)",
+                                  borderColor: "rgba(245,158,11,0.35)",
+                                }}
                               >
-                                Case notes
+                                Case Notes
                               </Link>
                               <Link
                                 to={`/staff/follow-ups?userId=${item.user._id}`}
-                                className="text-indigo-300 text-xs hover:text-indigo-200"
+                                className={`${actionLinkBase} text-indigo-200 hover:text-indigo-100`}
+                                style={{
+                                  background: "rgba(99,102,241,0.14)",
+                                  borderColor: "rgba(99,102,241,0.35)",
+                                }}
                               >
                                 Follow-ups
                               </Link>
                               <Link
                                 to={`/staff/report-workflows?userId=${item.user._id}`}
-                                className="text-emerald-300 text-xs hover:text-emerald-200"
+                                className={`${actionLinkBase} text-emerald-200 hover:text-emerald-100`}
+                                style={{
+                                  background: "rgba(16,185,129,0.14)",
+                                  borderColor: "rgba(16,185,129,0.35)",
+                                }}
                               >
                                 Workflow
                               </Link>
-                              <Link to="/staff" className="text-cyan-300 text-xs hover:text-cyan-200">Open report</Link>
+                              </div>
                             </div>
                           </td>
                         </tr>
