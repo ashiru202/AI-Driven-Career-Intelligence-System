@@ -150,14 +150,14 @@ export default function StaffPriorityQueue() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm min-w-[840px]">
                   <thead>
-                    <tr className="text-left border-b border-white/10 text-slate-400">
-                      <th className="pb-3">User</th>
-                      <th className="pb-3">Priority</th>
-                      <th className="pb-3">CV</th>
-                      <th className="pb-3">Roadmap</th>
-                      <th className="pb-3">Gaps</th>
-                      <th className="pb-3">Inactive Days</th>
-                      <th className="pb-3">Action</th>
+                    <tr className="border-b border-white/10 text-slate-400">
+                      <th className="pb-3 text-left">User</th>
+                      <th className="pb-3 text-left">Priority</th>
+                      <th className="pb-3 text-center">CV</th>
+                      <th className="pb-3 text-center">Roadmap</th>
+                      <th className="pb-3 text-center">Gaps</th>
+                      <th className="pb-3 text-center">Inactive Days</th>
+                      <th className="pb-3 text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -197,12 +197,12 @@ export default function StaffPriorityQueue() {
                               <div className="text-xs text-slate-400 mt-1">{item.reasons.slice(0, 2).join(" • ")}</div>
                             )}
                           </td>
-                          <td className="py-3 text-slate-200">{formatNumber(item.factors?.cvScore)}</td>
-                          <td className="py-3 text-slate-200">{formatNumber(item.factors?.roadmapProgress)}%</td>
-                          <td className="py-3 text-slate-200">{formatNumber(item.factors?.gapCount)}</td>
-                          <td className="py-3 text-slate-200">{formatNumber(item.factors?.inactiveDays)}</td>
-                          <td className="py-3">
-                            <div className="flex min-w-[420px] flex-wrap items-center gap-2">
+                          <td className="py-3 text-slate-200 text-center">{formatNumber(item.factors?.cvScore)}</td>
+                          <td className="py-3 text-slate-200 text-center">{formatNumber(item.factors?.roadmapProgress)}%</td>
+                          <td className="py-3 text-slate-200 text-center">{formatNumber(item.factors?.gapCount)}</td>
+                          <td className="py-3 text-slate-200 text-center">{formatNumber(item.factors?.inactiveDays)}</td>
+                          <td className="py-3 text-center">
+                            <div className="mx-auto flex min-w-[420px] flex-wrap items-center justify-center gap-2">
                               <Link
                                 to="/staff"
                                 className={`${actionLinkBase} min-w-[110px] text-cyan-200 hover:text-cyan-100`}
