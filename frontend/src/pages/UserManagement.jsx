@@ -244,7 +244,7 @@ export default function UserManagement() {
                             onClick={() => toggleStatus(u)}
                             className={
                               u.active
-                                ? "bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
+                                ? "bg-red-100 text-red-700 hover:bg-red-200 border border-red-300 !shadow-none hover:!shadow-none"
                                 : "bg-green-100 text-green-700 hover:bg-green-200 border border-green-300"
                             }
                           >
