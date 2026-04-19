@@ -1,6 +1,5 @@
 const User = require("../models/User");
-const bcrypt = require("bcryptjs");
-const { successResponse, errorResponse } = require("../utils/responseHelper");
+const { successResponse } = require("../utils/responseHelper");
 const AppError = require("../utils/AppError");
 const { asyncHandler } = require("../middleware/errorMiddleware");
 const Comparison = require("../models/Comparison");
@@ -8,40 +7,6 @@ const analyticsService = require("../services/analyticsService");
 const AuditLog = require("../models/AuditLog");
 const { logActivity } = require("../services/auditLogService");
 const { parsePagination, paginationMeta } = require("../utils/pagination");
-
-// Admin can create staff accounts
-const createStaff = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
-
-  // Check if user already exists
-  const exists = await User.findOne({ email });
-  if (exists) {
-    throw AppError.conflict('User with this email already exists');
-  }
-
-  // Hash the password
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  // Create staff user
-  const staff = await User.create({
-    name,
-    email,
-    password: hashedPassword,
-    role: "STAFF"
-  });
-
-  logActivity(req, "CREATE_STAFF", { type: "User", id: staff._id, email: staff.email, name: staff.name });
-
-  res.status(201).json(successResponse(
-    {
-      id: staff._id,
-      name: staff.name,
-      email: staff.email,
-      role: staff.role
-    },
-    'Staff account created successfully'
-  ));
-});
 
 // Admin can list all users with filters
 const listUsers = asyncHandler(async (req, res) => {
@@ -208,7 +173,6 @@ const getAuditLogs = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  createStaff,
   listUsers,
   toggleUserStatus,
   getAdminStats,

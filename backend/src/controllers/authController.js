@@ -26,7 +26,12 @@ function signAccessToken(userLike) {
 
 // POST /api/auth/register
 exports.register = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role = 'USER' } = req.body;
+  const normalizedRole = String(role).toUpperCase();
+
+  if (!['USER', 'STAFF'].includes(normalizedRole)) {
+    throw AppError.badRequest('BAD_REQUEST', 'Role must be USER or STAFF');
+  }
 
   const exists = await User.findOne({ email });
   if (exists) {
@@ -44,7 +49,7 @@ exports.register = asyncHandler(async (req, res) => {
     name,
     email,
     password: hashedPassword,
-    role: 'USER',
+    role: normalizedRole,
     emailVerified: false,
     emailVerificationToken: hashedVerificationToken,
     emailVerificationExpires: verificationExpires,

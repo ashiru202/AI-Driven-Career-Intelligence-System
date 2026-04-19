@@ -57,6 +57,37 @@ describe('POST /api/auth/register', () => {
     expect(res.body.ok).toBe(false);
   });
 
+  it('registers a new staff account when role is STAFF', async () => {
+    User.findOne.mockResolvedValue(null);
+    User.create.mockResolvedValue({
+      _id: 'aaaaaaaaaaaaaaaaaaaaaaaa',
+      name: 'Staff Member',
+      email: 'staff@example.com',
+      role: 'STAFF',
+      emailVerified: false,
+      emailVerificationToken: 'hashedtoken',
+      emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    });
+
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Staff Member', email: 'staff@example.com', password: 'password123', role: 'STAFF' });
+
+    expect(res.status).toBe(201);
+    const createCall = User.create.mock.calls[0][0];
+    expect(createCall.role).toBe('STAFF');
+  });
+
+  it('returns 400 when role is ADMIN at registration', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Alice', email: 'alice@example.com', password: 'password123', role: 'ADMIN' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+    expect(User.create).not.toHaveBeenCalled();
+  });
+
   it('returns 400 for missing required fields', async () => {
     const res = await request(app)
       .post('/api/auth/register')

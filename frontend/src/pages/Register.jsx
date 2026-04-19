@@ -9,7 +9,8 @@ export default function Register() {
     name: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    role: "USER"
   });
   const [error, setError]                     = useState("");
   const [loading, setLoading]                 = useState(false);
@@ -37,7 +38,8 @@ export default function Register() {
       await api.post("/api/auth/register", {
         name: formData.name,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        role: formData.role
       });
       setRegisteredEmail(formData.email);
     } catch (err) {
@@ -185,6 +187,38 @@ export default function Register() {
                       type="text" name="name" placeholder="John Doe" value={formData.name} required
                       onChange={handleChange} style={inputStyle} onFocus={focusOn} onBlur={focusOff}
                     />
+                  </div>
+                </div>
+
+                {/* Role field */}
+                <div>
+                  <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>I am a</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    {[
+                      { value: 'USER', label: 'User', hint: 'Job seeker' },
+                      { value: 'STAFF', label: 'Staff', hint: 'Support team' }
+                    ].map((choice) => {
+                      const selected = formData.role === choice.value;
+                      return (
+                        <button
+                          key={choice.value}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, role: choice.value })}
+                          style={{
+                            textAlign: 'left',
+                            padding: '12px 14px',
+                            borderRadius: 12,
+                            border: selected ? '1px solid rgba(99,102,241,0.85)' : '1px solid rgba(255,255,255,0.12)',
+                            background: selected ? 'rgba(99,102,241,0.16)' : 'rgba(255,255,255,0.03)',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <div style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>{choice.label}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 }}>{choice.hint}</div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

@@ -4,7 +4,6 @@ import Layout from "../components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
 import { Check, X, AlertTriangle, Trash2, Users, Activity } from "lucide-react";
 
 function Toast({ message, type, onClose }) {
@@ -29,11 +28,6 @@ function Toast({ message, type, onClose }) {
 export default function StaffManagement() {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Create form state
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const [formErrors, setFormErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState({});
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [toast, setToast] = useState(null);
@@ -55,38 +49,6 @@ export default function StaffManagement() {
     loadStaff();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const validate = () => {
-    const errors = {};
-    if (!form.name.trim()) errors.name = "Name is required";
-    if (!form.email.trim()) errors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email)) errors.email = "Invalid email";
-    if (!form.password) errors.password = "Password is required";
-    else if (form.password.length < 6) errors.password = "Password must be at least 6 characters";
-    return errors;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const errors = validate();
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-    setFormErrors({});
-    setSubmitting(true);
-    try {
-      await api.post("/api/admin/staff", form);
-      showToast(`Staff account created for ${form.email}`, "success");
-      setForm({ name: "", email: "", password: "" });
-      loadStaff();
-    } catch (err) {
-      const msg = err.response?.data?.error?.message || "Failed to create staff account";
-      showToast(msg, "error");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const deleteStaff = async (member) => {
     setDeleting((prev) => ({ ...prev, [member._id]: true }));
@@ -141,7 +103,7 @@ export default function StaffManagement() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h2 className="text-3xl font-bold text-white">Staff Management</h2>
-            <p className="text-slate-400 mt-1 text-sm">Create and manage staff accounts</p>
+            <p className="text-slate-400 mt-1 text-sm">View and manage staff accounts</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <span
@@ -159,75 +121,8 @@ export default function StaffManagement() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Create Staff Form */}
-          <Card className="lg:col-span-1 border-white/10" style={{ background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
-            <CardHeader className="border-b border-white/10">
-              <CardTitle className="text-white">Create Staff Account</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Full Name
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Jane Smith"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className={formErrors.name ? "border-red-400" : ""}
-                  />
-                  {formErrors.name && (
-                    <p className="text-xs text-red-500 mt-1">{formErrors.name}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Email Address
-                  </label>
-                  <Input
-                    type="email"
-                    placeholder="staff@example.com"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className={formErrors.email ? "border-red-400" : ""}
-                  />
-                  {formErrors.email && (
-                    <p className="text-xs text-red-500 mt-1">{formErrors.email}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Password
-                  </label>
-                  <Input
-                    type="password"
-                    placeholder="Min. 6 characters"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className={formErrors.password ? "border-red-400" : ""}
-                  />
-                  {formErrors.password && (
-                    <p className="text-xs text-red-500 mt-1">{formErrors.password}</p>
-                  )}
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  {submitting ? "Creating..." : "Create Staff Account"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Staff List */}
-          <Card className="lg:col-span-2 border-white/10" style={{ background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
+        <div>
+          <Card className="border-white/10" style={{ background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
             <CardHeader className="border-b border-white/10">
               <CardTitle className="text-white">Staff Accounts ({staff.length})</CardTitle>
             </CardHeader>
@@ -237,7 +132,7 @@ export default function StaffManagement() {
               ) : staff.length === 0 ? (
                 <div className="text-center py-8 text-slate-400">
                   <p>No staff accounts found.</p>
-                  <p className="text-sm mt-1">Use the form to create the first staff account.</p>
+                  <p className="text-sm mt-1">Staff users can register from the signup page.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
