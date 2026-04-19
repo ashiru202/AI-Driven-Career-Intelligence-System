@@ -21,6 +21,9 @@ const allowedOrigins = [
   process.env.CORS_ORIGIN, // Frontend prod (from env)
 ];
 
+const isLocalDevOrigin = (origin) => /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+const allowLocalhostAnyPort = process.env.ALLOW_LOCALHOST_ANY_PORT === 'true';
+
 const corsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, Postman, curl)
@@ -30,6 +33,12 @@ const corsOptions = {
 
     // Check if origin is in allowlist
     if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // In local runs, optionally allow localhost on any port.
+    // This helps when Windows reserves common ports like 3000.
+    if (allowLocalhostAnyPort && isLocalDevOrigin(origin)) {
       return callback(null, true);
     }
 
