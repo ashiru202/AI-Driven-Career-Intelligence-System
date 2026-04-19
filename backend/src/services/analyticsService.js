@@ -25,21 +25,39 @@ async function getSkillDemandStats(options = {}) {
     if (endDate) filter.createdAt.$lte = new Date(endDate);
   }
 
-  // Fetch all roadmaps (with optional date filter)
-  const roadmaps = await Roadmap.find(filter).select("jobSkills");
+  // Primary source: comparison records created from job-vs-resume checks.
+  // Fallback: roadmap jobSkills (legacy data), so existing environments still show demand.
+  const [comparisons, roadmaps] = await Promise.all([
+    Comparison.find(filter).select("jobSkills"),
+    Roadmap.find(filter).select("jobSkills"),
+  ]);
 
-  // Count skill occurrences from jobSkills arrays
+  // Count skill occurrences from jobSkills arrays.
+  // We count a skill once per document to avoid duplicate entries inflating counts.
   const skillCounts = {};
-  roadmaps.forEach((roadmap) => {
-    if (roadmap.jobSkills && Array.isArray(roadmap.jobSkills)) {
-      roadmap.jobSkills.forEach((skill) => {
-        const normalized = skill.trim().toLowerCase();
-        if (normalized) {
-          skillCounts[normalized] = (skillCounts[normalized] || 0) + 1;
-        }
+
+  const countSkillsFromDocs = (docs) => {
+    docs.forEach((doc) => {
+      if (!doc.jobSkills || !Array.isArray(doc.jobSkills)) return;
+
+      const uniqueSkills = new Set(
+        doc.jobSkills
+          .map((skill) => (skill || "").trim().toLowerCase())
+          .filter(Boolean)
+      );
+
+      uniqueSkills.forEach((skill) => {
+        skillCounts[skill] = (skillCounts[skill] || 0) + 1;
       });
-    }
-  });
+    });
+  };
+
+  countSkillsFromDocs(comparisons);
+
+  // Legacy fallback only if there is no comparison-derived signal.
+  if (Object.keys(skillCounts).length === 0) {
+    countSkillsFromDocs(roadmaps);
+  }
 
   // Convert to array and sort
   const skillArray = Object.entries(skillCounts).map(([skill, count]) => ({

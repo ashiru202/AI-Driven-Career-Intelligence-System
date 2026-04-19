@@ -1,122 +1,46 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Layout from "../components/Layout";
 import api from "../api/api";
 import { Trophy, Hash, Briefcase, TrendingUp, AlertTriangle, BarChart2 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
-// ─── Bar Chart Component ──────────────────────────────────────────────────────
-function BarChart({ data, isFirstRender }) {
-  if (!data || data.length === 0) return null;
+function titleizeSkill(skill) {
+  if (!skill) return "Unknown";
+  return String(skill)
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
 
-  const maxValue = Math.max(...data.map(d => d.value));
-  const chartHeight = 280;
-  const barWidth = 50;
-  const gap = 20;
-  const chartWidth = data.length * (barWidth + gap) + 80;
+function SkillDemandTooltip({ active, payload }) {
+  if (!active || !payload || payload.length === 0) return null;
 
+  const row = payload[0]?.payload;
+  const accent = payload[0]?.color || "#86efac";
   return (
-    <div style={{
-      width: "100%",
-      height: chartHeight + 60,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "20px 0",
-    }}>
-      <svg
-        width={chartWidth}
-        height={chartHeight + 60}
-        style={{ display: "block", margin: "0 auto" }}
-      >
-        {/* Y-axis labels */}
-        {[0, 25, 50, 75, 100].map((tick, i) => {
-          const y = chartHeight - (tick / 100) * chartHeight + 10;
-          return (
-            <text
-              key={`y-${i}`}
-              x="0"
-              y={y}
-              fill="rgba(255,255,255,0.3)"
-              fontSize="11"
-              textAnchor="start"
-              dominantBaseline="middle"
-            >
-              {Math.round((tick / 100) * maxValue)}
-            </text>
-          );
-        })}
-
-        {/* Bars */}
-        {data.map((item, idx) => {
-          const barHeight = (item.value / maxValue) * chartHeight;
-          const x = 40 + idx * (barWidth + gap);
-          const y = chartHeight - barHeight + 10;
-
-          return (
-            <g key={idx}>
-              {/* Bar */}
-              <rect
-                x={x}
-                y={isFirstRender ? chartHeight + 10 : y}
-                width={barWidth}
-                height={isFirstRender ? 0 : barHeight}
-                rx="4"
-                fill="#4169FF"
-                style={{
-                  animation: isFirstRender ? `growBarHeight-${idx} 0.8s cubic-bezier(0.22,1,0.36,1) ${idx * 0.05}s forwards` : "none",
-                  transition: isFirstRender ? "none" : "height 0.5s cubic-bezier(0.22,1,0.36,1), y 0.5s cubic-bezier(0.22,1,0.36,1)",
-                }}
-              />
-
-              {/* X-axis label */}
-              <text
-                x={x + barWidth / 2}
-                y={chartHeight + 30}
-                fill="rgba(255,255,255,0.4)"
-                fontSize="12"
-                textAnchor="middle"
-                fontWeight="500"
-              >
-                {item.label}
-              </text>
-
-              {/* Value on top of bar */}
-              <text
-                x={x + barWidth / 2}
-                y={y - 8}
-                fill="rgba(255,255,255,0.6)"
-                fontSize="11"
-                textAnchor="middle"
-                fontWeight="600"
-                style={{
-                  opacity: isFirstRender ? 0 : 1,
-                  animation: isFirstRender ? `fadeIn 0.3s ease-out ${idx * 0.05 + 0.6}s forwards` : "none",
-                }}
-              >
-                {item.value}
-              </text>
-            </g>
-          );
-        })}
-
-        <style>{`
-          ${data.map((_, idx) => `
-            @keyframes growBarHeight-${idx} {
-              from {
-                height: 0;
-                y: ${chartHeight + 10};
-              }
-              to {
-                height: ${(data[idx].value / maxValue) * chartHeight}px;
-                y: ${chartHeight - (data[idx].value / maxValue) * chartHeight + 10}px;
-              }
-            }
-          `).join('')}
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-        `}</style>
-      </svg>
+    <div
+      style={{
+        background: "rgba(10, 13, 24, 0.96)",
+        border: "1px solid rgba(255,255,255,0.14)",
+        borderRadius: 10,
+        padding: "9px 12px",
+        fontSize: 12,
+      }}
+    >
+      <p style={{ color: "#e2e8f0", marginBottom: 6, fontWeight: 700 }}>{row?.skillLabel || "Skill"}</p>
+      <p style={{ color: accent, margin: 0 }}>
+        Demand Count: <strong>{payload[0]?.value ?? 0}</strong>
+      </p>
     </div>
   );
 }
@@ -169,14 +93,18 @@ export default function SkillsInDemand() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const isFirstRender = useRef(true);
+  const [activeSkill, setActiveSkill] = useState("");
+  const [hoveredSkill, setHoveredSkill] = useState("");
 
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
 
     try {
       const res = await api.get("/api/analytics/skill-demand");
-      setSkillDemand(res.data.data);
+      const next = res.data.data || { top: [], least: [] };
+      setSkillDemand(next);
+      setActiveSkill((prev) => (next.top?.some((row) => row.skill === prev) ? prev : ""));
+      setHoveredSkill("");
       setLastUpdated(new Date());
       setError(null);
     } catch (err) {
@@ -186,7 +114,6 @@ export default function SkillsInDemand() {
       );
     } finally {
       setLoading(false);
-      if (isFirstRender.current) isFirstRender.current = false;
     }
   }, []);
 
@@ -199,7 +126,19 @@ export default function SkillsInDemand() {
 
   const topSkills = skillDemand?.top || [];
   const maxCount = topSkills[0]?.count || 1;
-  const totalJobs = topSkills.reduce((s, x) => s + x.count, 0);
+  const totalMentions = topSkills.reduce((s, x) => s + Number(x.count || 0), 0);
+
+  const chartRows = topSkills.slice(0, 10).map((item) => {
+    const skillLabel = titleizeSkill(item.skill);
+    return {
+      skill: item.skill,
+      skillLabel,
+      shortLabel: skillLabel.length > 14 ? `${skillLabel.slice(0, 12)}...` : skillLabel,
+      count: Number(item.count || 0),
+    };
+  });
+
+  const selectedRow = chartRows.find((row) => row.skill === activeSkill) || null;
 
   // Time since last update
   const timeSinceUpdate = lastUpdated
@@ -294,8 +233,8 @@ export default function SkillsInDemand() {
               />
               <StatCard
                 Icon={Briefcase}
-                label="Total Job Comparisons"
-                value={totalJobs.toLocaleString()}
+                label="Total Skill Mentions"
+                value={totalMentions.toLocaleString()}
                 color="#06b6d4"
               />
               <StatCard
@@ -315,86 +254,87 @@ export default function SkillsInDemand() {
                 padding: "32px 28px",
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "center",
               }}
             >
-              <div style={{ marginBottom: 24, textAlign: "center" }}>
+              <div style={{ marginBottom: 20, textAlign: "center" }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: "#e2e8f0", margin: 0 }}>
                   Top Skills Demand
                 </h2>
                 <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginTop: 4, marginBottom: 0 }}>
-                  Visual representation of the most in-demand skills (updates every 30s)
+                  Interactive chart of the most in-demand skills (updates every 30s)
                 </p>
               </div>
 
-              <BarChart
-                data={topSkills.slice(0, 10).map(item => ({
-                  label: item.skill.length > 10 ? item.skill.substring(0, 10) + '...' : item.skill,
-                  value: item.count,
-                }))}
-                isFirstRender={isFirstRender.current}
-              />
+              <div style={{ width: "100%", height: 320 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartRows} margin={{ top: 6, right: 8, left: -16, bottom: 24 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                    <XAxis
+                      dataKey="shortLabel"
+                      tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={0}
+                      angle={-12}
+                      textAnchor="end"
+                      height={55}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      content={<SkillDemandTooltip />}
+                      cursor={{ fill: "rgba(134,239,172,0.08)" }}
+                      wrapperStyle={{ outline: "none" }}
+                    />
+                    <Bar
+                      dataKey="count"
+                      name="Demand Count"
+                      radius={[6, 6, 0, 0]}
+                      onClick={(entry) => setActiveSkill((prev) => (prev === entry?.skill ? "" : entry?.skill || ""))}
+                    >
+                      {chartRows.map((row, idx) => {
+                        const isActive = activeSkill === row.skill;
+                        const isHovered = hoveredSkill === row.skill;
+                        return (
+                          <Cell
+                            key={`${row.skill}-${idx}`}
+                            fill={isActive ? "#fbbf24" : isHovered ? "#86efac" : "#4ade80"}
+                            opacity={activeSkill && !isActive ? 0.55 : 1}
+                            cursor="pointer"
+                            onMouseEnter={() => setHoveredSkill(row.skill)}
+                            onMouseLeave={() => setHoveredSkill("")}
+                          />
+                        );
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {selectedRow && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.02)",
+                    padding: "12px 14px",
+                  }}
+                >
+                  <p style={{ margin: 0, color: "#e2e8f0", fontSize: 13, fontWeight: 700 }}>
+                    Focus Skill: {selectedRow.skillLabel}
+                  </p>
+                  <p style={{ margin: "6px 0 0 0", color: "rgba(255,255,255,0.55)", fontSize: 12 }}>
+                    Current demand mentions: {selectedRow.count}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* ── Category breakdown (compact chips) ── */}
-            <div
-              style={{
-                borderRadius: 20,
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                padding: "24px",
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: "#e2e8f0",
-                  margin: "0 0 16px 0",
-                }}
-              >
-                All Tracked Skills
-              </h2>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {topSkills.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 7,
-                      borderRadius: 100,
-                      background: "rgba(99,102,241,0.08)",
-                      border: "1px solid rgba(99,102,241,0.18)",
-                      padding: "5px 14px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: "rgba(199,210,254,0.85)",
-                        textTransform: "capitalize",
-                      }}
-                    >
-                      {item.skill}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "rgba(165,180,252,0.5)",
-                        background: "rgba(99,102,241,0.15)",
-                        borderRadius: 100,
-                        padding: "1px 7px",
-                      }}
-                    >
-                      {item.count}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </>
         )}
 
