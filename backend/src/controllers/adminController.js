@@ -351,8 +351,28 @@ const getAuditLogs = asyncHandler(async (req, res) => {
   const { action, actorEmail, from, to } = req.query;
   const { page, limit, skip } = parsePagination(req.query);
 
+  const normalizeActionKey = (value) => String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+
+  const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const inviteAliases = ["INVITE_STAFF_ACCOUNT", "INVITE_STAFF", "STAFF_INVITE", "CREATE_STAFF_INVITE"];
+
   const filter = {};
-  if (action) filter.action = action.toUpperCase();
+  if (action) {
+    const normalizedAction = normalizeActionKey(action);
+
+    if (normalizedAction === "INVITE_STAFF_ACCOUNT") {
+      filter.action = {
+        $regex: new RegExp(`^(${inviteAliases.join("|")})\\s*$`, "i"),
+      };
+    } else {
+      const flexiblePattern = escapeRegex(normalizedAction).replace(/_/g, "[\\s_-]+");
+      filter.action = { $regex: new RegExp(`^${flexiblePattern}\\s*$`, "i") };
+    }
+  }
   if (actorEmail) filter.actorEmail = { $regex: actorEmail, $options: "i" };
   if (from || to) {
     filter.createdAt = {};

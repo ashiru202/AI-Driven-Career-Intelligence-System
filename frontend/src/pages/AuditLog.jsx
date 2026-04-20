@@ -9,12 +9,115 @@ import { X, ArrowLeft, ArrowRight } from "lucide-react";
 
 const ACTION_LABELS = {
   CREATE_STAFF:        { label: "Create Staff",       color: "bg-green-100 text-green-700" },
+  INVITE_STAFF_ACCOUNT:{ label: "Invite Staff Account", color: "bg-indigo-600 text-white" },
   TOGGLE_USER_STATUS:  { label: "Toggle Status",      color: "bg-amber-100 text-amber-700" },
   DELETE_USER:         { label: "Delete User",         color: "bg-red-100 text-red-600" },
   SUBMIT_STAFF_APPLICATION: { label: "Staff Application Request", color: "bg-blue-100 text-blue-700" },
   APPROVE_STAFF_APPLICATION: { label: "Approve Staff Application", color: "bg-green-100 text-green-700" },
   REJECT_STAFF_APPLICATION:  { label: "Reject Staff Application",  color: "bg-red-100 text-red-600" },
 };
+
+const ACTION_ALIASES = {
+  INVITE_STAFF: "INVITE_STAFF_ACCOUNT",
+  STAFF_INVITE: "INVITE_STAFF_ACCOUNT",
+  CREATE_STAFF_INVITE: "INVITE_STAFF_ACCOUNT",
+};
+
+const METADATA_LABELS = {
+  inviteExpiresAt: "Invite Expires",
+  role: "Role",
+  active: "Status",
+  reason: "Reason",
+  decision: "Decision",
+};
+
+function isObjectIdLike(value) {
+  return /^[a-f\d]{24}$/i.test(value);
+}
+
+function isUuidLike(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function prettifyMetadataKey(key) {
+  if (METADATA_LABELS[key]) return METADATA_LABELS[key];
+
+  const normalized = String(key)
+    .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
+    .trim();
+
+  return normalized.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatMetadataValue(key, value) {
+  if (value == null) return null;
+
+  const lowerKey = String(key).toLowerCase();
+
+  if (typeof value === "boolean") {
+    if (lowerKey === "active") return value ? "Enabled" : "Disabled";
+    return value ? "Yes" : "No";
+  }
+
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((item) => formatMetadataValue(key, item))
+      .filter(Boolean);
+    return parts.length ? parts.join(", ") : null;
+  }
+
+  if (typeof value === "object") {
+    return null;
+  }
+
+  const text = String(value).trim();
+  if (!text) return null;
+
+  if (/(token|password|secret)/i.test(lowerKey)) {
+    return null;
+  }
+
+  const isIdKey = lowerKey === "id" || lowerKey.endsWith("id") || lowerKey.endsWith("_id");
+  if (isIdKey && (isObjectIdLike(text) || isUuidLike(text))) {
+    return null;
+  }
+
+  if (lowerKey.includes("expires") || lowerKey.endsWith("at") || lowerKey.includes("date") || lowerKey.includes("time")) {
+    const parsedDate = new Date(text);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return parsedDate.toLocaleString();
+    }
+  }
+
+  if (lowerKey === "role") {
+    return text.toUpperCase();
+  }
+
+  return text;
+}
+
+function normalizeActionKey(action) {
+  return String(action || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function getActionMeta(action) {
+  const normalized = normalizeActionKey(action);
+  const actionKey = ACTION_ALIASES[normalized] || normalized;
+
+  if (ACTION_LABELS[actionKey]) return ACTION_LABELS[actionKey];
+
+  const label = String(actionKey || "UNKNOWN")
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+  return { label, color: "bg-slate-700 text-slate-100" };
+}
 
 function Toast({ message, type, onClose }) {
   useEffect(() => {
@@ -34,9 +137,23 @@ function Toast({ message, type, onClose }) {
 }
 
 function MetadataCell({ metadata }) {
-  if (!metadata || Object.keys(metadata).length === 0) return <span className="text-gray-400">—</span>;
-  const parts = Object.entries(metadata).map(([k, v]) => `${k}: ${String(v)}`);
-  return <span className="text-xs text-gray-500">{parts.join(", ")}</span>;
+  if (!metadata || typeof metadata !== "object" || Object.keys(metadata).length === 0) {
+    return <span className="text-gray-400">—</span>;
+  }
+
+  const parts = Object.entries(metadata)
+    .map(([key, value]) => {
+      const formattedValue = formatMetadataValue(key, value);
+      if (!formattedValue) return null;
+      return `${prettifyMetadataKey(key)}: ${formattedValue}`;
+    })
+    .filter(Boolean);
+
+  if (parts.length === 0) {
+    return <span className="text-gray-400">—</span>;
+  }
+
+  return <span className="text-xs text-slate-300">{parts.join(" • ")}</span>;
 }
 
 const PAGE_SIZE = 15;
@@ -207,7 +324,7 @@ export default function AuditLog() {
                   </thead>
                   <tbody>
                     {logs.map((log) => {
-                      const actionMeta = ACTION_LABELS[log.action] || { label: log.action, color: "bg-gray-100 text-gray-600" };
+                      const actionMeta = getActionMeta(log.action);
                       return (
                         <tr key={log._id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.04]">
                           <td className="py-2 pr-4 whitespace-nowrap text-slate-400 text-xs">

@@ -489,10 +489,10 @@ export default function AdminDashboard() {
               </div>
 
               {focusedSkillData && (
-                <div className="px-6 pb-5">
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                <div className="mt-4">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                     <p className="text-sm font-semibold text-white">Focus: {focusedSkillData.skill}</p>
-                    <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3 text-xs">
                       <p className="text-red-300">Demand: {focusedSkillData.demand}</p>
                       <p className="text-amber-300">Gaps: {focusedSkillData.gaps}</p>
                       <p className="text-sky-300">Low Demand: {focusedSkillData.lowDemand}</p>
