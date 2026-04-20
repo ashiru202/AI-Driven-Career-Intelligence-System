@@ -48,9 +48,26 @@ def _ensure_indexes(db) -> None:
 
     # ── skill_forecasts ───────────────────────────────────────────────────────
     sf = db["skill_forecasts"]
-    sf.create_index([("skill", ASCENDING)], unique=True, name="skill_unique")
+
+    # Backfill legacy rows that predate marketScope-aware forecasts.
+    sf.update_many(
+        {"marketScope": {"$exists": False}},
+        {"$set": {"marketScope": "combined"}},
+    )
+
+    # Replace legacy unique index on skill with scoped uniqueness.
+    for idx_name, meta in sf.index_information().items():
+        key = meta.get("key", [])
+        if meta.get("unique") and key == [("skill", 1)]:
+            sf.drop_index(idx_name)
+
     sf.create_index(
-        [("trendDirection", ASCENDING), ("trendSlope", DESCENDING)],
-        name="trendDirection_trendSlope",
+        [("skill", ASCENDING), ("marketScope", ASCENDING)],
+        unique=True,
+        name="skill_marketScope_unique",
+    )
+    sf.create_index(
+        [("marketScope", ASCENDING), ("trendDirection", ASCENDING), ("trendSlope", DESCENDING)],
+        name="marketScope_trendDirection_trendSlope",
     )
     sf.create_index([("generatedAt", DESCENDING)], name="generatedAt_desc")

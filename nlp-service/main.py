@@ -475,7 +475,18 @@ async def trigger_forecast(token: None = Depends(verify_internal_token)):
     """
     def _run():
         from forecaster import refresh_all_forecasts
-        return refresh_all_forecasts()
+
+        scopes = ["combined", "global", "local-lk"]
+        by_scope = {}
+        for scope in scopes:
+            by_scope[scope] = refresh_all_forecasts(market_scope=scope)
+
+        return {
+            "by_scope": by_scope,
+            "refreshed": sum(item.get("refreshed", 0) for item in by_scope.values()),
+            "skipped": sum(item.get("skipped", 0) for item in by_scope.values()),
+            "errors": sum(item.get("errors", 0) for item in by_scope.values()),
+        }
 
     result = await asyncio.to_thread(_run)
     return {"ok": True, "forecast": result}
@@ -520,7 +531,7 @@ async def get_rising_skills(limit: int = 10, market_scope: str = "combined"):
         db = get_db()
         return list(
             db["skill_forecasts"]
-            .find({"trendDirection": "rising"}, {"_id": 0})
+            .find({"marketScope": market_scope, "trendDirection": "rising"}, {"_id": 0})
             .sort("trendSlope", -1)
             .limit(min(limit, 50))
         )
@@ -538,7 +549,10 @@ async def get_skill_forecast(skill: str, market_scope: str = "combined"):
         db = get_db()
 
         skill_lower = skill.lower().strip()
-        forecast = db["skill_forecasts"].find_one({"skill": skill_lower}, {"_id": 0})
+        forecast = db["skill_forecasts"].find_one(
+            {"skill": skill_lower, "marketScope": market_scope},
+            {"_id": 0},
+        )
         if forecast is None:
             forecast = generate_forecast(skill_lower, market_scope=market_scope)
 

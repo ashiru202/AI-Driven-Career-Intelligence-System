@@ -51,6 +51,7 @@ function setupAuth(userObj) {
 function makeForecast(overrides = {}) {
   return {
     skill: 'python',
+    marketScope: 'combined',
     trendDirection: 'rising',
     trendSlope: 0.002,
     trendConfidence: 0.85,
@@ -203,6 +204,26 @@ describe('GET /api/trends/rising', () => {
     res.body.data.skills.forEach((s) => {
       expect(s.trendSlope).toBeGreaterThan(0);
     });
+
+    expect(SkillForecast.find).toHaveBeenCalledWith(
+      expect.objectContaining({ marketScope: 'combined', trendDirection: 'rising' })
+    );
+  });
+
+  it('applies marketScope to rising forecast query', async () => {
+    setupAuth(mockUser());
+
+    SkillForecast.find = jest.fn().mockReturnValue(chainResolving([]));
+    SkillSnapshot.aggregate = jest.fn().mockResolvedValue([]);
+
+    const res = await request(app)
+      .get('/api/trends/rising?limit=5&marketScope=local-lk')
+      .set('Authorization', `Bearer ${USER_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(SkillForecast.find).toHaveBeenCalledWith(
+      expect.objectContaining({ marketScope: 'local-lk', trendDirection: 'rising' })
+    );
   });
 
   it('clamps limit to a maximum of 50', async () => {
@@ -256,6 +277,26 @@ describe('GET /api/trends/falling', () => {
     res.body.data.skills.forEach((s) => {
       expect(s.trendSlope).toBeLessThan(0);
     });
+
+    expect(SkillForecast.find).toHaveBeenCalledWith(
+      expect.objectContaining({ marketScope: 'combined', trendDirection: 'falling' })
+    );
+  });
+
+  it('applies marketScope to falling forecast query', async () => {
+    setupAuth(mockUser());
+
+    SkillForecast.find = jest.fn().mockReturnValue(chainResolving([]));
+    SkillSnapshot.aggregate = jest.fn().mockResolvedValue([]);
+
+    const res = await request(app)
+      .get('/api/trends/falling?limit=5&marketScope=global')
+      .set('Authorization', `Bearer ${USER_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(SkillForecast.find).toHaveBeenCalledWith(
+      expect.objectContaining({ marketScope: 'global', trendDirection: 'falling' })
+    );
   });
 });
 
