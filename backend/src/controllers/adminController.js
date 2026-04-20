@@ -276,11 +276,13 @@ const toggleUserStatus = asyncHandler(async (req, res) => {
 
 // Get admin dashboard stats (enriched with analytics)
 const getAdminStats = asyncHandler(async (req, res) => {
+  const roleFilter = (role) => ({ role: { $regex: new RegExp(`^${role}$`, 'i') } });
+
   const [totalUsers, totalStaff, totalAdmins, activeUsers] = await Promise.all([
-    User.countDocuments({ role: 'USER' }),
-    User.countDocuments({ role: 'STAFF' }),
-    User.countDocuments({ role: 'ADMIN' }),
-    User.countDocuments({ role: 'USER', active: true }),
+    User.countDocuments(roleFilter('USER')),
+    User.countDocuments(roleFilter('STAFF')),
+    User.countDocuments(roleFilter('ADMIN')),
+    User.countDocuments({ ...roleFilter('USER'), active: true }),
   ]);
 
   // Average match score from all comparisons

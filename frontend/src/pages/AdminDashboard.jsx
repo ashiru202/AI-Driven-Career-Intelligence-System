@@ -35,6 +35,15 @@ import {
 const LIVE_INTERVAL_MS = 15000;
 const ROLE_COLORS = ["#ef4444", "#f59e0b", "#38bdf8"];
 
+function toLocalDateKey(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function formatNumber(value) {
   return new Intl.NumberFormat("en-US").format(Number(value || 0));
 }
@@ -165,6 +174,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [previousStats, setPreviousStats] = useState(null);
   const [userSample, setUserSample] = useState([]);
+  const [accountSample, setAccountSample] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [focusedSkill, setFocusedSkill] = useState("");
@@ -175,17 +185,20 @@ export default function AdminDashboard() {
     }
 
     try {
-      const [statsRes, usersRes] = await Promise.all([
+      const [statsRes, usersRes, allAccountsRes] = await Promise.all([
         api.get("/api/admin/stats"),
         api.get("/api/admin/users?role=USER&page=1&limit=120"),
+        api.get("/api/admin/users?page=1&limit=500"),
       ]);
 
       const nextStats = statsRes.data?.data || {};
       const users = usersRes.data?.data?.users || [];
+      const allAccounts = allAccountsRes.data?.data?.users || [];
 
       setPreviousStats(statsRef.current);
       setStats(nextStats);
       setUserSample(users);
+      setAccountSample(allAccounts);
       setFocusedSkill((current) => current || nextStats.topSkills?.[0]?.skill || "");
       setError("");
 
@@ -267,15 +280,17 @@ export default function AdminDashboard() {
       const d = new Date(start);
       d.setDate(start.getDate() - i);
       days.push({
-        key: d.toISOString().slice(0, 10),
+        key: toLocalDateKey(d),
         date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         signups: 0,
       });
     }
 
     const indexByDate = new Map(days.map((item, idx) => [item.key, idx]));
-    (userSample || []).forEach((user) => {
-      const key = new Date(user.createdAt).toISOString().slice(0, 10);
+    (accountSample || []).forEach((user) => {
+      if (!user?.createdAt) return;
+      const key = toLocalDateKey(user.createdAt);
+      if (!key) return;
       if (indexByDate.has(key)) {
         const idx = indexByDate.get(key);
         days[idx].signups += 1;
@@ -290,7 +305,7 @@ export default function AdminDashboard() {
         cumulative: running,
       };
     });
-  }, [userSample]);
+  }, [accountSample]);
 
   const fourteenDaySignups = useMemo(
     () => registrationTimeline.reduce((sum, day) => sum + Number(day.signups || 0), 0),
