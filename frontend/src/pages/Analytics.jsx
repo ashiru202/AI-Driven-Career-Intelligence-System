@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import api from "../api/api";
 import {
@@ -18,7 +17,7 @@ import {
 } from "lucide-react";
 import {
   AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ReferenceLine, ResponsiveContainer, Dot,
+  Tooltip, ReferenceLine, ResponsiveContainer,
 } from "recharts";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -303,8 +302,6 @@ export default function Analytics() {
       </Layout>
     );
   }
-
-  const cvColors = cvCompleteness ? scoreColor(cvCompleteness.score) : null;
 
   return (
     <Layout>

@@ -1,7 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import Layout from "../components/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
 import api from "../api/api";
 import {
   getSnapshotSummary,
@@ -17,7 +15,7 @@ import {
 import {
   TrendingUp, TrendingDown, Activity, BarChart2, Briefcase,
   RefreshCw, ChevronLeft, ChevronRight, Search, AlertTriangle,
-  ArrowUpRight, ArrowDownRight, Minus, Globe, MapPin, Layers,
+  ArrowUpRight, ArrowDownRight, Globe, MapPin, Layers,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -97,7 +95,7 @@ function SkillRow({ item, direction, onSelect, selected }) {
     <button
       onClick={() => onSelect(item.skill)}
       style={{
-        width: "100%", textAlign: "left", background: "none", border: "none",
+        width: "100%", textAlign: "left", border: "none",
         padding: "10px 12px", borderRadius: 10, cursor: "pointer",
         background: selected ? "rgba(99,102,241,0.12)" : "transparent",
         transition: "background 0.15s",
@@ -489,7 +487,6 @@ export default function TrendsPage() {
 
   // ── No-data notice ─────────────────────────────────────────────────────────
 
-  const noData = !loadingMeta && rising.length === 0 && falling.length === 0;
   const insufficient = summary?.weeksCovered != null && summary.weeksCovered < 4;
 
   // ─────────────────────────────────────────────────────────────────────────
