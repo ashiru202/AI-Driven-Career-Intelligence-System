@@ -13,6 +13,7 @@ jest.mock("../src/utils/emailService", () => ({
 }));
 jest.mock("../src/services/auditLogService", () => ({
   logActivity: jest.fn(),
+  logActivityWithActor: jest.fn(),
 }));
 
 const User = require("../src/models/User");

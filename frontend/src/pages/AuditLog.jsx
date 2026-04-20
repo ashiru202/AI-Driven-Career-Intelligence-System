@@ -11,6 +11,9 @@ const ACTION_LABELS = {
   CREATE_STAFF:        { label: "Create Staff",       color: "bg-green-100 text-green-700" },
   TOGGLE_USER_STATUS:  { label: "Toggle Status",      color: "bg-amber-100 text-amber-700" },
   DELETE_USER:         { label: "Delete User",         color: "bg-red-100 text-red-600" },
+  SUBMIT_STAFF_APPLICATION: { label: "Staff Application Request", color: "bg-blue-100 text-blue-700" },
+  APPROVE_STAFF_APPLICATION: { label: "Approve Staff Application", color: "bg-green-100 text-green-700" },
+  REJECT_STAFF_APPLICATION:  { label: "Reject Staff Application",  color: "bg-red-100 text-red-600" },
 };
 
 function Toast({ message, type, onClose }) {
@@ -97,7 +100,7 @@ export default function AuditLog() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-white">Activity Audit Log</h2>
-            <p className="text-slate-400 text-sm mt-0.5">All admin actions recorded in chronological order</p>
+            <p className="text-slate-400 text-sm mt-0.5">Admin actions and incoming requests recorded in chronological order</p>
           </div>
 
           <div className="flex flex-wrap gap-2">

@@ -14,6 +14,7 @@ jest.mock("../src/utils/emailService", () => ({
 }));
 jest.mock("../src/services/auditLogService", () => ({
   logActivity: jest.fn(),
+  logActivityWithActor: jest.fn(),
 }));
 jest.mock("../src/utils/sseManager", () => ({
   sendToUser: jest.fn(),
@@ -23,6 +24,7 @@ const User = require("../src/models/User");
 const StaffApplication = require("../src/models/StaffApplication");
 const { sendStaffInviteEmail } = require("../src/utils/emailService");
 const { sendToUser } = require("../src/utils/sseManager");
+const { logActivityWithActor } = require("../src/services/auditLogService");
 const app = require("../src/app");
 
 const ADMIN_TOKEN = makeToken({ id: "bbbbbbbbbbbbbbbbbbbbbbbb", role: "ADMIN" });
@@ -89,6 +91,17 @@ describe("Staff application workflow", () => {
           id: expect.stringMatching(/^staff_application_/),
           link: "/staff-management",
         })
+      );
+      expect(logActivityWithActor).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({
+          role: "USER_REQUEST",
+          email: "jane.staff@example.com",
+          name: "Jane Staff",
+        }),
+        "SUBMIT_STAFF_APPLICATION",
+        expect.objectContaining({ type: "StaffApplication" }),
+        expect.objectContaining({ source: "public_staff_application_form" })
       );
     });
 

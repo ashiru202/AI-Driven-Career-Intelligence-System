@@ -14,7 +14,6 @@ import {
   Users,
   Activity,
   Clock3,
-  Briefcase,
   Eye,
   Link2,
 } from "lucide-react";
@@ -426,9 +425,7 @@ export default function StaffManagement() {
         <div>
           <Card className="border-white/10 overflow-hidden" style={{ background: "linear-gradient(145deg, rgba(17,31,48,0.9), rgba(14,22,36,0.95))" }}>
             <CardHeader className="border-b border-white/10 bg-white/[0.02]">
-              <CardTitle className="text-white flex items-center gap-2">
-                <Briefcase size={16} /> Pending Staff Applications ({pendingApplications.length})
-              </CardTitle>
+              <CardTitle className="text-white">Pending Staff Applications</CardTitle>
             </CardHeader>
             <CardContent>
               {applicationsLoading ? (
@@ -511,7 +508,7 @@ export default function StaffManagement() {
         <div>
           <Card className="border-white/10" style={{ background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
             <CardHeader className="border-b border-white/10">
-              <CardTitle className="text-white">Staff Accounts ({staff.length})</CardTitle>
+              <CardTitle className="text-white">Staff Accounts</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
