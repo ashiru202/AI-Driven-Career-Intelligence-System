@@ -8,6 +8,13 @@ const { asyncHandler }     = require("../middleware/errorMiddleware");
 const { parsePagination, paginationMeta } = require("../utils/pagination");
 
 const NLP_URL = process.env.NLP_SERVICE_URL || "http://localhost:8000";
+const VALID_MARKET_SCOPES = new Set(["combined", "global", "local-lk"]);
+
+function normalizeMarketScope(scope) {
+  if (!scope) return "combined";
+  const value = String(scope).trim();
+  return VALID_MARKET_SCOPES.has(value) ? value : "combined";
+}
 
 function getInternalToken() {
   const token = (process.env.NLP_INTERNAL_TOKEN || process.env.INTERNAL_TOKEN || "").trim();
@@ -153,6 +160,10 @@ const getFallingSkills = asyncHandler(async (req, res) => {
  * GET /api/trends/snapshot-summary
  */
 const getSnapshotSummary = asyncHandler(async (req, res) => {
+  const marketScope = normalizeMarketScope(req.query.marketScope);
+  const jobFilter = marketScope === "combined" ? {} : { marketScope };
+  const snapshotFilter = { marketScope };
+
   const [
     totalJobsIndexed,
     skillsTracked,
@@ -161,15 +172,16 @@ const getSnapshotSummary = asyncHandler(async (req, res) => {
     lastForecast,
     allPeriodStarts,
   ] = await Promise.all([
-    JobPosting.countDocuments(),
-    SkillSnapshot.distinct("skill").then(a => a.length),
+    JobPosting.countDocuments(jobFilter),
+    SkillSnapshot.distinct("skill", snapshotFilter).then(a => a.length),
     SkillForecast.countDocuments(),
-    JobPosting.findOne().sort({ scrapedAt: -1 }).select("scrapedAt").lean(),
+    JobPosting.findOne(jobFilter).sort({ scrapedAt: -1 }).select("scrapedAt").lean(),
     SkillForecast.findOne().sort({ generatedAt: -1 }).select("generatedAt").lean(),
-    SkillSnapshot.distinct("periodStart"),
+    SkillSnapshot.distinct("periodStart", snapshotFilter),
   ]);
 
   res.json(successResponse({
+    marketScope,
     lastScrapedAt:     lastJob?.scrapedAt      || null,
     totalJobsIndexed,
     skillsTracked,

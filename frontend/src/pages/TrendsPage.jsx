@@ -389,7 +389,7 @@ export default function TrendsPage() {
   const loadMeta = useCallback(() => {
     setLoadingMeta(true);
     Promise.allSettled([
-      getSnapshotSummary(),
+      getSnapshotSummary(scope),
       getRisingSkills(8, scope),
       getFallingSkills(8, scope),
       api.get("/api/analytics/my-resumes"),

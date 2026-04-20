@@ -106,26 +106,66 @@ describe('GET /api/trends/snapshot-summary', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns summary with correct shape for any authenticated user', async () => {
+  it('returns a scope-aware summary for any authenticated user', async () => {
     setupAuth(mockUser());
+    const lkFilter = { marketScope: 'local-lk' };
 
     // Cover all the chain variants the controller might use
     JobPosting.findOne   = jest.fn().mockReturnValue(chainResolving({ scrapedAt: new Date('2026-03-15') }));
-    JobPosting.countDocuments    = jest.fn().mockResolvedValue(1500);
+    JobPosting.countDocuments    = jest.fn().mockResolvedValue(420);
     SkillForecast.countDocuments = jest.fn().mockResolvedValue(80);
     SkillForecast.findOne = jest.fn().mockReturnValue(chainResolving({ generatedAt: new Date('2026-03-15') }));
-    SkillSnapshot.aggregate = jest.fn().mockResolvedValue([{ count: 6 }]);
-    SkillSnapshot.distinct  = jest.fn().mockResolvedValue(['python', 'react', 'docker']);
+    SkillSnapshot.distinct = jest.fn((field) => {
+      if (field === 'skill') {
+        return Promise.resolve(['python', 'react']);
+      }
+      if (field === 'periodStart') {
+        return Promise.resolve([new Date('2026-03-03'), new Date('2026-03-10')]);
+      }
+      return Promise.resolve([]);
+    });
 
     const res = await request(app)
-      .get('/api/trends/snapshot-summary')
+      .get('/api/trends/snapshot-summary?marketScope=local-lk')
       .set('Authorization', `Bearer ${USER_TOKEN}`);
 
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
-    expect(res.body.data).toHaveProperty('totalJobsIndexed');
-    expect(res.body.data).toHaveProperty('skillsTracked');
+    expect(res.body.data).toHaveProperty('marketScope', 'local-lk');
+    expect(res.body.data).toHaveProperty('totalJobsIndexed', 420);
+    expect(res.body.data).toHaveProperty('skillsTracked', 2);
+    expect(res.body.data).toHaveProperty('weeksCovered', 2);
     expect(res.body.data).toHaveProperty('forecastsGenerated');
+
+    expect(JobPosting.countDocuments).toHaveBeenCalledWith(lkFilter);
+    expect(JobPosting.findOne).toHaveBeenCalledWith(lkFilter);
+    expect(SkillSnapshot.distinct).toHaveBeenNthCalledWith(1, 'skill', lkFilter);
+    expect(SkillSnapshot.distinct).toHaveBeenNthCalledWith(2, 'periodStart', lkFilter);
+  });
+
+  it('falls back to combined scope when query marketScope is invalid', async () => {
+    setupAuth(mockUser());
+
+    JobPosting.findOne = jest.fn().mockReturnValue(chainResolving({ scrapedAt: new Date('2026-03-15') }));
+    JobPosting.countDocuments = jest.fn().mockResolvedValue(1500);
+    SkillForecast.countDocuments = jest.fn().mockResolvedValue(80);
+    SkillForecast.findOne = jest.fn().mockReturnValue(chainResolving({ generatedAt: new Date('2026-03-15') }));
+    SkillSnapshot.distinct = jest.fn((field) => {
+      if (field === 'skill') return Promise.resolve(['python']);
+      if (field === 'periodStart') return Promise.resolve([new Date('2026-03-03')]);
+      return Promise.resolve([]);
+    });
+
+    const res = await request(app)
+      .get('/api/trends/snapshot-summary?marketScope=not-a-valid-scope')
+      .set('Authorization', `Bearer ${USER_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveProperty('marketScope', 'combined');
+    expect(JobPosting.countDocuments).toHaveBeenCalledWith({});
+    expect(JobPosting.findOne).toHaveBeenCalledWith({});
+    expect(SkillSnapshot.distinct).toHaveBeenNthCalledWith(1, 'skill', { marketScope: 'combined' });
+    expect(SkillSnapshot.distinct).toHaveBeenNthCalledWith(2, 'periodStart', { marketScope: 'combined' });
   });
 });
 
