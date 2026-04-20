@@ -49,6 +49,39 @@ export default function StaffApply() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const getSubmitErrorMessage = (err) => {
+    const status = err?.response?.status;
+    const data = err?.response?.data;
+
+    if (status === 404) {
+      return "Staff application endpoint is unavailable. Restart or rebuild the backend service and try again.";
+    }
+
+    if (typeof data === "string" && data.includes("Cannot POST /api/auth/staff-applications")) {
+      return "Backend route is missing for staff applications. Restart or rebuild backend and retry.";
+    }
+
+    if (data?.error?.message) {
+      return data.error.message;
+    }
+
+    if (Array.isArray(data?.error?.details) && data.error.details.length > 0) {
+      const firstDetail = data.error.details[0];
+      if (typeof firstDetail === "string") {
+        return firstDetail;
+      }
+      if (firstDetail?.message) {
+        return firstDetail.message;
+      }
+    }
+
+    if (err?.code === "ERR_NETWORK") {
+      return "Cannot reach backend at http://localhost:5001. Ensure backend is running and accessible.";
+    }
+
+    return "Failed to submit staff application";
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setError("");
@@ -85,7 +118,7 @@ export default function StaffApply() {
       });
       setFormData(initialForm);
     } catch (err) {
-      setError(err.response?.data?.error?.message || "Failed to submit staff application");
+      setError(getSubmitErrorMessage(err));
     } finally {
       setLoading(false);
     }
