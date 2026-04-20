@@ -4,7 +4,8 @@ import Layout from "../components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Check, X, AlertTriangle, Trash2, Users, Activity } from "lucide-react";
+import { Input } from "../components/ui/input";
+import { Check, X, AlertTriangle, Trash2, Users, Activity, UserPlus } from "lucide-react";
 
 function Toast({ message, type, onClose }) {
   useEffect(() => {
@@ -28,6 +29,8 @@ function Toast({ message, type, onClose }) {
 export default function StaffManagement() {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [inviting, setInviting] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ name: "", email: "" });
   const [deleting, setDeleting] = useState({});
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [toast, setToast] = useState(null);
@@ -61,6 +64,29 @@ export default function StaffManagement() {
       showToast(err.response?.data?.error?.message || "Failed to delete staff account", "error");
     } finally {
       setDeleting((prev) => ({ ...prev, [member._id]: false }));
+    }
+  };
+
+  const inviteStaff = async (e) => {
+    e.preventDefault();
+    const name = inviteForm.name.trim();
+    const email = inviteForm.email.trim();
+
+    if (!name || !email) {
+      showToast("Name and email are required", "error");
+      return;
+    }
+
+    setInviting(true);
+    try {
+      await api.post("/api/admin/staff", { name, email });
+      showToast("Staff invite sent. They will set their own password from email.", "success");
+      setInviteForm({ name: "", email: "" });
+      loadStaff();
+    } catch (err) {
+      showToast(err.response?.data?.error?.message || "Failed to send staff invite", "error");
+    } finally {
+      setInviting(false);
     }
   };
 
@@ -122,6 +148,48 @@ export default function StaffManagement() {
         </div>
 
         <div>
+          <Card className="border-white/10" style={{ background: "linear-gradient(145deg, rgba(20,28,48,0.9), rgba(13,18,33,0.95))" }}>
+            <CardHeader className="border-b border-white/10">
+              <CardTitle className="text-white flex items-center gap-2">
+                <UserPlus size={16} /> Invite New Staff
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={inviteStaff} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                <div className="md:col-span-1">
+                  <label className="block text-xs font-semibold text-white/70 mb-1">Full Name</label>
+                  <Input
+                    type="text"
+                    value={inviteForm.name}
+                    onChange={(e) => setInviteForm((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="Staff member name"
+                    maxLength={100}
+                  />
+                </div>
+                <div className="md:col-span-1">
+                  <label className="block text-xs font-semibold text-white/70 mb-1">Email</label>
+                  <Input
+                    type="email"
+                    value={inviteForm.email}
+                    onChange={(e) => setInviteForm((prev) => ({ ...prev, email: e.target.value }))}
+                    placeholder="staff@company.com"
+                    maxLength={254}
+                  />
+                </div>
+                <div className="md:col-span-1">
+                  <Button type="submit" disabled={inviting} className="w-full bg-indigo-600 text-white hover:bg-indigo-700">
+                    {inviting ? "Sending Invite..." : "Send Invite"}
+                  </Button>
+                </div>
+              </form>
+              <p className="text-xs text-slate-400 mt-3">
+                For privacy and security, admins do not set or see staff passwords. Invited staff set their own password via email.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
           <Card className="border-white/10" style={{ background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
             <CardHeader className="border-b border-white/10">
               <CardTitle className="text-white">Staff Accounts ({staff.length})</CardTitle>
@@ -132,7 +200,7 @@ export default function StaffManagement() {
               ) : staff.length === 0 ? (
                 <div className="text-center py-8 text-slate-400">
                   <p>No staff accounts found.</p>
-                  <p className="text-sm mt-1">Staff users can register from the signup page.</p>
+                  <p className="text-sm mt-1">Use the invite form above to onboard staff securely.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">

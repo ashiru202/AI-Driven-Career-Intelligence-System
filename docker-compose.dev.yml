@@ -36,7 +36,7 @@ services:
       XPRESSJOBS_ENABLED: "true"
       SCRAPE_INTERVAL_HOURS: "24"
       MAX_JOBS_PER_RUN: "200"
-      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-changeme}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?INTERNAL_TOKEN is required}
       MIN_DATA_POINTS: "2"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -63,7 +63,7 @@ services:
       CORS_ORIGIN: http://localhost:3000
       CLIENT_URL: http://localhost:3000
       ALLOW_LOCALHOST_ANY_PORT: "true"
-      NLP_INTERNAL_TOKEN: ${INTERNAL_TOKEN:-changeme}
+      NLP_INTERNAL_TOKEN: ${INTERNAL_TOKEN:?INTERNAL_TOKEN is required}
     volumes:
       - backend_uploads:/app/uploads
     depends_on:

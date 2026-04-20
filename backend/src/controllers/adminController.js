@@ -9,7 +9,7 @@ const analyticsService = require("../services/analyticsService");
 const AuditLog = require("../models/AuditLog");
 const { logActivity } = require("../services/auditLogService");
 const { parsePagination, paginationMeta } = require("../utils/pagination");
-const { sendVerificationEmail } = require("../utils/emailService");
+const { sendStaffInviteEmail } = require("../utils/emailService");
 
 function generateRawToken() {
   return crypto.randomBytes(32).toString("hex");
@@ -21,17 +21,20 @@ function hashToken(raw) {
 
 // Admin can create STAFF accounts only
 const createStaff = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email } = req.body;
 
   const exists = await User.findOne({ email });
   if (exists) {
     throw AppError.conflict("User with this email already exists");
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const rawToken = generateRawToken();
-  const hashedVerificationToken = hashToken(rawToken);
-  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  // Admin should never set or know staff passwords.
+  // We generate a random secret and require the staff member to set their own password via invite link.
+  const generatedPassword = crypto.randomBytes(48).toString("hex");
+  const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+  const rawInviteToken = generateRawToken();
+  const hashedInviteToken = hashToken(rawInviteToken);
+  const inviteExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   const user = await User.create({
     name,
@@ -39,15 +42,15 @@ const createStaff = asyncHandler(async (req, res) => {
     password: hashedPassword,
     role: "STAFF",
     emailVerified: false,
-    emailVerificationToken: hashedVerificationToken,
-    emailVerificationExpires: verificationExpires,
+    passwordResetToken: hashedInviteToken,
+    passwordResetExpires: inviteExpires,
   });
 
-  await sendVerificationEmail(email, name, rawToken);
+  await sendStaffInviteEmail(email, name, rawInviteToken);
 
-  logActivity(req, "CREATE_STAFF_ACCOUNT",
+  logActivity(req, "INVITE_STAFF_ACCOUNT",
     { type: "User", id: user._id, email: user.email, name: user.name },
-    { role: "STAFF" }
+    { role: "STAFF", inviteExpiresAt: inviteExpires }
   );
 
   res.status(201).json(successResponse(
@@ -58,7 +61,7 @@ const createStaff = asyncHandler(async (req, res) => {
       role: user.role,
       emailVerified: user.emailVerified,
     },
-    "Staff account created. Verification email sent."
+    "Staff invite sent. The staff member must set their own password from the email link."
   ));
 });
 

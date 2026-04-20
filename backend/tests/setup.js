@@ -8,4 +8,5 @@ process.env.PORT = '0'; // OS assigns a random free port
 process.env.NLP_SERVICE_URL = 'http://localhost:8000';
 process.env.MONGODB_URI = 'mongodb://localhost:27017/career-intelligence-test';
 process.env.GROQ_API_KEY = 'test-groq-api-key-for-jest-only';
-process.env.INTERNAL_TOKEN = 'test-internal-token';
+process.env.NLP_INTERNAL_TOKEN = 'test-internal-token';
+process.env.INTERNAL_TOKEN = process.env.NLP_INTERNAL_TOKEN;

@@ -15,7 +15,8 @@
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-for-jest-only';
 process.env.NLP_SERVICE_URL = 'http://localhost:8000';
-process.env.INTERNAL_TOKEN = 'test-internal-token';
+process.env.NLP_INTERNAL_TOKEN = 'test-internal-token';
+process.env.INTERNAL_TOKEN = process.env.NLP_INTERNAL_TOKEN;
 
 const request = require('supertest');
 const { makeToken, mockUser, mockAdminUser } = require('./helpers');

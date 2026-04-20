@@ -190,6 +190,12 @@ exports.resetPassword = asyncHandler(async (req, res) => {
   }
 
   user.password = await bcrypt.hash(password, 10);
+  // Invite-based onboarding: completing password setup activates email verification.
+  if (!user.emailVerified) {
+    user.emailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+  }
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
   await user.save();

@@ -104,4 +104,39 @@ async function sendPasswordResetEmail(to, name, token) {
   }
 }
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail };
+async function sendStaffInviteEmail(to, name, token) {
+  const transport = await getTransporter();
+  const link = `${CLIENT_URL}/reset-password?token=${token}`;
+
+  const info = await transport.sendMail({
+    from: FROM,
+    to,
+    subject: 'You have been invited as STAFF – Career Intelligence',
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#0d0d2b;color:#e5e5e5;border-radius:12px">
+        <h2 style="color:#a5b4fc;margin-bottom:8px">Hi ${name},</h2>
+        <p>An administrator invited you to join Career Intelligence as a <strong>STAFF</strong> member.</p>
+        <p style="color:#94a3b8">Set your password using the secure link below. This invite link expires in <strong style="color:#e5e5e5">24 hours</strong>.</p>
+        <p style="margin:28px 0">
+          <a href="${link}"
+             style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">
+            Set Password & Activate Account
+          </a>
+        </p>
+        <p style="font-size:13px;color:#64748b">Or copy this link into your browser:<br>
+          <a href="${link}" style="color:#818cf8;word-break:break-all">${link}</a>
+        </p>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:24px 0">
+        <p style="font-size:12px;color:#475569">If you were not expecting this invitation, you can ignore this email.</p>
+      </div>
+    `,
+  });
+
+  if (!process.env.SMTP_HOST) {
+    console.log(`[EMAIL] Staff invite email preview: ${nodemailer.getTestMessageUrl(info)}`);
+  } else {
+    console.log(`[EMAIL] Staff invite email sent via Gmail to: ${to}`);
+  }
+}
+
+module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendStaffInviteEmail };

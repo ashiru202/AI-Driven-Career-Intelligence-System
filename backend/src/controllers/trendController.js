@@ -7,8 +7,19 @@ const AppError             = require("../utils/AppError");
 const { asyncHandler }     = require("../middleware/errorMiddleware");
 const { parsePagination, paginationMeta } = require("../utils/pagination");
 
-const NLP_URL        = process.env.NLP_SERVICE_URL      || "http://localhost:8000";
-const INTERNAL_TOKEN = process.env.NLP_INTERNAL_TOKEN   || "changeme";
+const NLP_URL = process.env.NLP_SERVICE_URL || "http://localhost:8000";
+
+function getInternalToken() {
+  const token = (process.env.NLP_INTERNAL_TOKEN || process.env.INTERNAL_TOKEN || "").trim();
+  if (!token || token.toLowerCase() === "changeme") {
+    throw new Error(
+      "NLP_INTERNAL_TOKEN (or INTERNAL_TOKEN) must be set to a non-default shared secret"
+    );
+  }
+  return token;
+}
+
+const INTERNAL_TOKEN = getInternalToken();
 
 // ── Shared helper: latest snapshot per skill ──────────────────────────────────
 
