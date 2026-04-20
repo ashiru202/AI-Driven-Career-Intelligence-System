@@ -3,6 +3,14 @@ const AppError = require('../utils/AppError');
 
 // Strip HTML tags from a string to prevent stored XSS
 const stripHtml = (str) => str.replace(/<[^>]*>/g, '').trim();
+const optionalUrl = z.preprocess(
+  (value) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    return trimmed.length === 0 ? undefined : trimmed;
+  },
+  z.string().url('Invalid URL').max(300, 'URL must be at most 300 characters').optional()
+);
 
 // Validation middleware factory
 const validate = (schema) => {
@@ -60,6 +68,45 @@ const schemas = {
         .email('Invalid email address')
         .max(254, 'Email too long')
         .toLowerCase()
+    })
+  }),
+
+  staffApply: z.object({
+    body: z.object({
+      fullName: z.string()
+        .min(2, 'Name must be at least 2 characters')
+        .max(100, 'Name must be at most 100 characters')
+        .transform(stripHtml),
+      email: z.string()
+        .email('Invalid email address')
+        .max(254, 'Email too long')
+        .toLowerCase(),
+      phone: z.string()
+        .min(7, 'Phone number must be at least 7 characters')
+        .max(20, 'Phone number must be at most 20 characters')
+        .transform(stripHtml),
+      currentRole: z.string()
+        .min(2, 'Current role must be at least 2 characters')
+        .max(120, 'Current role must be at most 120 characters')
+        .transform(stripHtml),
+      yearsExperience: z.coerce.number()
+        .int('Years of experience must be a whole number')
+        .min(0, 'Years of experience cannot be negative')
+        .max(50, 'Years of experience must be at most 50'),
+      expertiseAreas: z.array(
+        z.string()
+          .min(2, 'Each expertise area must be at least 2 characters')
+          .max(50, 'Each expertise area must be at most 50 characters')
+          .transform(stripHtml)
+      )
+        .min(1, 'At least one expertise area is required')
+        .max(10, 'At most 10 expertise areas are allowed'),
+      motivation: z.string()
+        .min(30, 'Motivation must be at least 30 characters')
+        .max(2000, 'Motivation must be at most 2000 characters')
+        .transform(stripHtml),
+      linkedInUrl: optionalUrl,
+      portfolioUrl: optionalUrl,
     })
   }),
 
@@ -177,6 +224,37 @@ const schemas = {
         z.number().min(0, 'Priority must be at least 0').max(100, 'Priority must be at most 100'),
         z.null()
       ])
+    })
+  }),
+
+  adminListStaffApplications: z.object({
+    query: z.object({
+      status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
+      search: z.string().max(120, 'Search text too long').optional(),
+      page: z.coerce.number().int().min(1).optional(),
+      limit: z.coerce.number().int().min(1).max(100).optional(),
+    })
+  }),
+
+  adminReviewStaffApplication: z.object({
+    params: z.object({
+      applicationId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid application ID')
+    }),
+    body: z.object({
+      decision: z.enum(['APPROVE', 'REJECT']),
+      reviewNotes: z.string()
+        .max(1000, 'Review notes must be at most 1000 characters')
+        .optional()
+        .default('')
+        .transform(stripHtml),
+    }).refine((data) => {
+      if (data.decision === 'REJECT') {
+        return data.reviewNotes.length >= 10;
+      }
+      return true;
+    }, {
+      message: 'Review notes are required when rejecting an application',
+      path: ['reviewNotes']
     })
   }),
 

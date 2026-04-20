@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const User = require("../models/User");
+const StaffApplication = require("../models/StaffApplication");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { successResponse } = require("../utils/responseHelper");
@@ -56,6 +57,54 @@ exports.register = asyncHandler(async (req, res) => {
     { email: user.email },
     'Registration successful! Please check your email to verify your account.'
   ));
+});
+
+// POST /api/auth/staff-applications
+exports.applyForStaff = asyncHandler(async (req, res) => {
+  const {
+    fullName,
+    email,
+    phone,
+    currentRole,
+    yearsExperience,
+    expertiseAreas,
+    motivation,
+    linkedInUrl,
+    portfolioUrl,
+  } = req.body;
+
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    throw AppError.conflict('An account already exists with this email. Use a different email for staff application.');
+  }
+
+  const existingPending = await StaffApplication.findOne({ email, status: 'PENDING' });
+  if (existingPending) {
+    throw AppError.conflict('A pending staff application already exists for this email.');
+  }
+
+  const application = await StaffApplication.create({
+    fullName,
+    email,
+    phone,
+    currentRole,
+    yearsExperience,
+    expertiseAreas,
+    motivation,
+    linkedInUrl: linkedInUrl || '',
+    portfolioUrl: portfolioUrl || '',
+    status: 'PENDING',
+  });
+
+  res.status(201).json(
+    successResponse(
+      {
+        applicationId: application._id,
+        status: application.status,
+      },
+      'Staff application submitted successfully. Admin review is pending.'
+    )
+  );
 });
 
 // POST /api/auth/login

@@ -12,6 +12,7 @@ api.interceptors.response.use(
     const isAuthEndpoint =
       error.config?.url?.includes("/auth/login") ||
       error.config?.url?.includes("/auth/register") ||
+      error.config?.url?.includes("/auth/staff-applications") ||
       error.config?.url?.includes("/auth/forgot-password") ||
       error.config?.url?.includes("/auth/reset-password") ||
       error.config?.url?.includes("/auth/verify-email") ||

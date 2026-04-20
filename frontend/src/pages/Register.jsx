@@ -256,6 +256,12 @@ export default function Register() {
                   Sign in
                 </Link>
               </p>
+              <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.45)', fontSize: 13, marginTop: 10 }}>
+                Applying as staff?{' '}
+                <Link to="/staff-apply" style={{ color: '#93c5fd', fontWeight: 600, textDecoration: 'none' }}>
+                  Submit staff application
+                </Link>
+              </p>
             </>
           )}
         </div>

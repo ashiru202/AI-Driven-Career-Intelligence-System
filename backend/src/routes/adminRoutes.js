@@ -4,6 +4,8 @@ const { requireAuth, requireRole } = require("../middleware/authMiddleware");
 const { validate, schemas } = require("../middleware/validationMiddleware");
 const {
   createStaff,
+  listStaffApplications,
+  reviewStaffApplication,
   listUsers,
   toggleUserStatus,
   getAdminStats,
@@ -24,6 +26,18 @@ router.get("/stats", getAdminStats);
 
 // Create staff account (admin only)
 router.post("/staff", validate(schemas.adminCreateStaff), createStaff);
+
+// Staff application review flow (admin only)
+router.get(
+  "/staff-applications",
+  validate(schemas.adminListStaffApplications),
+  listStaffApplications
+);
+router.patch(
+  "/staff-applications/:applicationId/review",
+  validate(schemas.adminReviewStaffApplication),
+  reviewStaffApplication
+);
 
 // List users (with filters)
 router.get("/users", listUsers);

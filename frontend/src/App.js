@@ -4,6 +4,7 @@ import WelcomePage from "./pages/WelcomePage";
 import Ping from "./pages/Ping";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import StaffApply from "./pages/StaffApply";
 import Dashboard from "./pages/Dashboard";
 import MyRoadmap from "./pages/MyRoadmap";
 import AllRoadmaps from "./pages/AllRoadmaps";
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/ping" element={<Ping />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/staff-apply" element={<StaffApply />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />

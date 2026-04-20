@@ -262,6 +262,20 @@ function Navbar({ isLoggedIn, role }) {
           ) : (
             <>
               <Link
+                to="/staff-apply"
+                style={{
+                  padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+                  color: "#93c5fd", textDecoration: "none",
+                  border: "1px solid rgba(147,197,253,0.25)",
+                  background: "rgba(59,130,246,0.08)",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => { e.target.style.background = "rgba(59,130,246,0.16)"; }}
+                onMouseLeave={(e) => { e.target.style.background = "rgba(59,130,246,0.08)"; }}
+              >
+                Staff Apply
+              </Link>
+              <Link
                 to="/login"
                 style={{
                   padding: "10px 20px", borderRadius: 10, fontSize: 14, fontWeight: 500,
@@ -316,6 +330,7 @@ function Navbar({ isLoggedIn, role }) {
               <Link to={getDashboardPath()} style={{ flex: 1, textAlign: "center", padding: "14px", borderRadius: 12, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", textDecoration: "none", fontSize: 15, fontWeight: 600 }}>Dashboard</Link>
             ) : (
               <>
+                <Link to="/staff-apply" style={{ flex: 1, textAlign: "center", padding: "14px", borderRadius: 12, border: "1px solid rgba(147,197,253,0.3)", color: "#93c5fd", textDecoration: "none", fontSize: 15, fontWeight: 600, background: "rgba(59,130,246,0.08)" }}>Staff Apply</Link>
                 <Link to="/login" style={{ flex: 1, textAlign: "center", padding: "14px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)", color: "#fff", textDecoration: "none", fontSize: 15, fontWeight: 600 }}>Log In</Link>
                 <Link to="/register" style={{ flex: 1, textAlign: "center", padding: "14px", borderRadius: 12, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", textDecoration: "none", fontSize: 15, fontWeight: 600 }}>Get Started</Link>
               </>

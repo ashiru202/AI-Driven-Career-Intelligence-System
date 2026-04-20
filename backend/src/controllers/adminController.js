@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const StaffApplication = require("../models/StaffApplication");
 const { successResponse } = require("../utils/responseHelper");
 const AppError = require("../utils/AppError");
 const { asyncHandler } = require("../middleware/errorMiddleware");
@@ -19,6 +20,52 @@ function hashToken(raw) {
   return crypto.createHash("sha256").update(raw).digest("hex");
 }
 
+async function createInvitedStaffUser({ name, email, staffProfile = null }) {
+  // Admin should never set or know staff passwords.
+  // We generate a random secret and require the staff member to set their own password via invite link.
+  const generatedPassword = crypto.randomBytes(48).toString("hex");
+  const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+  const rawInviteToken = generateRawToken();
+  const hashedInviteToken = hashToken(rawInviteToken);
+  const inviteExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  const payload = {
+    name,
+    email,
+    password: hashedPassword,
+    role: "STAFF",
+    emailVerified: false,
+    passwordResetToken: hashedInviteToken,
+    passwordResetExpires: inviteExpires,
+  };
+
+  if (staffProfile) {
+    payload.staffProfile = staffProfile;
+  }
+
+  const user = await User.create(payload);
+
+  return {
+    user,
+    rawInviteToken,
+    inviteExpires,
+  };
+}
+
+function mapStaffProfileFromApplication(application) {
+  return {
+    phone: application.phone,
+    currentRole: application.currentRole,
+    yearsExperience: application.yearsExperience,
+    expertiseAreas: Array.isArray(application.expertiseAreas)
+      ? application.expertiseAreas
+      : [],
+    motivation: application.motivation,
+    linkedInUrl: application.linkedInUrl || "",
+    portfolioUrl: application.portfolioUrl || "",
+  };
+}
+
 // Admin can create STAFF accounts only
 const createStaff = asyncHandler(async (req, res) => {
   const { name, email } = req.body;
@@ -28,22 +75,9 @@ const createStaff = asyncHandler(async (req, res) => {
     throw AppError.conflict("User with this email already exists");
   }
 
-  // Admin should never set or know staff passwords.
-  // We generate a random secret and require the staff member to set their own password via invite link.
-  const generatedPassword = crypto.randomBytes(48).toString("hex");
-  const hashedPassword = await bcrypt.hash(generatedPassword, 10);
-  const rawInviteToken = generateRawToken();
-  const hashedInviteToken = hashToken(rawInviteToken);
-  const inviteExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-  const user = await User.create({
+  const { user, rawInviteToken, inviteExpires } = await createInvitedStaffUser({
     name,
     email,
-    password: hashedPassword,
-    role: "STAFF",
-    emailVerified: false,
-    passwordResetToken: hashedInviteToken,
-    passwordResetExpires: inviteExpires,
   });
 
   await sendStaffInviteEmail(email, name, rawInviteToken);
@@ -63,6 +97,133 @@ const createStaff = asyncHandler(async (req, res) => {
     },
     "Staff invite sent. The staff member must set their own password from the email link."
   ));
+});
+
+// Admin can list staff applications with filters
+const listStaffApplications = asyncHandler(async (req, res) => {
+  const { status, search } = req.query;
+  const { page, limit, skip } = parsePagination(req.query, 20);
+
+  const query = {};
+  if (status && ["PENDING", "APPROVED", "REJECTED"].includes(String(status).toUpperCase())) {
+    query.status = String(status).toUpperCase();
+  }
+
+  if (search) {
+    query.$or = [
+      { fullName: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { currentRole: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  const [applications, total] = await Promise.all([
+    StaffApplication.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("reviewedBy", "name email role")
+      .populate("invitedUser", "name email role")
+      .lean(),
+    StaffApplication.countDocuments(query),
+  ]);
+
+  res.json(
+    successResponse({
+      applications,
+      pagination: paginationMeta(total, page, limit),
+    })
+  );
+});
+
+// Admin can approve or reject staff applications
+const reviewStaffApplication = asyncHandler(async (req, res) => {
+  const { applicationId } = req.params;
+  const { decision, reviewNotes = "" } = req.body;
+
+  const application = await StaffApplication.findById(applicationId);
+  if (!application) {
+    throw AppError.notFound("Staff application not found");
+  }
+
+  if (application.status !== "PENDING") {
+    throw AppError.badRequest("BAD_REQUEST", "Only pending applications can be reviewed");
+  }
+
+  if (decision === "APPROVE") {
+    const existingUser = await User.findOne({ email: application.email });
+    if (existingUser) {
+      throw AppError.conflict("A user account already exists with this applicant email");
+    }
+
+    const { user, rawInviteToken, inviteExpires } = await createInvitedStaffUser({
+      name: application.fullName,
+      email: application.email,
+      staffProfile: mapStaffProfileFromApplication(application),
+    });
+
+    await sendStaffInviteEmail(user.email, user.name, rawInviteToken);
+
+    application.status = "APPROVED";
+    application.reviewNotes = reviewNotes;
+    application.reviewedAt = new Date();
+    application.reviewedBy = req.user.id;
+    application.invitedUser = user._id;
+    await application.save();
+
+    logActivity(
+      req,
+      "APPROVE_STAFF_APPLICATION",
+      { type: "StaffApplication", id: application._id, email: application.email, name: application.fullName },
+      { invitedUserId: user._id, inviteExpiresAt: inviteExpires }
+    );
+
+    return res.json(
+      successResponse(
+        {
+          application: {
+            id: application._id,
+            status: application.status,
+            reviewedAt: application.reviewedAt,
+          },
+          staff: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
+        },
+        "Application approved. Invite email sent to the staff applicant."
+      )
+    );
+  }
+
+  application.status = "REJECTED";
+  application.reviewNotes = reviewNotes;
+  application.reviewedAt = new Date();
+  application.reviewedBy = req.user.id;
+  await application.save();
+
+  logActivity(
+    req,
+    "REJECT_STAFF_APPLICATION",
+    { type: "StaffApplication", id: application._id, email: application.email, name: application.fullName },
+    { reviewNotes }
+  );
+
+  res.json(
+    successResponse(
+      {
+        application: {
+          id: application._id,
+          status: application.status,
+          reviewedAt: application.reviewedAt,
+          reviewNotes: application.reviewNotes,
+        },
+      },
+      "Application rejected successfully"
+    )
+  );
 });
 
 // Admin can list all users with filters
@@ -231,6 +392,8 @@ const getAuditLogs = asyncHandler(async (req, res) => {
 
 module.exports = {
   createStaff,
+  listStaffApplications,
+  reviewStaffApplication,
   listUsers,
   toggleUserStatus,
   getAdminStats,
