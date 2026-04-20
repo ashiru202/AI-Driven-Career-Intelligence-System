@@ -12,6 +12,7 @@ const VALID_MARKET_SCOPES = new Set(["combined", "global", "local-lk"]);
 const RISING_SLOPE_THRESHOLD = 0.001;
 const FALLING_SLOPE_THRESHOLD = -0.001;
 const FALLBACK_POINT_LIMIT = 12;
+const MIN_FORECAST_HISTORY_POINTS = 4;
 
 function normalizeMarketScope(scope) {
   if (!scope) return "combined";
@@ -56,6 +57,27 @@ function linearRegressionSlope(values) {
 
   if (denominator === 0) return 0;
   return ((n * sumXY) - (sumX * sumY)) / denominator;
+}
+
+function linearRegressionFit(values) {
+  const n = values.length;
+  if (n < 2) {
+    return { slope: 0, intercept: values[0] || 0 };
+  }
+
+  const sumX = (n * (n - 1)) / 2;
+  const sumXX = ((n - 1) * n * ((2 * n) - 1)) / 6;
+  const sumY = values.reduce((acc, y) => acc + y, 0);
+  const sumXY = values.reduce((acc, y, x) => acc + (x * y), 0);
+  const denominator = (n * sumXX) - (sumX * sumX);
+
+  if (denominator === 0) {
+    return { slope: 0, intercept: sumY / n };
+  }
+
+  const slope = ((n * sumXY) - (sumX * sumY)) / denominator;
+  const intercept = (sumY - (slope * sumX)) / n;
+  return { slope, intercept };
 }
 
 function classifyDirectionBySlope(slope) {
@@ -142,6 +164,54 @@ async function buildSnapshotTrendFallback({ marketScope, direction, limit, skip 
   };
 }
 
+function buildForecastFromHistory(skill, marketScope, history, weeksAhead = 8) {
+  if (!Array.isArray(history) || history.length < MIN_FORECAST_HISTORY_POINTS) {
+    return null;
+  }
+
+  const frequencies = history.map((item) => Number(item.relativeFreq) || 0);
+  const { slope, intercept } = linearRegressionFit(frequencies);
+  const trendDirection = classifyDirectionBySlope(slope);
+
+  const residuals = frequencies.map((y, x) => y - ((slope * x) + intercept));
+  const variance = residuals.reduce((acc, r) => acc + (r * r), 0) / Math.max(1, residuals.length);
+  const std = Math.sqrt(variance);
+  const halfBand = 1.5 * std;
+
+  const forecastPoints = [];
+  const lastPeriod = new Date(history[history.length - 1].periodStart);
+  for (let i = 1; i <= weeksAhead; i += 1) {
+    const x = (history.length - 1) + i;
+    const predicted = Math.max((intercept + (slope * x)), 0);
+    const periodStart = new Date(lastPeriod);
+    periodStart.setUTCDate(periodStart.getUTCDate() + (7 * i));
+
+    forecastPoints.push({
+      periodStart,
+      predictedFreq: Number(predicted.toFixed(8)),
+      lowerBound: Number(Math.max(predicted - halfBand, 0).toFixed(8)),
+      upperBound: Number((predicted + halfBand).toFixed(8)),
+    });
+  }
+
+  const mean = frequencies.reduce((acc, y) => acc + y, 0) / frequencies.length;
+  const ssTotal = frequencies.reduce((acc, y) => acc + ((y - mean) ** 2), 0);
+  const ssResidual = residuals.reduce((acc, r) => acc + (r ** 2), 0);
+  const trendConfidence = ssTotal === 0 ? 0 : Math.max(0, 1 - (ssResidual / ssTotal));
+
+  return {
+    skill,
+    marketScope,
+    generatedAt: null,
+    trendDirection,
+    trendSlope: Number(slope.toFixed(8)),
+    trendConfidence: Number(trendConfidence.toFixed(6)),
+    forecastPoints,
+    dataPointsUsed: history.length,
+    modelUsed: "snapshot-linear-fallback",
+  };
+}
+
 // ── User-facing handlers ──────────────────────────────────────────────────────
 
 /**
@@ -216,15 +286,18 @@ const getSkillDetail = asyncHandler(async (req, res) => {
     SkillSnapshot.find({ skill, marketScope }).sort({ periodStart: 1 }).lean(),
   ]);
 
-  if (!forecast && history.length === 0) {
+  if (history.length === 0 && !forecast) {
     throw AppError.notFound(`No trend data found for skill: ${skill}`);
   }
+
+  const fallbackForecast = forecast || buildForecastFromHistory(skill, marketScope, history);
+  const forecastPending = !forecast && !fallbackForecast;
 
   res.json(successResponse({
     skill,
     marketScope,
-    forecast:        forecast || null,
-    forecastPending: !forecast,
+    forecast:        fallbackForecast || null,
+    forecastPending,
     history,
   }));
 });

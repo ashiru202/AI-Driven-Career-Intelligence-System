@@ -435,6 +435,30 @@ describe('GET /api/trends/skills/:skill', () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveProperty('forecastPending', true);
   });
+
+  it('builds a fallback forecast from history when scoped forecast is missing but enough points exist', async () => {
+    setupAuth(mockUser());
+
+    const history = [
+      makeSnapshot({ skill: 'python', periodStart: new Date('2026-01-05'), relativeFreq: 0.05 }),
+      makeSnapshot({ skill: 'python', periodStart: new Date('2026-01-12'), relativeFreq: 0.06 }),
+      makeSnapshot({ skill: 'python', periodStart: new Date('2026-01-19'), relativeFreq: 0.07 }),
+      makeSnapshot({ skill: 'python', periodStart: new Date('2026-01-26'), relativeFreq: 0.09 }),
+    ];
+
+    SkillForecast.findOne = jest.fn().mockReturnValue(chainResolving(null));
+    SkillSnapshot.find = jest.fn().mockReturnValue(chainResolving(history));
+
+    const res = await request(app)
+      .get('/api/trends/skills/python?marketScope=local-lk')
+      .set('Authorization', `Bearer ${USER_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveProperty('forecastPending', false);
+    expect(res.body.data.forecast).toBeTruthy();
+    expect(res.body.data.forecast).toHaveProperty('modelUsed', 'snapshot-linear-fallback');
+    expect(res.body.data.forecast.forecastPoints.length).toBeGreaterThan(0);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -565,7 +565,9 @@ export default function TrendsPage() {
               <h2 style={{ color: "#e2e8f0", fontSize: 16, fontWeight: 600, margin: 0 }}>Rising Skills</h2>
             </div>
             {rising.length === 0 && !loadingMeta && (
-              <p style={{ color: "#64748b", fontSize: 13 }}>No rising skill data yet.</p>
+              <p style={{ color: "#64748b", fontSize: 13 }}>
+                No skills are currently crossing the rising threshold in this market.
+              </p>
             )}
             {rising.map(item => (
               <SkillRow key={item.skill} item={item} direction="rising"
@@ -580,7 +582,9 @@ export default function TrendsPage() {
               <h2 style={{ color: "#e2e8f0", fontSize: 16, fontWeight: 600, margin: 0 }}>Falling Skills</h2>
             </div>
             {falling.length === 0 && !loadingMeta && (
-              <p style={{ color: "#64748b", fontSize: 13 }}>No falling skill data yet.</p>
+              <p style={{ color: "#64748b", fontSize: 13 }}>
+                No skills are currently crossing the falling threshold in this market.
+              </p>
             )}
             {falling.map(item => (
               <SkillRow key={item.skill} item={item} direction="falling"
