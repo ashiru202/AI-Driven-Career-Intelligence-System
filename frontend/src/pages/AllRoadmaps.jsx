@@ -257,7 +257,7 @@ const exportCSV = () => {
       </div>
 
       {/* Table */}
-      <div style={{ marginTop: 12, border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, overflow: "hidden", background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
+      <div className="table-unified" style={{ marginTop: 12, border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, overflow: "hidden", background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "rgba(255,255,255,0.06)" }}>

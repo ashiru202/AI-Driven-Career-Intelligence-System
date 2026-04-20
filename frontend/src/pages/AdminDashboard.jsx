@@ -602,7 +602,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="pt-3">
               {userSample.length > 0 ? (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto table-unified">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-slate-400 border-b border-white/10">

@@ -140,7 +140,7 @@ export default function StaffPriorityQueue() {
             ) : items.length === 0 ? (
               <p className="text-sm text-slate-400">No users found for this queue filter.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto table-unified">
                 <table className="w-full text-sm min-w-[840px]">
                   <thead>
                     <tr className="border-b border-white/10 text-slate-400">

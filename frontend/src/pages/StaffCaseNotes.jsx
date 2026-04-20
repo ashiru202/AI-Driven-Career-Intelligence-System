@@ -449,7 +449,7 @@ export default function StaffCaseNotes() {
                                 <Button
                                   onClick={() => handleDeleteNote(note._id)}
                                   disabled={isSaving}
-                                  className="bg-red-600 hover:bg-red-700 text-white"
+                                  className="btn-danger"
                                 >
                                   <Trash2 size={13} className="mr-1" /> Delete
                                 </Button>

@@ -288,7 +288,7 @@ export default function StaffManagement() {
                 Approve
               </Button>
               <Button
-                className={`flex-1 bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60 ${flatButtonClass}`}
+                className={`flex-1 btn-danger ${flatButtonClass}`}
                 onClick={() => openReviewModal(viewApplication, "REJECT")}
               >
                 Reject
@@ -342,7 +342,7 @@ export default function StaffManagement() {
                 className={`flex-1 text-white ${
                   reviewModal.decision === "APPROVE"
                     ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-red-600 hover:bg-red-700"
+                    : "btn-danger"
                 } ${flatButtonClass}`}
                 disabled={reviewing[reviewModal.application._id]}
                 onClick={submitApplicationReview}
@@ -377,7 +377,7 @@ export default function StaffManagement() {
             </p>
             <div className="flex gap-3">
               <Button
-                className={`flex-1 bg-red-600 text-white hover:bg-red-700 ${flatButtonClass}`}
+                className={`flex-1 btn-danger ${flatButtonClass}`}
                 disabled={deleting[confirmDelete._id]}
                 onClick={() => deleteStaff(confirmDelete)}
               >
@@ -439,7 +439,7 @@ export default function StaffManagement() {
                   <p className="text-sm mt-1">When candidates apply, they will appear here for admin review.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-white/10 bg-[#0b1326]/70">
+                <div className="overflow-x-auto table-unified rounded-lg border border-white/10 bg-[#0b1326]/70">
                   <table className="w-full min-w-[860px] text-sm">
                     <thead>
                       <tr className="text-left text-white/50 border-b border-white/10 text-[11px] uppercase tracking-[0.08em]">
@@ -492,7 +492,7 @@ export default function StaffManagement() {
                                 size="sm"
                                 disabled={reviewing[application._id]}
                                 onClick={() => openReviewModal(application, "REJECT")}
-                                className={`bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60 ${flatButtonClass}`}
+                                className={`btn-danger ${flatButtonClass}`}
                               >
                                 Reject
                               </Button>
@@ -522,7 +522,7 @@ export default function StaffManagement() {
                   <p className="text-sm mt-1">Approve pending applications above to onboard staff members.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto table-unified">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-white/40 border-b border-white/10">
@@ -557,7 +557,7 @@ export default function StaffManagement() {
                               size="sm"
                               disabled={deleting[s._id]}
                               onClick={() => setConfirmDelete(s)}
-                              className={`bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60 ${flatButtonClass}`}
+                              className={`btn-danger ${flatButtonClass}`}
                             >
                               <Trash2 size={14} className="inline mr-1" /> Delete
                             </Button>

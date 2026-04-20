@@ -455,7 +455,7 @@ export default function StaffFollowUpTasks() {
                               <Button
                                 onClick={() => handleDeleteTask(task._id)}
                                 disabled={updatingTaskId === task._id}
-                                className="bg-red-600 hover:bg-red-700 text-white"
+                                className="btn-danger"
                               >
                                 <Trash2 size={13} className="mr-1" /> Delete
                               </Button>

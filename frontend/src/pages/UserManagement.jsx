@@ -123,7 +123,7 @@ export default function UserManagement() {
             </p>
             <div className="flex gap-3">
               <Button
-                className="flex-1 bg-red-600 text-white hover:bg-red-700"
+                className="flex-1 btn-danger"
                 disabled={deleting[confirmDelete._id]}
                 onClick={() => deleteUser(confirmDelete)}
               >
@@ -207,7 +207,7 @@ export default function UserManagement() {
                 No users found{search ? ` matching "${search}"` : ""}.
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto table-unified">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-white/40 border-b border-white/10">
@@ -260,7 +260,7 @@ export default function UserManagement() {
                             size="sm"
                             disabled={deleting[u._id]}
                             onClick={() => setConfirmDelete(u)}
-                            className="bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60"
+                            className="btn-danger"
                           >
                             <Trash2 size={14} className="inline mr-1" /> Delete
                           </Button>

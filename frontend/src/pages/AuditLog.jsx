@@ -191,7 +191,7 @@ export default function AuditLog() {
             ) : logs.length === 0 ? (
               <div className="py-12 text-center text-slate-400 text-sm">No audit log entries match your filters.</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto table-unified">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-slate-400 border-b border-white/10">

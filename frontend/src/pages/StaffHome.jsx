@@ -652,7 +652,7 @@ export default function StaffHome() {
             {recentUsers.length === 0 ? (
               <p className="text-sm text-slate-400">No users registered yet.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto table-unified">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left border-b border-white/10 text-slate-400">

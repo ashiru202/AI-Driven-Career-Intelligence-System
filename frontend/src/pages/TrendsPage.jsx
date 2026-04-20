@@ -265,7 +265,7 @@ function SkillsTable({ scope, onSelectSkill, selectedSkill }) {
       </div>
 
       {/* Table */}
-      <div style={{ overflowX: "auto" }}>
+      <div className="table-unified" style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
