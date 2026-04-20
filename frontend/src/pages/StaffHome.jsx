@@ -73,14 +73,16 @@ function chartTooltip({ active, payload, label }) {
 function metricCard({ title, value, subtitle, Icon, accent }) {
   return (
     <Card
+      className="h-full"
       style={{
         border: "1px solid rgba(255,255,255,0.1)",
         borderRadius: 16,
         background: "linear-gradient(145deg, rgba(18,22,38,0.88), rgba(12,14,27,0.92))",
         boxShadow: "0 14px 35px rgba(0,0,0,0.28)",
+        minHeight: 156,
       }}
     >
-      <CardContent className="pt-4 pb-4">
+      <CardContent className="pt-4 pb-4 h-full">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.45)" }}>
@@ -365,7 +367,7 @@ export default function StaffHome() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           {statCards.map((tile) => (
-            <div key={tile.title}>{metricCard(tile)}</div>
+            <div key={tile.title} className="h-full">{metricCard(tile)}</div>
           ))}
         </div>
 
