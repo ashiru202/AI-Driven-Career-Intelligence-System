@@ -51,6 +51,7 @@ export default function StaffManagement() {
   const [deleting, setDeleting] = useState({});
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [toast, setToast] = useState(null);
+  const flatButtonClass = "shadow-none hover:shadow-none";
 
   const showToast = (message, type = "success") => setToast({ message, type });
   const closeToast = () => setToast(null);
@@ -95,6 +96,32 @@ export default function StaffManagement() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveNotifications]);
+
+  useEffect(() => {
+    const hasOpenModal = Boolean(viewApplication || reviewModal || confirmDelete);
+    if (!hasOpenModal) {
+      return undefined;
+    }
+
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const mainEl = document.querySelector("main");
+    const prevMainOverflow = mainEl ? mainEl.style.overflow : "";
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    if (mainEl) {
+      mainEl.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      if (mainEl) {
+        mainEl.style.overflow = prevMainOverflow;
+      }
+    };
+  }, [viewApplication, reviewModal, confirmDelete]);
 
   const openReviewModal = (application, decision) => {
     setViewApplication(null);
@@ -161,8 +188,8 @@ export default function StaffManagement() {
 
       {/* View Application Modal */}
       {viewApplication && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-[#13132b] border border-white/10 rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-[1px] overflow-y-auto px-4 py-6 sm:px-6 md:py-10">
+          <div className="mx-auto bg-[#13132b] border border-white/10 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[calc(100vh-3rem)] overflow-y-auto">
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
                 <h3 className="text-lg font-bold text-white">Staff Application Details</h3>
@@ -255,13 +282,13 @@ export default function StaffManagement() {
 
             <div className="flex gap-3">
               <Button
-                className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700"
+                className={`flex-1 bg-emerald-600 text-white hover:bg-emerald-700 ${flatButtonClass}`}
                 onClick={() => openReviewModal(viewApplication, "APPROVE")}
               >
                 Approve
               </Button>
               <Button
-                className="flex-1 bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60"
+                className={`flex-1 bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60 ${flatButtonClass}`}
                 onClick={() => openReviewModal(viewApplication, "REJECT")}
               >
                 Reject
@@ -273,7 +300,7 @@ export default function StaffManagement() {
 
       {/* Review Application Modal */}
       {reviewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/70 px-4 py-8 overflow-y-auto">
           <div className="bg-[#13132b] border border-white/10 rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4">
             <h3 className="text-lg font-bold text-white mb-2">
               {reviewModal.decision === "APPROVE" ? "Approve Application?" : "Reject Application?"}
@@ -316,7 +343,7 @@ export default function StaffManagement() {
                   reviewModal.decision === "APPROVE"
                     ? "bg-emerald-600 hover:bg-emerald-700"
                     : "bg-red-600 hover:bg-red-700"
-                }`}
+                } ${flatButtonClass}`}
                 disabled={reviewing[reviewModal.application._id]}
                 onClick={submitApplicationReview}
               >
@@ -327,7 +354,7 @@ export default function StaffManagement() {
                   : "Reject Application"}
               </Button>
               <Button
-                className="flex-1 bg-white/10 text-white hover:bg-white/20"
+                className={`flex-1 bg-white/10 text-white hover:bg-white/20 ${flatButtonClass}`}
                 onClick={() => setReviewModal(null)}
               >
                 Cancel
@@ -339,7 +366,7 @@ export default function StaffManagement() {
 
       {/* Confirm Delete Modal */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/70 px-4 py-8 overflow-y-auto">
           <div className="bg-[#13132b] border border-white/10 rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
             <h3 className="text-lg font-bold text-white mb-2">Delete Staff Account?</h3>
             <p className="text-white/60 text-sm mb-1">You are about to permanently delete:</p>
@@ -350,14 +377,14 @@ export default function StaffManagement() {
             </p>
             <div className="flex gap-3">
               <Button
-                className="flex-1 bg-red-600 text-white hover:bg-red-700"
+                className={`flex-1 bg-red-600 text-white hover:bg-red-700 ${flatButtonClass}`}
                 disabled={deleting[confirmDelete._id]}
                 onClick={() => deleteStaff(confirmDelete)}
               >
                 {deleting[confirmDelete._id] ? "Deleting..." : "Yes, Delete"}
               </Button>
               <Button
-                className="flex-1 bg-white/10 text-white hover:bg-white/20"
+                className={`flex-1 bg-white/10 text-white hover:bg-white/20 ${flatButtonClass}`}
                 onClick={() => setConfirmDelete(null)}
               >
                 Cancel
@@ -377,13 +404,13 @@ export default function StaffManagement() {
           <div className="flex flex-wrap gap-2">
             <span
               className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
-              style={{ background: "rgba(14,165,233,0.18)", color: "#bae6fd", border: "1px solid rgba(14,165,233,0.35)" }}
+              style={{ background: "rgba(59,130,246,0.18)", color: "#bfdbfe", border: "1px solid rgba(96,165,250,0.35)" }}
             >
               <Users size={13} /> {staff.length} staff
             </span>
             <span
               className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
-              style={{ background: "rgba(34,197,94,0.16)", color: "#bbf7d0", border: "1px solid rgba(34,197,94,0.35)" }}
+              style={{ background: "rgba(59,130,246,0.12)", color: "#dbeafe", border: "1px solid rgba(96,165,250,0.28)" }}
             >
               <Activity size={13} /> {activeStaff} active
             </span>
@@ -397,8 +424,8 @@ export default function StaffManagement() {
         </div>
 
         <div>
-          <Card className="border-white/10" style={{ background: "linear-gradient(145deg, rgba(17,31,48,0.9), rgba(14,22,36,0.95))" }}>
-            <CardHeader className="border-b border-white/10">
+          <Card className="border-white/10 overflow-hidden" style={{ background: "linear-gradient(145deg, rgba(17,31,48,0.9), rgba(14,22,36,0.95))" }}>
+            <CardHeader className="border-b border-white/10 bg-white/[0.02]">
               <CardTitle className="text-white flex items-center gap-2">
                 <Briefcase size={16} /> Pending Staff Applications ({pendingApplications.length})
               </CardTitle>
@@ -412,42 +439,44 @@ export default function StaffManagement() {
                   <p className="text-sm mt-1">When candidates apply, they will appear here for admin review.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto rounded-lg border border-white/10 bg-[#0b1326]/70">
+                  <table className="w-full min-w-[860px] text-sm">
                     <thead>
-                      <tr className="text-left text-white/40 border-b border-white/10">
-                        <th className="pb-3">Applicant</th>
-                        <th className="pb-3">Current Role</th>
-                        <th className="pb-3">Experience</th>
-                        <th className="pb-3">Expertise</th>
-                        <th className="pb-3">Submitted</th>
-                        <th className="pb-3">Action</th>
+                      <tr className="text-left text-white/50 border-b border-white/10 text-[11px] uppercase tracking-[0.08em]">
+                        <th className="px-4 py-3">Applicant</th>
+                        <th className="px-4 py-3">Current Role</th>
+                        <th className="px-4 py-3">Experience</th>
+                        <th className="px-4 py-3">Expertise</th>
+                        <th className="px-4 py-3">Submitted</th>
+                        <th className="px-4 py-3">Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {pendingApplications.map((application) => (
+                      {pendingApplications.map((application, index) => (
                         <tr
                           key={application._id}
-                          className="border-b border-white/5 last:border-0 hover:bg-white/[0.06] transition-colors"
+                          className={`border-b border-white/5 last:border-0 transition-colors ${
+                            index % 2 === 0 ? "bg-white/[0.015]" : "bg-transparent"
+                          } hover:bg-[#1a2440]/70`}
                         >
-                          <td className="py-3">
+                          <td className="px-4 py-3">
                             <p className="font-medium text-white/90">{application.fullName}</p>
                             <p className="text-white/55 text-xs mt-0.5">{application.email}</p>
                           </td>
-                          <td className="py-3 text-white/70">{application.currentRole || "-"}</td>
-                          <td className="py-3 text-white/70">{application.yearsExperience || 0} yrs</td>
-                          <td className="py-3 text-white/65 text-xs max-w-[220px]">
+                          <td className="px-4 py-3 text-white/75">{application.currentRole || "-"}</td>
+                          <td className="px-4 py-3 text-white/75">{application.yearsExperience || 0} yrs</td>
+                          <td className="px-4 py-3 text-white/70 text-xs max-w-[240px]">
                             {(application.expertiseAreas || []).join(", ") || "-"}
                           </td>
-                          <td className="py-3 text-white/45">
+                          <td className="px-4 py-3 text-white/55">
                             {new Date(application.createdAt).toLocaleDateString()}
                           </td>
-                          <td className="py-3">
+                          <td className="px-4 py-3">
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 onClick={() => setViewApplication(application)}
-                                className="bg-white/10 text-white hover:bg-white/20 border border-white/20"
+                                className={`bg-white/10 text-white hover:bg-white/20 border border-white/20 ${flatButtonClass}`}
                               >
                                 <Eye size={14} className="inline mr-1" /> View
                               </Button>
@@ -455,7 +484,7 @@ export default function StaffManagement() {
                                 size="sm"
                                 disabled={reviewing[application._id]}
                                 onClick={() => openReviewModal(application, "APPROVE")}
-                                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                className={`bg-emerald-600 text-white hover:bg-emerald-700 ${flatButtonClass}`}
                               >
                                 Approve
                               </Button>
@@ -463,7 +492,7 @@ export default function StaffManagement() {
                                 size="sm"
                                 disabled={reviewing[application._id]}
                                 onClick={() => openReviewModal(application, "REJECT")}
-                                className="bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60"
+                                className={`bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60 ${flatButtonClass}`}
                               >
                                 Reject
                               </Button>
@@ -528,7 +557,7 @@ export default function StaffManagement() {
                               size="sm"
                               disabled={deleting[s._id]}
                               onClick={() => setConfirmDelete(s)}
-                              className="bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60"
+                              className={`bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60 ${flatButtonClass}`}
                             >
                               <Trash2 size={14} className="inline mr-1" /> Delete
                             </Button>
