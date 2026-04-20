@@ -184,7 +184,7 @@ export default function Register() {
                   <div style={{ position: 'relative' }}>
                     <User size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
                     <input
-                      type="text" name="name" placeholder="John Doe" value={formData.name} required
+                      type="text" name="name" placeholder="Ashiru Dilmin" value={formData.name} required
                       onChange={handleChange} style={inputStyle} onFocus={focusOn} onBlur={focusOff}
                     />
                   </div>

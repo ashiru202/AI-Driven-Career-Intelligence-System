@@ -134,6 +134,7 @@ function ProfileModal({ onClose, onSave }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '16px',
         animation: 'pmFadeIn 0.2s ease',
+        overscrollBehavior: 'contain',
       }}
     >
       <style>{`@keyframes pmFadeIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}`}</style>
@@ -184,7 +185,7 @@ function ProfileModal({ onClose, onSave }) {
         </div>
 
         {/* Body */}
-        <div style={{ overflowY: 'auto', flex: 1 }}>
+        <div style={{ overflowY: 'auto', flex: 1, overscrollBehavior: 'contain' }}>
           {loading ? (
             <div style={{ padding: 32, textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>Loading profile…</div>
           ) : (
@@ -807,6 +808,23 @@ export default function Layout({ children }) {
   const [sidebarOpen,    setSidebarOpen]    = useState(false);
   const [profileOpen,    setProfileOpen]    = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+
+  // Lock page scrolling while full-screen overlays are visible.
+  useEffect(() => {
+    const shouldLockScroll = profileOpen || logoutModalOpen;
+    if (!shouldLockScroll) return;
+
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, [profileOpen, logoutModalOpen]);
 
   useEffect(() => {
     try {
