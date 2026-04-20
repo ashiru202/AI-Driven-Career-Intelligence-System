@@ -16,7 +16,6 @@ jest.mock("../src/services/auditLogService", () => ({
 }));
 
 const User = require("../src/models/User");
-const { sendStaffInviteEmail } = require("../src/utils/emailService");
 const app = require("../src/app");
 
 const USER_TOKEN = makeToken({ id: "aaaaaaaaaaaaaaaaaaaaaaaa", role: "USER" });
@@ -52,37 +51,18 @@ describe("POST /api/admin/staff", () => {
     expect(res.status).toBe(403);
   });
 
-  it("creates a STAFF account for admin", async () => {
+  it("returns 410 because direct invite is disabled", async () => {
     setupAuth(mockAdminUser());
-    User.findOne.mockResolvedValue(null);
-    User.create.mockResolvedValue({
-      _id: "cccccccccccccccccccccccc",
-      name: "Staff Member",
-      email: "staff@example.com",
-      role: "STAFF",
-      emailVerified: false,
-    });
 
     const res = await request(app)
       .post("/api/admin/staff")
       .set("Authorization", `Bearer ${ADMIN_TOKEN}`)
       .send({ name: "Staff Member", email: "staff@example.com" });
 
-    expect(res.status).toBe(201);
-    expect(res.body.ok).toBe(true);
-    expect(res.body.data.role).toBe("STAFF");
-
-    const createCall = User.create.mock.calls[0][0];
-    expect(createCall.role).toBe("STAFF");
-    expect(createCall.email).toBe("staff@example.com");
-    expect(typeof createCall.password).toBe("string");
-    expect(typeof createCall.passwordResetToken).toBe("string");
-    expect(createCall.passwordResetExpires).toBeInstanceOf(Date);
-    expect(sendStaffInviteEmail).toHaveBeenCalledWith(
-      "staff@example.com",
-      "Staff Member",
-      expect.any(String)
-    );
+    expect(res.status).toBe(410);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.error.code).toBe("DIRECT_INVITE_DISABLED");
+    expect(User.create).not.toHaveBeenCalled();
   });
 
   it("returns 400 for invalid payload", async () => {
@@ -97,18 +77,16 @@ describe("POST /api/admin/staff", () => {
     expect(User.create).not.toHaveBeenCalled();
   });
 
-  it("returns 409 if staff email already exists", async () => {
+  it("does not attempt invite side effects", async () => {
     setupAuth(mockAdminUser());
-    User.findOne.mockResolvedValue({ _id: "existing", email: "staff@example.com" });
 
     const res = await request(app)
       .post("/api/admin/staff")
       .set("Authorization", `Bearer ${ADMIN_TOKEN}`)
       .send({ name: "Staff Member", email: "staff@example.com" });
 
-    expect(res.status).toBe(409);
-    expect(res.body.ok).toBe(false);
+    expect(res.status).toBe(410);
+    expect(User.findOne).not.toHaveBeenCalled();
     expect(User.create).not.toHaveBeenCalled();
-    expect(sendStaffInviteEmail).not.toHaveBeenCalled();
   });
 });

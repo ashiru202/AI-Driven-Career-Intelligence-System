@@ -68,35 +68,11 @@ function mapStaffProfileFromApplication(application) {
 
 // Admin can create STAFF accounts only
 const createStaff = asyncHandler(async (req, res) => {
-  const { name, email } = req.body;
-
-  const exists = await User.findOne({ email });
-  if (exists) {
-    throw AppError.conflict("User with this email already exists");
-  }
-
-  const { user, rawInviteToken, inviteExpires } = await createInvitedStaffUser({
-    name,
-    email,
-  });
-
-  await sendStaffInviteEmail(email, name, rawInviteToken);
-
-  logActivity(req, "INVITE_STAFF_ACCOUNT",
-    { type: "User", id: user._id, email: user.email, name: user.name },
-    { role: "STAFF", inviteExpiresAt: inviteExpires }
+  throw new AppError(
+    410,
+    "DIRECT_INVITE_DISABLED",
+    "Direct staff invite is disabled. Use the staff application review workflow instead."
   );
-
-  res.status(201).json(successResponse(
-    {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      emailVerified: user.emailVerified,
-    },
-    "Staff invite sent. The staff member must set their own password from the email link."
-  ));
 });
 
 // Admin can list staff applications with filters

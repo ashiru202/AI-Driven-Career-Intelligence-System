@@ -7,6 +7,7 @@ const { successResponse } = require("../utils/responseHelper");
 const AppError = require("../utils/AppError");
 const { asyncHandler } = require("../middleware/errorMiddleware");
 const { sendVerificationEmail, sendPasswordResetEmail } = require("../utils/emailService");
+const { sendToUser } = require("../utils/sseManager");
 
 // Helpers
 function generateRawToken() {
@@ -94,6 +95,21 @@ exports.applyForStaff = asyncHandler(async (req, res) => {
     linkedInUrl: linkedInUrl || '',
     portfolioUrl: portfolioUrl || '',
     status: 'PENDING',
+  });
+
+  const adminUsers = await User.find({ role: 'ADMIN', active: true }, '_id');
+  const notification = {
+    id: `staff_application_${String(application._id)}`,
+    icon: 'ClipboardList',
+    title: 'New staff application received',
+    body: `${application.fullName} applied for staff (${application.currentRole}).`,
+    link: '/staff-management',
+    time: 'Just now',
+    createdAt: application.createdAt,
+  };
+
+  (adminUsers || []).forEach((admin) => {
+    sendToUser(String(admin._id), 'notification', notification);
   });
 
   res.status(201).json(

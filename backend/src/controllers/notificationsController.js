@@ -6,6 +6,7 @@ const Resume     = require('../models/Resume');
 const Roadmap    = require('../models/Roadmap');
 const Comparison = require('../models/Comparison');
 const User       = require('../models/User');
+const StaffApplication = require('../models/StaffApplication');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function timeAgo(date) {
@@ -133,6 +134,8 @@ async function getAdminNotifications() {
     newRoadmaps,
     newComparisons,
     lowMatchComps,
+    pendingStaffApplications,
+    latestPendingApplications,
   ] = await Promise.all([
     User.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
     User.countDocuments({ role: 'USER' }),
@@ -140,6 +143,12 @@ async function getAdminNotifications() {
     Roadmap.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
     Comparison.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
     Comparison.countDocuments({ matchScore: { $lt: 40 }, createdAt: { $gte: sevenDaysAgo } }),
+    StaffApplication.countDocuments({ status: 'PENDING' }),
+    StaffApplication.find({ status: 'PENDING' })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('fullName currentRole createdAt')
+      .lean(),
   ]);
 
   notifications.push({
@@ -183,6 +192,32 @@ async function getAdminNotifications() {
     time: 'Live',
     createdAt: new Date(),
   });
+
+  notifications.push({
+    id: 'admin_staff_applications_summary',
+    icon: 'ClipboardList',
+    title: `${pendingStaffApplications} pending staff application${pendingStaffApplications !== 1 ? 's' : ''}`,
+    body: pendingStaffApplications > 0
+      ? 'New staff applications are waiting for review.'
+      : 'No pending staff applications at the moment.',
+    link: '/staff-management',
+    time: 'Live',
+    createdAt: new Date(),
+  });
+
+  latestPendingApplications.forEach((application) => {
+    notifications.push({
+      id: `staff_application_${application._id}`,
+      icon: 'ClipboardList',
+      title: 'New staff application received',
+      body: `${application.fullName} applied for staff (${application.currentRole || 'Role not specified'}).`,
+      link: '/staff-management',
+      time: timeAgo(application.createdAt),
+      createdAt: application.createdAt,
+    });
+  });
+
+  notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return notifications;
 }

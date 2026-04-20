@@ -15,10 +15,14 @@ jest.mock("../src/utils/emailService", () => ({
 jest.mock("../src/services/auditLogService", () => ({
   logActivity: jest.fn(),
 }));
+jest.mock("../src/utils/sseManager", () => ({
+  sendToUser: jest.fn(),
+}));
 
 const User = require("../src/models/User");
 const StaffApplication = require("../src/models/StaffApplication");
 const { sendStaffInviteEmail } = require("../src/utils/emailService");
+const { sendToUser } = require("../src/utils/sseManager");
 const app = require("../src/app");
 
 const ADMIN_TOKEN = makeToken({ id: "bbbbbbbbbbbbbbbbbbbbbbbb", role: "ADMIN" });
@@ -48,14 +52,19 @@ function validApplicationPayload(overrides = {}) {
 describe("Staff application workflow", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    User.find = jest.fn().mockResolvedValue([]);
   });
 
   describe("POST /api/auth/staff-applications", () => {
     it("submits a staff application", async () => {
       User.findOne.mockResolvedValue(null);
+      User.find.mockResolvedValue([{ _id: "bbbbbbbbbbbbbbbbbbbbbbbb" }]);
       StaffApplication.findOne.mockResolvedValue(null);
       StaffApplication.create.mockResolvedValue({
         _id: "cccccccccccccccccccccccc",
+        fullName: "Jane Staff",
+        currentRole: "Career Coach",
+        createdAt: new Date(),
         status: "PENDING",
       });
 
@@ -71,6 +80,14 @@ describe("Staff application workflow", () => {
           fullName: "Jane Staff",
           email: "jane.staff@example.com",
           status: "PENDING",
+        })
+      );
+      expect(sendToUser).toHaveBeenCalledWith(
+        "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "notification",
+        expect.objectContaining({
+          id: expect.stringMatching(/^staff_application_/),
+          link: "/staff-management",
         })
       );
     });
