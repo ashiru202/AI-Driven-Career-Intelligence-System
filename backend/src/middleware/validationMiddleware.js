@@ -46,7 +46,23 @@ const schemas = {
       password: z.string()
         .min(6, 'Password must be at least 6 characters')
         .max(128, 'Password must be at most 128 characters'),
-      role: z.enum(['USER', 'STAFF']).optional().default('USER')
+      role: z.enum(['USER']).optional().default('USER')
+    })
+  }),
+
+  adminCreateStaff: z.object({
+    body: z.object({
+      name: z.string()
+        .min(2, 'Name must be at least 2 characters')
+        .max(100, 'Name must be at most 100 characters')
+        .transform(stripHtml),
+      email: z.string()
+        .email('Invalid email address')
+        .max(254, 'Email too long')
+        .toLowerCase(),
+      password: z.string()
+        .min(6, 'Password must be at least 6 characters')
+        .max(128, 'Password must be at most 128 characters')
     })
   }),
 

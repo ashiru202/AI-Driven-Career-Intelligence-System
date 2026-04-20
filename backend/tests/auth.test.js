@@ -17,6 +17,11 @@ jest.mock('../src/config/db', () => jest.fn());
 jest.mock('../src/models/User');
 const User = require('../src/models/User');
 
+jest.mock('../src/utils/emailService', () => ({
+  sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+  sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
+}));
+
 const app = require('../src/app');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -44,6 +49,9 @@ describe('POST /api/auth/register', () => {
     expect(res.body.data).toHaveProperty('email');
     expect(res.body.data.email).toBe('alice@example.com');
     expect(res.body.message).toContain('verify your account');
+
+    const createCall = User.create.mock.calls[0][0];
+    expect(createCall.role).toBe('USER');
   });
 
   it('returns 409 if the email is already registered', async () => {
@@ -57,25 +65,14 @@ describe('POST /api/auth/register', () => {
     expect(res.body.ok).toBe(false);
   });
 
-  it('registers a new staff account when role is STAFF', async () => {
-    User.findOne.mockResolvedValue(null);
-    User.create.mockResolvedValue({
-      _id: 'aaaaaaaaaaaaaaaaaaaaaaaa',
-      name: 'Staff Member',
-      email: 'staff@example.com',
-      role: 'STAFF',
-      emailVerified: false,
-      emailVerificationToken: 'hashedtoken',
-      emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
-    });
-
+  it('returns 400 when role is STAFF at registration', async () => {
     const res = await request(app)
       .post('/api/auth/register')
       .send({ name: 'Staff Member', email: 'staff@example.com', password: 'password123', role: 'STAFF' });
 
-    expect(res.status).toBe(201);
-    const createCall = User.create.mock.calls[0][0];
-    expect(createCall.role).toBe('STAFF');
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+    expect(User.create).not.toHaveBeenCalled();
   });
 
   it('returns 400 when role is ADMIN at registration', async () => {

@@ -1,3 +1,5 @@
+const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const { successResponse } = require("../utils/responseHelper");
 const AppError = require("../utils/AppError");
@@ -7,6 +9,58 @@ const analyticsService = require("../services/analyticsService");
 const AuditLog = require("../models/AuditLog");
 const { logActivity } = require("../services/auditLogService");
 const { parsePagination, paginationMeta } = require("../utils/pagination");
+const { sendVerificationEmail } = require("../utils/emailService");
+
+function generateRawToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+function hashToken(raw) {
+  return crypto.createHash("sha256").update(raw).digest("hex");
+}
+
+// Admin can create STAFF accounts only
+const createStaff = asyncHandler(async (req, res) => {
+  const { name, email, password } = req.body;
+
+  const exists = await User.findOne({ email });
+  if (exists) {
+    throw AppError.conflict("User with this email already exists");
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const rawToken = generateRawToken();
+  const hashedVerificationToken = hashToken(rawToken);
+  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  const user = await User.create({
+    name,
+    email,
+    password: hashedPassword,
+    role: "STAFF",
+    emailVerified: false,
+    emailVerificationToken: hashedVerificationToken,
+    emailVerificationExpires: verificationExpires,
+  });
+
+  await sendVerificationEmail(email, name, rawToken);
+
+  logActivity(req, "CREATE_STAFF_ACCOUNT",
+    { type: "User", id: user._id, email: user.email, name: user.name },
+    { role: "STAFF" }
+  );
+
+  res.status(201).json(successResponse(
+    {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      emailVerified: user.emailVerified,
+    },
+    "Staff account created. Verification email sent."
+  ));
+});
 
 // Admin can list all users with filters
 const listUsers = asyncHandler(async (req, res) => {
@@ -173,6 +227,7 @@ const getAuditLogs = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  createStaff,
   listUsers,
   toggleUserStatus,
   getAdminStats,
