@@ -127,7 +127,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {/* Industry Trends Card */}
               <Link
-                to="/industry-trends"
+                to="/trends"
                 className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/20 hover:bg-white/8 transition-all duration-200 flex flex-col gap-4 text-left no-underline"
                 style={{ textDecoration: "none" }}
               >
