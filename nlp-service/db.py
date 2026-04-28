@@ -19,29 +19,52 @@ def get_db():
 
 def _ensure_indexes(db) -> None:
     """Create all collection indexes idempotently."""
+    def ensure_index(collection, keys, *, unique: bool = False, name: str | None = None) -> str:
+        """Ensure an index exists, regardless of its current name.
+
+        MongoDB considers index identity to be the key pattern + options. If an
+        index already exists under a different name, attempting to create it
+        again with a custom name raises IndexOptionsConflict.
+        """
+        key_list = [(field, int(direction)) for field, direction in keys]
+
+        for existing_name, meta in collection.index_information().items():
+            if meta.get("key") != key_list:
+                continue
+            if unique and not meta.get("unique"):
+                collection.drop_index(existing_name)
+                break
+            return existing_name
+
+        return collection.create_index(keys, unique=unique, name=name)
+
     # ── job_postings ─────────────────────────────────────────────────────────
     jp = db["job_postings"]
-    jp.create_index(
+    ensure_index(
+        jp,
         [("sourceId", ASCENDING), ("source", ASCENDING)],
         unique=True,
         name="sourceId_source_unique",
     )
-    jp.create_index([("scrapedAt", DESCENDING)], name="scrapedAt_desc")
-    jp.create_index([("processed", ASCENDING)], name="processed_asc")
-    jp.create_index(
+    ensure_index(jp, [("scrapedAt", DESCENDING)], name="scrapedAt_desc")
+    ensure_index(jp, [("processed", ASCENDING)], name="processed_asc")
+    ensure_index(
+        jp,
         [("marketScope", ASCENDING), ("scrapedAt", DESCENDING)],
         name="marketScope_scrapedAt",
     )
 
     # ── skill_snapshots ───────────────────────────────────────────────────────
     ss = db["skill_snapshots"]
-    ss.create_index(
+    ensure_index(
+        ss,
         [("skill", ASCENDING), ("periodStart", ASCENDING), ("marketScope", ASCENDING)],
         unique=True,
         name="skill_periodStart_marketScope_unique",
     )
-    ss.create_index([("periodStart", DESCENDING)], name="periodStart_desc")
-    ss.create_index(
+    ensure_index(ss, [("periodStart", DESCENDING)], name="periodStart_desc")
+    ensure_index(
+        ss,
         [("relativeFreq", DESCENDING), ("periodStart", DESCENDING)],
         name="relativeFreq_periodStart",
     )
@@ -61,13 +84,11 @@ def _ensure_indexes(db) -> None:
         if meta.get("unique") and key == [("skill", 1)]:
             sf.drop_index(idx_name)
 
-    sf.create_index(
-        [("skill", ASCENDING), ("marketScope", ASCENDING)],
-        unique=True,
-        name="skill_marketScope_unique",
-    )
-    sf.create_index(
+    # These indexes are also declared by the backend Mongoose model, which uses
+    # MongoDB's default naming. Do not force a different name here.
+    ensure_index(sf, [("skill", ASCENDING), ("marketScope", ASCENDING)], unique=True)
+    ensure_index(
+        sf,
         [("marketScope", ASCENDING), ("trendDirection", ASCENDING), ("trendSlope", DESCENDING)],
-        name="marketScope_trendDirection_trendSlope",
     )
-    sf.create_index([("generatedAt", DESCENDING)], name="generatedAt_desc")
+    ensure_index(sf, [("generatedAt", DESCENDING)])
