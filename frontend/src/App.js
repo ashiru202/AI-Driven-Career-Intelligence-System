@@ -37,6 +37,7 @@ import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForceChangePassword from "./pages/ForceChangePassword";
 import AdminSkillGroups from "./pages/AdminSkillGroups";
+import AdminSkillsDemand from "./pages/AdminSkillsDemand";
 
 export default function App() {
   return (
@@ -289,6 +290,17 @@ export default function App() {
             <ProtectedRoute>
               <RoleRoute roles={["ADMIN"]}>
                 <AdminSkillGroups />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/skills-demand"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["ADMIN"]}>
+                <AdminSkillsDemand />
               </RoleRoute>
             </ProtectedRoute>
           }

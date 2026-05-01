@@ -401,6 +401,7 @@ const ROLE_NAV = {
     { path: '/staff-management',    label: 'Staff Management', Icon: Users },
     { path: '/users',               label: 'Job Seekers',      Icon: UserCheck },
     { path: '/admin/skill-groups',  label: 'CV Skill Groups',  Icon: Layers3 },
+    { path: '/admin/skills-demand', label: 'Skills Demand',    Icon: Flame },
     { path: '/admin-report',        label: 'Platform Report',  Icon: BarChart2 },
     { path: '/admin/user-reports',  label: 'User Reports',     Icon: ClipboardList },
     { path: '/all-roadmaps',        label: 'All Roadmaps',     Icon: Map },

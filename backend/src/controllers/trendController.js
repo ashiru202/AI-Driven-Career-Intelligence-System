@@ -20,6 +20,12 @@ function normalizeMarketScope(scope) {
   return VALID_MARKET_SCOPES.has(value) ? value : "combined";
 }
 
+function parseLimit(value, fallback = 10, max = 50) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(parsed, max);
+}
+
 function getInternalToken() {
   const token = (process.env.NLP_INTERNAL_TOKEN || process.env.INTERNAL_TOKEN || "").trim();
   if (!token || token.toLowerCase() === "changeme") {
@@ -400,6 +406,63 @@ const getSnapshotSummary = asyncHandler(async (req, res) => {
   }));
 });
 
+/**
+ * GET /api/trends/top-least
+ * Query: ?marketScope=combined&limit=10
+ * Latest industry snapshot demand sorted by relative frequency.
+ */
+const getTopLeastSkills = asyncHandler(async (req, res) => {
+  const marketScope = normalizeMarketScope(req.query.marketScope);
+  const limit = parseLimit(req.query.limit, 10, 50);
+
+  const latestSnapshot = await SkillSnapshot.findOne({ marketScope })
+    .sort({ periodStart: -1 })
+    .lean();
+
+  if (!latestSnapshot) {
+    return res.json(successResponse({
+      marketScope,
+      periodStart: null,
+      periodEnd: null,
+      top: [],
+      least: [],
+    }));
+  }
+
+  const snapshotFilter = {
+    marketScope,
+    periodStart: latestSnapshot.periodStart,
+  };
+
+  const [top, least] = await Promise.all([
+    SkillSnapshot.find(snapshotFilter)
+      .sort({ relativeFreq: -1, count: -1, skill: 1 })
+      .limit(limit)
+      .lean(),
+    SkillSnapshot.find(snapshotFilter)
+      .sort({ relativeFreq: 1, count: 1, skill: 1 })
+      .limit(limit)
+      .lean(),
+  ]);
+
+  const mapSnapshot = (snapshot) => ({
+    skill: snapshot.skill,
+    count: snapshot.count,
+    totalJobs: snapshot.totalJobs,
+    relativeFreq: snapshot.relativeFreq,
+    marketScope: snapshot.marketScope,
+    sources: snapshot.sources || [],
+  });
+
+  res.json(successResponse({
+    marketScope,
+    periodStart: latestSnapshot.periodStart,
+    periodEnd: latestSnapshot.periodEnd,
+    top: top.map(mapSnapshot),
+    least: least.map(mapSnapshot),
+  }));
+});
+
 // ── Admin-only handlers ───────────────────────────────────────────────────────
 
 /**
@@ -446,6 +509,7 @@ module.exports = {
   getRisingSkills,
   getFallingSkills,
   getSnapshotSummary,
+  getTopLeastSkills,
   triggerScrape,
   triggerForecast,
   getScrapeStatus,

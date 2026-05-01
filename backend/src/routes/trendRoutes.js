@@ -7,12 +7,14 @@ const {
   getRisingSkills,
   getFallingSkills,
   getSnapshotSummary,
+  getTopLeastSkills,
 } = require("../controllers/trendController");
 
 // All trend routes require a valid auth token (any role).
 router.use(requireAuth);
 
 router.get("/snapshot-summary", getSnapshotSummary);
+router.get("/top-least",        getTopLeastSkills);
 router.get("/rising",           getRisingSkills);
 router.get("/falling",          getFallingSkills);
 router.get("/skills",           getSkillsList);

@@ -172,6 +172,72 @@ describe('GET /api/trends/snapshot-summary', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+describe('GET /api/trends/top-least', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns 401 without a token', async () => {
+    const res = await request(app).get('/api/trends/top-least');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns top and least skills from the latest snapshot period', async () => {
+    setupAuth(mockUser());
+
+    const latest = makeSnapshot({
+      skill: 'python',
+      periodStart: new Date('2026-04-20'),
+      periodEnd: new Date('2026-04-26'),
+      relativeFreq: 0.3,
+    });
+    const topRows = [
+      makeSnapshot({ skill: 'python', periodStart: latest.periodStart, relativeFreq: 0.3, count: 30 }),
+      makeSnapshot({ skill: 'react', periodStart: latest.periodStart, relativeFreq: 0.2, count: 20 }),
+    ];
+    const leastRows = [
+      makeSnapshot({ skill: 'perl', periodStart: latest.periodStart, relativeFreq: 0.01, count: 1 }),
+      makeSnapshot({ skill: 'cobol', periodStart: latest.periodStart, relativeFreq: 0.02, count: 2 }),
+    ];
+
+    SkillSnapshot.findOne = jest.fn().mockReturnValue(chainResolving(latest));
+    SkillSnapshot.find = jest
+      .fn()
+      .mockReturnValueOnce(chainResolving(topRows))
+      .mockReturnValueOnce(chainResolving(leastRows));
+
+    const res = await request(app)
+      .get('/api/trends/top-least?marketScope=combined&limit=2')
+      .set('Authorization', `Bearer ${USER_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.data.marketScope).toBe('combined');
+    expect(res.body.data.top.map((row) => row.skill)).toEqual(['python', 'react']);
+    expect(res.body.data.least.map((row) => row.skill)).toEqual(['perl', 'cobol']);
+    expect(SkillSnapshot.findOne).toHaveBeenCalledWith({ marketScope: 'combined' });
+    expect(SkillSnapshot.find).toHaveBeenCalledWith({
+      marketScope: 'combined',
+      periodStart: latest.periodStart,
+    });
+  });
+
+  it('returns empty arrays when no snapshots exist for scope', async () => {
+    setupAuth(mockUser());
+
+    SkillSnapshot.findOne = jest.fn().mockReturnValue(chainResolving(null));
+
+    const res = await request(app)
+      .get('/api/trends/top-least?marketScope=local-lk')
+      .set('Authorization', `Bearer ${USER_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.marketScope).toBe('local-lk');
+    expect(res.body.data.top).toEqual([]);
+    expect(res.body.data.least).toEqual([]);
+  });
+});
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
 describe('GET /api/trends/rising', () => {
   beforeEach(() => jest.clearAllMocks());
 

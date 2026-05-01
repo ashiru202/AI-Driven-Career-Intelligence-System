@@ -90,6 +90,7 @@ function StatCard({ Icon, label, value, color }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function SkillsInDemand() {
   const [skillDemand, setSkillDemand] = useState(null);
+  const [industryDemand, setIndustryDemand] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -100,9 +101,13 @@ export default function SkillsInDemand() {
     if (!silent) setLoading(true);
 
     try {
-      const res = await api.get("/api/analytics/skill-demand");
-      const next = res.data.data || { top: [], least: [] };
+      const [platformRes, industryRes] = await Promise.all([
+        api.get("/api/analytics/skill-demand"),
+        api.get("/api/trends/top-least", { params: { marketScope: "combined", limit: 5 } }),
+      ]);
+      const next = platformRes.data.data || { top: [], least: [] };
       setSkillDemand(next);
+      setIndustryDemand(industryRes.data.data || { top: [], least: [] });
       setActiveSkill((prev) => (next.top?.some((row) => row.skill === prev) ? prev : ""));
       setHoveredSkill("");
       setLastUpdated(new Date());
@@ -125,6 +130,8 @@ export default function SkillsInDemand() {
   }, [fetchData]);
 
   const topSkills = skillDemand?.top || [];
+  const industryTop = industryDemand?.top || [];
+  const industryLeast = industryDemand?.least || [];
   const maxCount = topSkills[0]?.count || 1;
   const totalMentions = topSkills.reduce((s, x) => s + Number(x.count || 0), 0);
 
@@ -210,7 +217,7 @@ export default function SkillsInDemand() {
         )}
 
         {/* ── Stats row ── */}
-        {!loading && !error && topSkills.length > 0 && (
+        {!loading && !error && (topSkills.length > 0 || industryTop.length > 0 || industryLeast.length > 0) && (
           <>
             <div
               style={{
@@ -335,11 +342,90 @@ export default function SkillsInDemand() {
               )}
             </div>
 
+            {(industryTop.length > 0 || industryLeast.length > 0) && (
+              <div
+                style={{
+                  borderRadius: 20,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  padding: "26px 24px",
+                }}
+              >
+                <div style={{ marginBottom: 18 }}>
+                  <h2 style={{ fontSize: 18, fontWeight: 700, color: "#e2e8f0", margin: 0 }}>
+                    Industry Demand Snapshot
+                  </h2>
+                  <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginTop: 4, marginBottom: 0 }}>
+                    Latest job-market snapshot from the forecasting module
+                    {industryDemand?.periodStart && (
+                      <span>
+                        {" "}({new Date(industryDemand.periodStart).toLocaleDateString()} to {new Date(industryDemand.periodEnd).toLocaleDateString()})
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 18 }}>
+                  <div>
+                    <p style={{ color: "#86efac", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
+                      Highest industry demand
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {industryTop.map((item, index) => (
+                        <div
+                          key={item.skill}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            borderRadius: 10,
+                            background: "rgba(255,255,255,0.035)",
+                            border: "1px solid rgba(255,255,255,0.07)",
+                            padding: "10px 12px",
+                            color: "rgba(255,255,255,0.78)",
+                          }}
+                        >
+                          <span>{index + 1}. {titleizeSkill(item.skill)}</span>
+                          <span style={{ color: "#bae6fd" }}>{(Number(item.relativeFreq || 0) * 100).toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p style={{ color: "#fcd34d", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
+                      Least industry demand
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {industryLeast.map((item, index) => (
+                        <div
+                          key={item.skill}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            borderRadius: 10,
+                            background: "rgba(255,255,255,0.035)",
+                            border: "1px solid rgba(255,255,255,0.07)",
+                            padding: "10px 12px",
+                            color: "rgba(255,255,255,0.78)",
+                          }}
+                        >
+                          <span>{index + 1}. {titleizeSkill(item.skill)}</span>
+                          <span style={{ color: "#fde68a" }}>{(Number(item.relativeFreq || 0) * 100).toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </>
         )}
 
         {/* ── Empty state ── */}
-        {!loading && !error && topSkills.length === 0 && (
+        {!loading && !error && topSkills.length === 0 && industryTop.length === 0 && industryLeast.length === 0 && (
           <div
             style={{
               borderRadius: 20,
