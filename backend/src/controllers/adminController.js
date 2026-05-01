@@ -8,6 +8,7 @@ const { asyncHandler } = require("../middleware/errorMiddleware");
 const Comparison = require("../models/Comparison");
 const Resume = require("../models/Resume");
 const analyticsService = require("../services/analyticsService");
+const adminSkillInsightsService = require("../services/adminSkillInsightsService");
 const AuditLog = require("../models/AuditLog");
 const { logActivity } = require("../services/auditLogService");
 const { parsePagination, paginationMeta } = require("../utils/pagination");
@@ -563,6 +564,12 @@ const getResumesBySkill = asyncHandler(async (req, res) => {
   );
 });
 
+// Admin: compare CV uploads against top/least demanded skills
+const getSupplyVsDemand = asyncHandler(async (req, res) => {
+  const insights = await adminSkillInsightsService.getSupplyVsDemand(req.query);
+  res.json(successResponse(insights));
+});
+
 // Admin: manually override resume candidate level
 const updateResumeCandidateLevel = asyncHandler(async (req, res) => {
   const { resumeId } = req.params;
@@ -610,5 +617,6 @@ module.exports = {
   getAuditLogs,
   getResumeSkillGroups,
   getResumesBySkill,
+  getSupplyVsDemand,
   updateResumeCandidateLevel,
 };
