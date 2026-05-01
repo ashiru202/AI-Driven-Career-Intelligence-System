@@ -6,11 +6,13 @@ const { successResponse } = require("../utils/responseHelper");
 const AppError = require("../utils/AppError");
 const { asyncHandler } = require("../middleware/errorMiddleware");
 const Comparison = require("../models/Comparison");
+const Resume = require("../models/Resume");
 const analyticsService = require("../services/analyticsService");
 const AuditLog = require("../models/AuditLog");
 const { logActivity } = require("../services/auditLogService");
 const { parsePagination, paginationMeta } = require("../utils/pagination");
 const { sendStaffInviteEmail } = require("../utils/emailService");
+const { normalizeSkill } = require("../utils/skillNormalizer");
 
 function generateRawToken() {
   return crypto.randomBytes(32).toString("hex");
@@ -425,6 +427,178 @@ const getAuditLogs = asyncHandler(async (req, res) => {
   res.json(successResponse({ logs, pagination: paginationMeta(total, page, limit) }));
 });
 
+function readPositiveInt(value, fallback, max) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(parsed, max);
+}
+
+function countCandidateLevels(resumes) {
+  return resumes.reduce(
+    (acc, resume) => {
+      const level = resume.candidateLevel || "UNKNOWN";
+      acc[level] = (acc[level] || 0) + 1;
+      return acc;
+    },
+    { INTERN: 0, PROFESSIONAL: 0, UNKNOWN: 0 }
+  );
+}
+
+function mapResumeForAdmin(resume) {
+  const user = resume.user || {};
+  return {
+    id: resume._id,
+    fileName: resume.fileName,
+    createdAt: resume.createdAt,
+    candidateLevel: resume.candidateLevel || "UNKNOWN",
+    candidateLevelSource: resume.candidateLevelSource || "heuristic",
+    normalizedSkills: resume.normalizedSkills || [],
+    user: user?._id
+      ? {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          careerLevel: user.careerLevel || "UNKNOWN",
+          yearsExperience: user.yearsExperience ?? null,
+        }
+      : null,
+  };
+}
+
+// Admin: group CVs with the same normalized skill set
+const getResumeSkillGroups = asyncHandler(async (req, res) => {
+  const minGroupSize = readPositiveInt(req.query.minGroupSize, 2, 20);
+  const minSkills = readPositiveInt(req.query.minSkills, 5, 100);
+  const limit = readPositiveInt(req.query.limit, 50, 100);
+
+  const groups = await Resume.aggregate([
+    {
+      $match: {
+        skillsSignature: { $type: "string", $ne: "" },
+      },
+    },
+    {
+      $addFields: {
+        normalizedSkillCount: { $size: { $ifNull: ["$normalizedSkills", []] } },
+      },
+    },
+    {
+      $match: {
+        normalizedSkillCount: { $gte: minSkills },
+      },
+    },
+    {
+      $group: {
+        _id: "$skillsSignature",
+        resumeIds: { $push: "$_id" },
+        resumeCount: { $sum: 1 },
+        normalizedSkills: { $first: "$normalizedSkills" },
+        latestCreatedAt: { $max: "$createdAt" },
+      },
+    },
+    {
+      $match: {
+        resumeCount: { $gte: minGroupSize },
+      },
+    },
+    { $sort: { resumeCount: -1, latestCreatedAt: -1 } },
+    { $limit: limit },
+  ]);
+
+  const allResumeIds = groups.flatMap((group) => group.resumeIds);
+  const resumes = await Resume.find({ _id: { $in: allResumeIds } })
+    .select("user fileName createdAt normalizedSkills skillsSignature candidateLevel candidateLevelSource")
+    .populate("user", "name email careerLevel yearsExperience")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const resumesBySignature = new Map();
+  resumes.forEach((resume) => {
+    if (!resumesBySignature.has(resume.skillsSignature)) {
+      resumesBySignature.set(resume.skillsSignature, []);
+    }
+    resumesBySignature.get(resume.skillsSignature).push(resume);
+  });
+
+  res.json(
+    successResponse({
+      filters: { minGroupSize, minSkills, limit },
+      groups: groups.map((group) => {
+        const groupResumes = resumesBySignature.get(group._id) || [];
+        return {
+          skillsSignature: group._id,
+          normalizedSkills: group.normalizedSkills || [],
+          skillCount: (group.normalizedSkills || []).length,
+          resumeCount: group.resumeCount,
+          latestCreatedAt: group.latestCreatedAt,
+          candidateLevels: countCandidateLevels(groupResumes),
+          resumes: groupResumes.map(mapResumeForAdmin),
+        };
+      }),
+    })
+  );
+});
+
+// Admin: drill into resumes containing one normalized skill
+const getResumesBySkill = asyncHandler(async (req, res) => {
+  const skill = normalizeSkill(String(req.query.skill || ""));
+  const limit = readPositiveInt(req.query.limit, 50, 100);
+
+  if (!skill) {
+    throw AppError.badRequest("MISSING_SKILL", "Skill query parameter is required");
+  }
+
+  const resumes = await Resume.find({ normalizedSkills: skill })
+    .select("user fileName createdAt normalizedSkills skillsSignature candidateLevel candidateLevelSource")
+    .populate("user", "name email careerLevel yearsExperience")
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+
+  res.json(
+    successResponse({
+      skill,
+      resumes: resumes.map(mapResumeForAdmin),
+    })
+  );
+});
+
+// Admin: manually override resume candidate level
+const updateResumeCandidateLevel = asyncHandler(async (req, res) => {
+  const { resumeId } = req.params;
+  const { candidateLevel } = req.body;
+
+  if (!["INTERN", "PROFESSIONAL", "UNKNOWN"].includes(candidateLevel)) {
+    throw AppError.badRequest(
+      "INVALID_CANDIDATE_LEVEL",
+      "candidateLevel must be INTERN, PROFESSIONAL, or UNKNOWN"
+    );
+  }
+
+  const resume = await Resume.findById(resumeId).populate("user", "name email careerLevel yearsExperience");
+  if (!resume) {
+    throw AppError.notFound("Resume not found");
+  }
+
+  resume.candidateLevel = candidateLevel;
+  resume.candidateLevelSource = "manual";
+  await resume.save();
+
+  logActivity(
+    req,
+    "UPDATE_RESUME_CANDIDATE_LEVEL",
+    { type: "Resume", id: resume._id, email: resume.user?.email, name: resume.user?.name },
+    { candidateLevel }
+  );
+
+  res.json(
+    successResponse(
+      { resume: mapResumeForAdmin(resume.toObject ? resume.toObject() : resume) },
+      "Candidate level updated"
+    )
+  );
+});
+
 module.exports = {
   createStaff,
   listStaffApplications,
@@ -434,4 +608,7 @@ module.exports = {
   getAdminStats,
   deleteUser,
   getAuditLogs,
+  getResumeSkillGroups,
+  getResumesBySkill,
+  updateResumeCandidateLevel,
 };

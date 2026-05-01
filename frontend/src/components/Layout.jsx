@@ -4,7 +4,7 @@ import {
   Zap, Users, UserCheck, BarChart2, ClipboardList, Map, Home, FileText,
   Folder, Target, TrendingUp, Briefcase, Flame, LogOut, HeartPulse, BellRing,
   ArrowLeft, RefreshCw, Check, X, ChevronDown, ChevronRight,
-  ShieldCheck, ListChecks, Activity,
+  ShieldCheck, ListChecks, Activity, Layers3,
 } from 'lucide-react';
 import api from '../api/api';
 import { useSSE } from '../context/SSEContext';
@@ -400,6 +400,7 @@ const ROLE_NAV = {
     { path: '/admin',               label: 'Admin Dashboard', Icon: Zap },
     { path: '/staff-management',    label: 'Staff Management', Icon: Users },
     { path: '/users',               label: 'Job Seekers',      Icon: UserCheck },
+    { path: '/admin/skill-groups',  label: 'CV Skill Groups',  Icon: Layers3 },
     { path: '/admin-report',        label: 'Platform Report',  Icon: BarChart2 },
     { path: '/admin/user-reports',  label: 'User Reports',     Icon: ClipboardList },
     { path: '/all-roadmaps',        label: 'All Roadmaps',     Icon: Map },

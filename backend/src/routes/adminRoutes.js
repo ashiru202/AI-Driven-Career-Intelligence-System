@@ -11,6 +11,9 @@ const {
   getAdminStats,
   deleteUser,
   getAuditLogs,
+  getResumeSkillGroups,
+  getResumesBySkill,
+  updateResumeCandidateLevel,
 } = require("../controllers/adminController");
 const {
   triggerScrape,
@@ -23,6 +26,11 @@ router.use(requireAuth, requireRole('ADMIN'));
 
 // Admin dashboard stats
 router.get("/stats", getAdminStats);
+
+// CV skill groups: same normalized skill set across candidates
+router.get("/resumes/skill-groups", getResumeSkillGroups);
+router.get("/resumes/by-skill", getResumesBySkill);
+router.patch("/resumes/:resumeId/candidate-level", updateResumeCandidateLevel);
 
 // Create staff account (admin only)
 router.post("/staff", validate(schemas.adminCreateStaff), createStaff);

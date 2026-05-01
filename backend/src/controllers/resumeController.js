@@ -1,4 +1,5 @@
 const Resume = require('../models/Resume');
+const User = require('../models/User');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const AppError = require('../utils/AppError');
 const { asyncHandler } = require('../middleware/errorMiddleware');
@@ -105,6 +106,26 @@ const uploadResume = asyncHandler(async (req, res) => {
       time: 'Just now',
       createdAt: new Date(),
     });
+
+    try {
+      const adminUsers = await User.find({ role: 'ADMIN', active: true }, '_id');
+      const adminNotification = {
+        id: `admin_resume_uploaded_${resume._id}`,
+        icon: 'FileText',
+        title: 'New resume uploaded',
+        body: `${resume.fileName} was classified as ${resume.candidateLevel}.`,
+        link: '/admin/skill-groups',
+        time: 'Just now',
+        createdAt: new Date(),
+        resumeId: resume._id,
+      };
+
+      (adminUsers || []).forEach((admin) => {
+        sendToUser(String(admin._id), 'notification', adminNotification);
+      });
+    } catch (notifyError) {
+      console.warn('[Resume] Failed to notify admins about resume upload:', notifyError.message);
+    }
 
     res.status(201).json(successResponse({
       resumeId: resume._id,
