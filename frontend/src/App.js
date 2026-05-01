@@ -35,6 +35,7 @@ import TrendsPage from "./pages/TrendsPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
+import ForceChangePassword from "./pages/ForceChangePassword";
 
 export default function App() {
   return (
@@ -50,6 +51,14 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/health" element={<Health />} />
+        <Route
+          path="/force-change-password"
+          element={
+            <ProtectedRoute>
+              <ForceChangePassword />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/dashboard"

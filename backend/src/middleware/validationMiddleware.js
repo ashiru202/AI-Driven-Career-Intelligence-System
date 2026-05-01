@@ -67,7 +67,11 @@ const schemas = {
       email: z.string()
         .email('Invalid email address')
         .max(254, 'Email too long')
-        .toLowerCase()
+        .toLowerCase(),
+      nicOrTempPassword: z.string()
+        .min(6, 'Temporary password must be at least 6 characters')
+        .max(64, 'Temporary password must be at most 64 characters')
+        .transform(stripHtml)
     })
   }),
 

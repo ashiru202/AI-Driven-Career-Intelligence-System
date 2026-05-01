@@ -16,6 +16,8 @@ import {
   Clock3,
   Eye,
   Link2,
+  Plus,
+  KeyRound,
 } from "lucide-react";
 
 function Toast({ message, type, onClose }) {
@@ -49,6 +51,13 @@ export default function StaffManagement() {
   const [reviewNotes, setReviewNotes] = useState("");
   const [deleting, setDeleting] = useState({});
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [createModal, setCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    email: "",
+    nicOrTempPassword: "",
+  });
   const [toast, setToast] = useState(null);
   const flatButtonClass = "shadow-none hover:shadow-none";
 
@@ -97,7 +106,7 @@ export default function StaffManagement() {
   }, [liveNotifications]);
 
   useEffect(() => {
-    const hasOpenModal = Boolean(viewApplication || reviewModal || confirmDelete);
+    const hasOpenModal = Boolean(viewApplication || reviewModal || confirmDelete || createModal);
     if (!hasOpenModal) {
       return undefined;
     }
@@ -120,7 +129,33 @@ export default function StaffManagement() {
         mainEl.style.overflow = prevMainOverflow;
       }
     };
-  }, [viewApplication, reviewModal, confirmDelete]);
+  }, [viewApplication, reviewModal, confirmDelete, createModal]);
+
+  const submitCreateStaff = async () => {
+    const payload = {
+      name: createForm.name.trim(),
+      email: createForm.email.trim(),
+      nicOrTempPassword: createForm.nicOrTempPassword.trim(),
+    };
+
+    if (!payload.name || !payload.email || payload.nicOrTempPassword.length < 6) {
+      showToast("Enter name, email, and a temporary password with at least 6 characters", "error");
+      return;
+    }
+
+    setCreating(true);
+    try {
+      await api.post("/api/admin/staff", payload);
+      showToast("Staff created. Login with email and temporary password, then change password.", "success");
+      setCreateModal(false);
+      setCreateForm({ name: "", email: "", nicOrTempPassword: "" });
+      loadStaff();
+    } catch (err) {
+      showToast(err.response?.data?.error?.message || "Failed to create staff account", "error");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const openReviewModal = (application, decision) => {
     setViewApplication(null);
@@ -393,6 +428,82 @@ export default function StaffManagement() {
         </div>
       )}
 
+      {/* Create Staff Modal */}
+      {createModal && (
+        <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/70 px-4 py-8 overflow-y-auto">
+          <div className="bg-[#13132b] border border-white/10 rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <h3 className="text-lg font-bold text-white">Create Staff Account</h3>
+                <p className="text-white/55 text-sm mt-1">
+                  Staff will sign in with email and the temporary password, then update it immediately.
+                </p>
+              </div>
+              <button
+                className="text-white/60 hover:text-white"
+                onClick={() => setCreateModal(false)}
+                aria-label="Close create staff modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-white/70 mb-1">Full Name</label>
+                <input
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
+                  className="w-full rounded-lg border border-white/10 bg-[#0f1630] px-3 py-2.5 text-sm text-white outline-none focus:border-indigo-400"
+                  placeholder="Staff member name"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/70 mb-1">Email</label>
+                <input
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
+                  className="w-full rounded-lg border border-white/10 bg-[#0f1630] px-3 py-2.5 text-sm text-white outline-none focus:border-indigo-400"
+                  placeholder="staff@example.com"
+                  type="email"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/70 mb-1">NIC / Temporary Password</label>
+                <input
+                  value={createForm.nicOrTempPassword}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, nicOrTempPassword: e.target.value }))}
+                  className="w-full rounded-lg border border-white/10 bg-[#0f1630] px-3 py-2.5 text-sm text-white outline-none focus:border-indigo-400"
+                  placeholder="Temporary password"
+                  type="password"
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+              The temporary password is only used to create the account. It is stored as a password hash and is not saved as NIC data.
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <Button
+                className={`flex-1 bg-indigo-600 text-white hover:bg-indigo-700 ${flatButtonClass}`}
+                disabled={creating}
+                onClick={submitCreateStaff}
+              >
+                <KeyRound size={15} className="inline mr-1" />
+                {creating ? "Creating..." : "Create Account"}
+              </Button>
+              <Button
+                className={`flex-1 bg-white/10 text-white hover:bg-white/20 ${flatButtonClass}`}
+                onClick={() => setCreateModal(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -401,6 +512,12 @@ export default function StaffManagement() {
             <p className="text-slate-400 mt-1 text-sm">View and manage staff accounts</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => setCreateModal(true)}
+              className={`bg-indigo-600 text-white hover:bg-indigo-700 ${flatButtonClass}`}
+            >
+              <Plus size={16} className="inline mr-1" /> Create Staff
+            </Button>
             <span
               className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
               style={{ background: "rgba(59,130,246,0.18)", color: "#bfdbfe", border: "1px solid rgba(96,165,250,0.35)" }}
@@ -516,7 +633,7 @@ export default function StaffManagement() {
               ) : staff.length === 0 ? (
                 <div className="text-center py-8 text-slate-400">
                   <p>No staff accounts found.</p>
-                  <p className="text-sm mt-1">Approve pending applications above to onboard staff members.</p>
+                  <p className="text-sm mt-1">Create a staff account directly or approve pending applications above.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto table-unified">
@@ -526,6 +643,7 @@ export default function StaffManagement() {
                         <th className="pb-3">Name</th>
                         <th className="pb-3">Email</th>
                         <th className="pb-3">Status</th>
+                        <th className="pb-3">Onboarding</th>
                         <th className="pb-3">Joined</th>
                         <th className="pb-3">Action</th>
                       </tr>
@@ -544,6 +662,17 @@ export default function StaffManagement() {
                               }
                             >
                               {s.active ? "Active" : "Disabled"}
+                            </Badge>
+                          </td>
+                          <td className="py-3">
+                            <Badge
+                              className={
+                                s.mustChangePassword
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-slate-100 text-slate-700"
+                              }
+                            >
+                              {s.mustChangePassword ? "Password change required" : "Ready"}
                             </Badge>
                           </td>
                           <td className="py-3 text-white/45">

@@ -9,6 +9,7 @@ import { X, ArrowLeft, ArrowRight } from "lucide-react";
 
 const ACTION_LABELS = {
   CREATE_STAFF:        { label: "Create Staff",       color: "bg-green-100 text-green-700" },
+  CREATE_STAFF_ACCOUNT:{ label: "Create Staff Account", color: "bg-green-100 text-green-700" },
   INVITE_STAFF_ACCOUNT:{ label: "Invite Staff Account", color: "bg-indigo-600 text-white" },
   TOGGLE_USER_STATUS:  { label: "Toggle Status",      color: "bg-amber-100 text-amber-700" },
   DELETE_USER:         { label: "Delete User",         color: "bg-red-100 text-red-600" },

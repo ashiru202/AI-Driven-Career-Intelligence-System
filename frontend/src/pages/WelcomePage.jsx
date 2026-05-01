@@ -274,20 +274,6 @@ function Navbar({ isLoggedIn, role }) {
                 Log in
               </Link>
               <Link
-                to="/staff-apply"
-                style={{
-                  padding: "10px 24px", borderRadius: 10, fontSize: 14, fontWeight: 600,
-                  background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff",
-                  textDecoration: "none",
-                  boxShadow: "0 0 20px rgba(99,102,241,0.4), 0 4px 14px rgba(99,102,241,0.35)",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                }}
-                onMouseEnter={(e) => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 0 30px rgba(99,102,241,0.5), 0 6px 20px rgba(99,102,241,0.45)"; }}
-                onMouseLeave={(e) => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 0 20px rgba(99,102,241,0.4), 0 4px 14px rgba(99,102,241,0.35)"; }}
-              >
-                Staff Apply
-              </Link>
-              <Link
                 to="/register"
                 style={{
                   padding: "10px 24px", borderRadius: 10, fontSize: 14, fontWeight: 600,
@@ -331,7 +317,6 @@ function Navbar({ isLoggedIn, role }) {
             ) : (
               <>
                 <Link to="/login" style={{ flex: 1, textAlign: "center", padding: "14px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)", color: "#fff", textDecoration: "none", fontSize: 15, fontWeight: 600 }}>Log In</Link>
-                <Link to="/staff-apply" style={{ flex: 1, textAlign: "center", padding: "14px", borderRadius: 12, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", textDecoration: "none", fontSize: 15, fontWeight: 600 }}>Staff Apply</Link>
                 <Link to="/register" style={{ flex: 1, textAlign: "center", padding: "14px", borderRadius: 12, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", textDecoration: "none", fontSize: 15, fontWeight: 600 }}>Get Started</Link>
               </>
             )}

@@ -68,10 +68,47 @@ function mapStaffProfileFromApplication(application) {
 
 // Admin can create STAFF accounts only
 const createStaff = asyncHandler(async (req, res) => {
-  throw new AppError(
-    410,
-    "DIRECT_INVITE_DISABLED",
-    "Direct staff invite is disabled. Use the staff application review workflow instead."
+  const { name, email, nicOrTempPassword } = req.body;
+
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    throw AppError.conflict("A user account already exists with this email");
+  }
+
+  const hashedPassword = await bcrypt.hash(nicOrTempPassword, 10);
+  const user = await User.create({
+    name,
+    email,
+    password: hashedPassword,
+    role: "STAFF",
+    active: true,
+    emailVerified: true,
+    mustChangePassword: true,
+    createdByAdmin: true,
+  });
+
+  logActivity(
+    req,
+    "CREATE_STAFF_ACCOUNT",
+    { type: "User", id: user._id, email: user.email, name: user.name },
+    { createdByAdmin: true, mustChangePassword: true }
+  );
+
+  res.status(201).json(
+    successResponse(
+      {
+        staff: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          active: user.active,
+          mustChangePassword: user.mustChangePassword,
+          createdByAdmin: user.createdByAdmin,
+        },
+      },
+      "Staff account created. Staff can log in with email and temporary password, then must change password."
+    )
   );
 });
 

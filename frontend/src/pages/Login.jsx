@@ -57,7 +57,9 @@ export default function Login() {
         await syncExtensionSession();
 
         const role = res.data.data.user.role;
-        if (role === 'ADMIN')       navigate('/admin',      { replace: true });
+        if (res.data.data.user.mustChangePassword) {
+          navigate('/force-change-password', { replace: true });
+        } else if (role === 'ADMIN')       navigate('/admin',      { replace: true });
         else if (role === 'STAFF')  navigate('/staff-home', { replace: true });
         else                        navigate('/dashboard',  { replace: true });
       } else {
@@ -255,12 +257,6 @@ export default function Login() {
               onMouseLeave={e => e.target.style.color = '#a5b4fc'}
             >
               Create account
-            </Link>
-          </p>
-          <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.45)', fontSize: 13, marginTop: 10 }}>
-            Want to join as staff?{' '}
-            <Link to="/staff-apply" style={{ color: '#93c5fd', fontWeight: 600, textDecoration: 'none' }}>
-              Apply here
             </Link>
           </p>
         </div>

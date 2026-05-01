@@ -24,6 +24,13 @@ api.interceptors.response.use(
       localStorage.removeItem("role");
       window.location.href = "/login";
     }
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.error?.code === "PASSWORD_CHANGE_REQUIRED" &&
+      window.location.pathname !== "/force-change-password"
+    ) {
+      window.location.href = "/force-change-password";
+    }
     return Promise.reject(error);
   }
 );

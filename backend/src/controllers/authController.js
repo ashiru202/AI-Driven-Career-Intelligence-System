@@ -181,7 +181,13 @@ exports.login = asyncHandler(async (req, res) => {
   });
 
   res.json(successResponse({
-    user: { id: user._id, name: user.name, email: user.email, role: user.role }
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      mustChangePassword: Boolean(user.mustChangePassword),
+    }
   }));
 });
 

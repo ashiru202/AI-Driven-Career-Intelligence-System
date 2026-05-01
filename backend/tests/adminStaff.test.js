@@ -3,6 +3,7 @@ process.env.JWT_SECRET = "test-jwt-secret-for-jest-only";
 
 const request = require("supertest");
 const { makeToken, mockUser, mockAdminUser } = require("./helpers");
+const bcrypt = require("bcryptjs");
 
 jest.mock("../src/config/db", () => jest.fn());
 jest.mock("../src/models/User");
@@ -52,18 +53,36 @@ describe("POST /api/admin/staff", () => {
     expect(res.status).toBe(403);
   });
 
-  it("returns 410 because direct invite is disabled", async () => {
+  it("creates staff with a temporary password and forced password change", async () => {
     setupAuth(mockAdminUser());
+    User.findOne = jest.fn().mockResolvedValue(null);
+    User.create = jest.fn().mockImplementation(async (payload) => ({
+      _id: "cccccccccccccccccccccccc",
+      active: true,
+      ...payload,
+    }));
 
     const res = await request(app)
       .post("/api/admin/staff")
       .set("Authorization", `Bearer ${ADMIN_TOKEN}`)
-      .send({ name: "Staff Member", email: "staff@example.com" });
+      .send({
+        name: "Staff Member",
+        email: "staff@example.com",
+        nicOrTempPassword: "991234567V",
+      });
 
-    expect(res.status).toBe(410);
-    expect(res.body.ok).toBe(false);
-    expect(res.body.error.code).toBe("DIRECT_INVITE_DISABLED");
-    expect(User.create).not.toHaveBeenCalled();
+    expect(res.status).toBe(201);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.data.staff.email).toBe("staff@example.com");
+    expect(res.body.data.staff.mustChangePassword).toBe(true);
+
+    const createCall = User.create.mock.calls[0][0];
+    expect(createCall.role).toBe("STAFF");
+    expect(createCall.emailVerified).toBe(true);
+    expect(createCall.createdByAdmin).toBe(true);
+    expect(createCall.mustChangePassword).toBe(true);
+    expect(createCall.password).not.toBe("991234567V");
+    await expect(bcrypt.compare("991234567V", createCall.password)).resolves.toBe(true);
   });
 
   it("returns 400 for invalid payload", async () => {
@@ -72,22 +91,26 @@ describe("POST /api/admin/staff", () => {
     const res = await request(app)
       .post("/api/admin/staff")
       .set("Authorization", `Bearer ${ADMIN_TOKEN}`)
-      .send({ name: "A" });
+      .send({ name: "A", email: "not-an-email", nicOrTempPassword: "123" });
 
     expect(res.status).toBe(400);
     expect(User.create).not.toHaveBeenCalled();
   });
 
-  it("does not attempt invite side effects", async () => {
+  it("returns 409 if staff email already exists", async () => {
     setupAuth(mockAdminUser());
+    User.findOne = jest.fn().mockResolvedValue({ email: "staff@example.com" });
 
     const res = await request(app)
       .post("/api/admin/staff")
       .set("Authorization", `Bearer ${ADMIN_TOKEN}`)
-      .send({ name: "Staff Member", email: "staff@example.com" });
+      .send({
+        name: "Staff Member",
+        email: "staff@example.com",
+        nicOrTempPassword: "991234567V",
+      });
 
-    expect(res.status).toBe(410);
-    expect(User.findOne).not.toHaveBeenCalled();
+    expect(res.status).toBe(409);
     expect(User.create).not.toHaveBeenCalled();
   });
 });

@@ -177,8 +177,8 @@ export default function StaffApply() {
               Apply As Staff Member
             </h1>
             <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 14, lineHeight: 1.6 }}>
-              Submit your experience profile. An admin will review your request, and approved applicants
-              receive a secure email to set their password.
+              Submit your experience profile. This optional application flow is reviewed by admins;
+              most staff accounts are now created directly by an admin with temporary credentials.
             </p>
           </div>
 
@@ -207,7 +207,7 @@ export default function StaffApply() {
               </p>
               <p style={{ color: "#a5b4fc", fontWeight: 700, marginBottom: 18 }}>{submitted.email}</p>
               <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, marginBottom: 24 }}>
-                Application ID: {submitted.applicationId}
+                Application ID: {submitted.applicationId}. If approved, an admin will create your staff account and provide temporary credentials.
               </p>
               <Link
                 to="/login"
