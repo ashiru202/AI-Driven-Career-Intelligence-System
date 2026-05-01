@@ -22,7 +22,9 @@ const allowedOrigins = [
 ];
 
 const isLocalDevOrigin = (origin) => /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
-const allowLocalhostAnyPort = process.env.ALLOW_LOCALHOST_ANY_PORT === 'true';
+const allowLocalhostAnyPort =
+  process.env.ALLOW_LOCALHOST_ANY_PORT === 'true' ||
+  process.env.NODE_ENV !== 'production';
 
 const corsOptions = {
   origin: (origin, callback) => {
