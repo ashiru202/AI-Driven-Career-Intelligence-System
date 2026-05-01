@@ -23,6 +23,7 @@ import {
 } from "recharts";
 import api from "../api/api";
 import Layout from "../components/Layout";
+import { useSSE } from "../context/SSEContext";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 
@@ -145,6 +146,7 @@ function SupplyTable({ title, rows, source, icon: Icon }) {
 }
 
 export default function AdminSupplyDemand() {
+  const { liveNotifications } = useSSE();
   const [source, setSource] = useState("industry");
   const [period, setPeriod] = useState("weekly");
   const [marketScope, setMarketScope] = useState("combined");
@@ -170,6 +172,15 @@ export default function AdminSupplyDemand() {
   useEffect(() => {
     fetchInsights();
   }, [fetchInsights]);
+
+  useEffect(() => {
+    if (!liveNotifications.length) return;
+    const shouldRefresh = liveNotifications.some((notification) => {
+      const id = String(notification?.id || "");
+      return id.startsWith("admin_analytics_") || id.startsWith("admin_resume_");
+    });
+    if (shouldRefresh) fetchInsights();
+  }, [liveNotifications, fetchInsights]);
 
   const chartRows = useMemo(() => {
     return (insights.rows || []).map((row) => ({

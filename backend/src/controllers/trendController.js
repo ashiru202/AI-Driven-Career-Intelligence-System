@@ -6,6 +6,7 @@ const { successResponse } = require("../utils/responseHelper");
 const AppError             = require("../utils/AppError");
 const { asyncHandler }     = require("../middleware/errorMiddleware");
 const { parsePagination, paginationMeta } = require("../utils/pagination");
+const { notifyActiveAdmins } = require("../services/adminRealtimeService");
 
 const NLP_URL = process.env.NLP_SERVICE_URL || "http://localhost:8000";
 const VALID_MARKET_SCOPES = new Set(["combined", "global", "local-lk"]);
@@ -475,6 +476,13 @@ const triggerScrape = asyncHandler(async (req, res) => {
     {},
     { headers: { "X-Internal-Token": INTERNAL_TOKEN }, timeout: 120_000 }
   );
+  await notifyActiveAdmins({
+    id: `admin_analytics_trends_scrape_${Date.now()}`,
+    icon: "TrendingUp",
+    title: "Industry trends refreshed",
+    body: "Scrape and processing completed. Demand dashboards are ready to refresh.",
+    link: "/admin/industry-contribution",
+  });
   res.json(successResponse(response.data, "Scrape job triggered"));
 });
 
@@ -488,6 +496,13 @@ const triggerForecast = asyncHandler(async (req, res) => {
     {},
     { headers: { "X-Internal-Token": INTERNAL_TOKEN }, timeout: 120_000 }
   );
+  await notifyActiveAdmins({
+    id: `admin_analytics_trends_forecast_${Date.now()}`,
+    icon: "TrendingUp",
+    title: "Skill forecast refreshed",
+    body: "Forecast refresh completed. Industry demand pages are ready to update.",
+    link: "/admin/skills-demand",
+  });
   res.json(successResponse(response.data, "Forecast refresh triggered"));
 });
 

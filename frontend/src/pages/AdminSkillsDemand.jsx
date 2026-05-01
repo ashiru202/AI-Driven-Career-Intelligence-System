@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import api from "../api/api";
 import Layout from "../components/Layout";
+import { useSSE } from "../context/SSEContext";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 
@@ -102,6 +103,7 @@ function DemandChart({ rows, metricKey, color }) {
 }
 
 export default function AdminSkillsDemand() {
+  const { liveNotifications } = useSSE();
   const [activeTab, setActiveTab] = useState("platform");
   const [marketScope, setMarketScope] = useState("combined");
   const [platformDemand, setPlatformDemand] = useState({ top: [], least: [] });
@@ -129,6 +131,15 @@ export default function AdminSkillsDemand() {
   useEffect(() => {
     fetchDemand();
   }, [fetchDemand]);
+
+  useEffect(() => {
+    if (!liveNotifications.length) return;
+    const shouldRefresh = liveNotifications.some((notification) => {
+      const id = String(notification?.id || "");
+      return id.startsWith("admin_analytics_") || id.startsWith("admin_resume_");
+    });
+    if (shouldRefresh) fetchDemand();
+  }, [liveNotifications, fetchDemand]);
 
   const view = useMemo(() => {
     if (activeTab === "industry") {
