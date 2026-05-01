@@ -10,7 +10,16 @@
 const Groq = require('groq-sdk');
 const axios = require('axios');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+let groqClient = null;
+function getGroqClient() {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey || !String(apiKey).trim()) return null;
+
+  if (!groqClient) {
+    groqClient = new Groq({ apiKey });
+  }
+  return groqClient;
+}
 
 const SYSTEM_PROMPT = `You are an expert skill extraction AI for career analysis.
 Extract ALL technical and professional skills from the given text.
@@ -26,6 +35,11 @@ Example output: ["Python", "React", "AWS", "Machine Learning", "Agile"]`;
  * @returns {Promise<string[]>}
  */
 async function extractWithGroq(text) {
+  const groq = getGroqClient();
+  if (!groq) {
+    throw new Error('GROQ_API_KEY is missing; cannot use Groq extraction');
+  }
+
   const snippet = text.substring(0, 3000);
 
   const response = await groq.chat.completions.create({

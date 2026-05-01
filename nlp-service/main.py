@@ -124,6 +124,13 @@ SKILL_PATTERNS = {
     # Cloud & DevOps
     'aws', 'azure', 'gcp', 'google cloud', 'docker', 'kubernetes', 'k8s', 'jenkins',
     'gitlab', 'github', 'circleci', 'terraform', 'ansible', 'puppet', 'chef',
+
+    # IT Ops / Networking
+    'active directory', 'cisco', 'firewall', 'networking', 'network', 'tcp/ip', 'vmware',
+    'windows server', 'dhcp', 'dns', 'technical support', 'helpdesk', 'help desk', 'troubleshooting',
+    'virtualization', 'backup', 'disaster recovery', 'automation', 'capacity planning',
+    'storage planning', 'data protection', 'failover',
+    'project management', 'qa testing',
     
     # Mobile
     'android', 'ios', 'react native', 'flutter', 'xamarin', 'ionic',
@@ -180,6 +187,11 @@ def extract_skills_from_text(text: str) -> List[str]:
         if ' ' in pattern and pattern in text_lower:
             found_skills.add(pattern)
     
+    # Check for patterns with special characters (C++, C#, CI/CD, TCP/IP, etc.)
+    for pattern in SKILL_PATTERNS:
+        if re.search(r'[^a-z0-9\s]', pattern) and pattern in text_lower:
+            found_skills.add(pattern)
+
     # Check for common patterns like "React.js" or "Node.js"
     for pattern in SKILL_PATTERNS:
         if '.' in pattern:
@@ -221,6 +233,31 @@ def extract_skills_from_text(text: str) -> List[str]:
         'c++': 'C++',
         'csharp': 'C#',
         'c#': 'C#',
+        'ci/cd': 'CI/CD',
+        'tcp/ip': 'TCP/IP',
+        'active directory': 'Active Directory',
+        'firewall': 'Firewall',
+        'network': 'Networking',
+        'networking': 'Networking',
+        'vmware': 'VMware',
+        'windows server': 'Windows Server',
+        'dhcp': 'DHCP',
+        'dns': 'DNS',
+        'qa testing': 'QA Testing',
+        'technical support': 'Technical Support',
+        'helpdesk': 'Technical Support',
+        'help desk': 'Technical Support',
+        'troubleshooting': 'Troubleshooting',
+        'virtualization': 'Virtualization',
+        'backup': 'Backup and Recovery',
+        'disaster recovery': 'Disaster Recovery',
+        'automation': 'Automation',
+        'capacity planning': 'Capacity Planning',
+        'storage planning': 'Storage Planning',
+        'data protection': 'Data Protection',
+        'failover': 'Failover',
+        'project management': 'Project Management',
+        'cisco': 'Cisco',
         'html': 'HTML',
         'html5': 'HTML5',
         'css': 'CSS',

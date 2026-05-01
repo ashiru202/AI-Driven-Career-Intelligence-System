@@ -1,0 +1,18 @@
+
+                 SKILL EXTRACTION EVALUATION                  
+──────────────────────────────────────────────────────────────
+  Dataset size : 10 annotated postings
+  Precision    : 89.21%
+  Recall       : 68.04%
+  F1           : 75.32%
+
+  Per-source breakdown:
+    topjobs_lk            n=  3  P=95.24%  R=69.05%  F1=78.57%
+    xpressjobs_lk         n=  3  P=83.81%  R=73.81%  F1=77.66%
+    adzuna                n=  2  P=87.50%  R=61.60%  F1=67.27%
+    remotive              n=  2  P=90.00%  R=64.29%  F1=75.00%
+
+  Low-recall postings (recall < 50%) — 1 entries:
+    [adzuna] REPLACE_WITH_REAL_ID_006  recall=37.50%  missed=['Apache Spark', 'Kafka', 'Airflow', 'Databricks', 'dbt']
+──────────────────────────────────────────────────────────────
+
