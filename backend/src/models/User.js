@@ -23,6 +23,14 @@ const userSchema = new mongoose.Schema({
   location: { type: String, default: '' },
   jobTitle: { type: String, default: '' },
   avatar:   { type: String, default: '' }, // future: URL to profile picture
+  careerLevel: {
+    type: String,
+    enum: ['INTERN', 'PROFESSIONAL', 'UNKNOWN'],
+    default: 'UNKNOWN',
+  },
+  yearsExperience: { type: Number, default: null },
+  mustChangePassword: { type: Boolean, default: false },
+  createdByAdmin: { type: Boolean, default: false },
   staffProfile: {
     phone: { type: String, default: '' },
     currentRole: { type: String, default: '' },

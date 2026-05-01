@@ -5,6 +5,7 @@ const { asyncHandler } = require('../middleware/errorMiddleware');
 const { parsePagination, paginationMeta } = require('../utils/pagination');
 const { extractTextFromFile } = require('../services/resumeTextExtractor');
 const { extractSkillsWithAI } = require('../services/aiSkillExtractorService');
+const { buildResumeDerivedFields } = require('../utils/resumeDerivedFields');
 const { sendToUser } = require('../utils/sseManager');
 const axios = require('axios');
 const fs = require('fs').promises;
@@ -59,6 +60,9 @@ const uploadResume = asyncHandler(async (req, res) => {
     });
     const { skills: extractedSkills, source: extractionSource } = await extractSkillsWithAI(extractedText);
     console.log(`[Resume] Skill extraction source: ${extractionSource}, count: ${extractedSkills.length}`);
+    const derivedFields = buildResumeDerivedFields(extractedSkills, extractedText, {
+      careerLevel: req.user.careerLevel,
+    });
 
     // Step 3: Persist to DB
     sendToUser(userId, 'progress', {
@@ -75,7 +79,8 @@ const uploadResume = asyncHandler(async (req, res) => {
       fileSize: file.size,
       fileType: file.mimetype,
       extractedText: extractedText.substring(0, 10000),
-      extractedSkills
+      extractedSkills,
+      ...derivedFields
     });
 
     // Step 4: Done — notify via SSE
@@ -105,6 +110,8 @@ const uploadResume = asyncHandler(async (req, res) => {
       resumeId: resume._id,
       fileName: resume.fileName,
       skills: resume.extractedSkills,
+      normalizedSkills: resume.normalizedSkills,
+      candidateLevel: resume.candidateLevel,
       skillCount: resume.extractedSkills.length,
       extractionSource
     }, 'Resume analyzed successfully'));
@@ -154,6 +161,9 @@ const getResumeDetails = asyncHandler(async (req, res) => {
     fileName: resume.fileName,
     fileSize: resume.fileSize,
     skills: resume.extractedSkills,
+    normalizedSkills: resume.normalizedSkills,
+    candidateLevel: resume.candidateLevel,
+    candidateLevelSource: resume.candidateLevelSource,
     createdAt: resume.createdAt
   }));
 });

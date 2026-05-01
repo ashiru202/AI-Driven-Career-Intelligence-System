@@ -54,7 +54,9 @@ const requireAuth = async (req, res, next) => {
       id: user._id.toString(),
       email: user.email,
       role: user.role,
-      name: user.name
+      name: user.name,
+      careerLevel: user.careerLevel || 'UNKNOWN',
+      mustChangePassword: Boolean(user.mustChangePassword)
     };
 
     next();
