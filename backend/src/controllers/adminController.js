@@ -570,6 +570,12 @@ const getSupplyVsDemand = asyncHandler(async (req, res) => {
   res.json(successResponse(insights));
 });
 
+// Admin: weekly/monthly CV alignment with current top demanded skills
+const getSkillAlignmentTimeseries = asyncHandler(async (req, res) => {
+  const insights = await adminSkillInsightsService.getAlignmentTimeseries(req.query);
+  res.json(successResponse(insights));
+});
+
 // Admin: manually override resume candidate level
 const updateResumeCandidateLevel = asyncHandler(async (req, res) => {
   const { resumeId } = req.params;
@@ -617,6 +623,7 @@ module.exports = {
   getAuditLogs,
   getResumeSkillGroups,
   getResumesBySkill,
+  getSkillAlignmentTimeseries,
   getSupplyVsDemand,
   updateResumeCandidateLevel,
 };

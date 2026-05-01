@@ -39,6 +39,7 @@ import ForceChangePassword from "./pages/ForceChangePassword";
 import AdminSkillGroups from "./pages/AdminSkillGroups";
 import AdminSkillsDemand from "./pages/AdminSkillsDemand";
 import AdminSupplyDemand from "./pages/AdminSupplyDemand";
+import AdminIndustryContribution from "./pages/AdminIndustryContribution";
 
 export default function App() {
   return (
@@ -313,6 +314,17 @@ export default function App() {
             <ProtectedRoute>
               <RoleRoute roles={["ADMIN"]}>
                 <AdminSupplyDemand />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/industry-contribution"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["ADMIN"]}>
+                <AdminIndustryContribution />
               </RoleRoute>
             </ProtectedRoute>
           }

@@ -35,6 +35,40 @@ function getPeriodWindow(period, now = new Date()) {
   return { startDate, endDate };
 }
 
+function readLookback(value) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return 12;
+  return Math.min(parsed, 52);
+}
+
+function getBucketCount(period) {
+  return period === "monthly" ? 30 : 7;
+}
+
+function buildRollingBuckets(period, lookback, now = new Date()) {
+  const bucketDays = getBucketCount(period);
+  const endDate = new Date(now);
+  const buckets = [];
+
+  for (let i = lookback - 1; i >= 0; i -= 1) {
+    const periodEnd = new Date(endDate);
+    periodEnd.setDate(endDate.getDate() - bucketDays * i);
+
+    const periodStart = new Date(periodEnd);
+    periodStart.setDate(periodEnd.getDate() - bucketDays);
+
+    buckets.push({
+      periodStart,
+      periodEnd,
+      cvUploads: 0,
+      cvWithTopSkills: 0,
+      totalTopSkillMatches: 0,
+    });
+  }
+
+  return buckets;
+}
+
 function normalizeDemandRows(rows, metricKey) {
   return (rows || [])
     .map((row) => {
@@ -102,6 +136,17 @@ async function getPlatformDemand({ limit }) {
   };
 }
 
+async function getPlatformDemandTheseDays({ limit, now = new Date() }) {
+  const { startDate, endDate } = getPeriodWindow("weekly", now);
+  const demand = await analyticsService.getSkillDemandStats({ startDate, endDate });
+  return {
+    periodStart: startDate,
+    periodEnd: endDate,
+    top: normalizeDemandRows((demand.top || []).slice(0, limit), "count"),
+    least: normalizeDemandRows((demand.least || []).slice(0, limit), "count"),
+  };
+}
+
 async function getSupplyCounts(skills, { startDate, endDate }) {
   const normalizedSkills = [...new Set(skills.map(normalizeSkill).filter(Boolean))];
   if (normalizedSkills.length === 0) return new Map();
@@ -116,7 +161,7 @@ async function getSupplyCounts(skills, { startDate, endDate }) {
     {
       $project: {
         user: 1,
-        matchedSkills: { $setIntersection: ["$normalizedSkills", normalizedSkills] },
+        matchedSkills: { $setIntersection: [{ $ifNull: ["$normalizedSkills", []] }, normalizedSkills] },
       },
     },
     { $unwind: "$matchedSkills" },
@@ -197,7 +242,98 @@ async function getSupplyVsDemand(options = {}) {
   };
 }
 
+function findBucketIndex(buckets, value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return -1;
+
+  return buckets.findIndex((bucket, index) => {
+    const isLast = index === buckets.length - 1;
+    return date >= bucket.periodStart && (isLast ? date <= bucket.periodEnd : date < bucket.periodEnd);
+  });
+}
+
+function finalizeBucket(bucket) {
+  const cvUploads = Number(bucket.cvUploads || 0);
+  const cvWithTopSkills = Number(bucket.cvWithTopSkills || 0);
+  return {
+    periodStart: bucket.periodStart,
+    periodEnd: bucket.periodEnd,
+    cvUploads,
+    cvWithTopSkills,
+    alignmentRate: cvUploads > 0 ? cvWithTopSkills / cvUploads : 0,
+    avgTopSkillsPerCV: cvUploads > 0 ? Number((bucket.totalTopSkillMatches / cvUploads).toFixed(2)) : 0,
+  };
+}
+
+async function getAlignmentTimeseries(options = {}) {
+  const source = readSource(options.source);
+  const period = readPeriod(options.period);
+  const marketScope = readMarketScope(options.marketScope);
+  const limit = readLimit(options.limit);
+  const lookback = readLookback(options.lookback);
+  const now = new Date();
+
+  const demand = source === "industry"
+    ? await getIndustryDemand({ marketScope, limit })
+    : await getPlatformDemandTheseDays({ limit, now });
+
+  const topSkills = [...new Set((demand.top || []).map((row) => row.skill).filter(Boolean))];
+  const buckets = buildRollingBuckets(period, lookback, now);
+  const totalStart = buckets[0]?.periodStart || getPeriodWindow(period, now).startDate;
+
+  const resumes = await Resume.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: totalStart, $lte: now },
+      },
+    },
+    {
+      $project: {
+        createdAt: 1,
+        matchedTopSkills: { $setIntersection: [{ $ifNull: ["$normalizedSkills", []] }, topSkills] },
+      },
+    },
+  ]);
+
+  resumes.forEach((resume) => {
+    const bucketIndex = findBucketIndex(buckets, resume.createdAt);
+    if (bucketIndex < 0) return;
+
+    const matchedTopSkills = Array.isArray(resume.matchedTopSkills) ? resume.matchedTopSkills : [];
+    buckets[bucketIndex].cvUploads += 1;
+    buckets[bucketIndex].totalTopSkillMatches += matchedTopSkills.length;
+    if (matchedTopSkills.length > 0) {
+      buckets[bucketIndex].cvWithTopSkills += 1;
+    }
+  });
+
+  const dataPoints = buckets.map(finalizeBucket);
+  const latest = dataPoints[dataPoints.length - 1] || finalizeBucket({
+    periodStart: null,
+    periodEnd: null,
+    cvUploads: 0,
+    cvWithTopSkills: 0,
+    totalTopSkillMatches: 0,
+  });
+
+  return {
+    source,
+    period,
+    marketScope,
+    limit,
+    lookback,
+    topSkills: demand.top || [],
+    demandPeriod: {
+      startDate: demand.periodStart,
+      endDate: demand.periodEnd,
+    },
+    latest,
+    dataPoints,
+  };
+}
+
 module.exports = {
+  getAlignmentTimeseries,
   getSupplyVsDemand,
   getPeriodWindow,
 };

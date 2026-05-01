@@ -13,6 +13,7 @@ const {
   getAuditLogs,
   getResumeSkillGroups,
   getResumesBySkill,
+  getSkillAlignmentTimeseries,
   getSupplyVsDemand,
   updateResumeCandidateLevel,
 } = require("../controllers/adminController");
@@ -35,6 +36,7 @@ router.patch("/resumes/:resumeId/candidate-level", updateResumeCandidateLevel);
 
 // CV uploads matched against highest/least demanded skills
 router.get("/skills/supply-vs-demand", getSupplyVsDemand);
+router.get("/skills/alignment-timeseries", getSkillAlignmentTimeseries);
 
 // Create staff account (admin only)
 router.post("/staff", validate(schemas.adminCreateStaff), createStaff);

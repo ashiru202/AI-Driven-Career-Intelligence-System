@@ -163,3 +163,92 @@ describe("GET /api/admin/skills/supply-vs-demand", () => {
     }));
   });
 });
+
+describe("GET /api/admin/skills/alignment-timeseries", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("returns rolling CV alignment buckets for current platform top skills", async () => {
+    setupAuth(mockAdminUser());
+    analyticsService.getSkillDemandStats.mockResolvedValue({
+      top: [
+        { skill: "ReactJS", count: 8 },
+        { skill: "Node", count: 6 },
+      ],
+      least: [],
+    });
+    Resume.aggregate = jest.fn().mockResolvedValue([
+      { createdAt: new Date(), matchedTopSkills: ["react", "node.js"] },
+      { createdAt: new Date(), matchedTopSkills: [] },
+    ]);
+
+    const res = await request(app)
+      .get("/api/admin/skills/alignment-timeseries?source=platform&period=weekly&limit=2&lookback=3")
+      .set("Authorization", `Bearer ${ADMIN_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.data.source).toBe("platform");
+    expect(res.body.data.period).toBe("weekly");
+    expect(res.body.data.dataPoints).toHaveLength(3);
+    expect(res.body.data.topSkills.map((row) => row.skill)).toEqual(["react", "node.js"]);
+    expect(res.body.data.latest).toEqual(expect.objectContaining({
+      cvUploads: 2,
+      cvWithTopSkills: 1,
+      alignmentRate: 0.5,
+      avgTopSkillsPerCV: 1,
+    }));
+    expect(Resume.aggregate).toHaveBeenCalledWith(expect.arrayContaining([
+      expect.objectContaining({
+        $project: expect.objectContaining({
+          matchedTopSkills: { $setIntersection: [{ $ifNull: ["$normalizedSkills", []] }, ["react", "node.js"]] },
+        }),
+      }),
+    ]));
+  });
+
+  it("returns current industry top skills with monthly alignment data", async () => {
+    setupAuth(mockAdminUser());
+    const latestSnapshot = {
+      skill: "python",
+      periodStart: new Date("2026-04-20T00:00:00Z"),
+      periodEnd: new Date("2026-04-27T00:00:00Z"),
+      marketScope: "combined",
+    };
+
+    SkillSnapshot.findOne = jest.fn().mockReturnValue(queryResolving(latestSnapshot));
+    SkillSnapshot.find = jest
+      .fn()
+      .mockReturnValueOnce(queryResolving([
+        { skill: "Python", count: 20, totalJobs: 100, relativeFreq: 0.2, marketScope: "combined" },
+      ]))
+      .mockReturnValueOnce(queryResolving([
+        { skill: "Perl", count: 1, totalJobs: 100, relativeFreq: 0.01, marketScope: "combined" },
+      ]));
+    Resume.aggregate = jest.fn().mockResolvedValue([
+      { createdAt: new Date(), matchedTopSkills: ["python"] },
+    ]);
+
+    const res = await request(app)
+      .get("/api/admin/skills/alignment-timeseries?source=industry&period=monthly&marketScope=combined&limit=1&lookback=2")
+      .set("Authorization", `Bearer ${ADMIN_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.source).toBe("industry");
+    expect(res.body.data.period).toBe("monthly");
+    expect(res.body.data.demandPeriod.startDate).toBe("2026-04-20T00:00:00.000Z");
+    expect(res.body.data.topSkills).toEqual([
+      expect.objectContaining({
+        skill: "python",
+        demandMetric: 0.2,
+      }),
+    ]);
+    expect(res.body.data.latest).toEqual(expect.objectContaining({
+      cvUploads: 1,
+      cvWithTopSkills: 1,
+      alignmentRate: 1,
+      avgTopSkillsPerCV: 1,
+    }));
+  });
+});
