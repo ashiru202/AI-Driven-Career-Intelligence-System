@@ -16,6 +16,10 @@ const { normalizeSkillList } = require("../src/utils/skillNormalizer");
 
 const DATASET_SNAPSHOT_SOURCE = "dataset-lk-it-jobs";
 const DATASET_SOURCE_ID_PREFIX = "dataset-lk-it-jobs:";
+const MIN_FORECAST_POINTS = 4;
+const FORECAST_WEEKS_AHEAD = 8;
+const RISING_SLOPE_THRESHOLD = 0.0001;
+const FALLING_SLOPE_THRESHOLD = -0.0001;
 
 function parseArgs(argv) {
   const args = {
@@ -142,6 +146,122 @@ function formatISODate(date) {
   return new Date(date).toISOString().slice(0, 10);
 }
 
+function linearRegressionFit(values) {
+  const n = values.length;
+  if (n < 2) {
+    return { slope: 0, intercept: values[0] || 0 };
+  }
+
+  const sumX = (n * (n - 1)) / 2;
+  const sumXX = ((n - 1) * n * ((2 * n) - 1)) / 6;
+  const sumY = values.reduce((acc, value) => acc + value, 0);
+  const sumXY = values.reduce((acc, value, index) => acc + (index * value), 0);
+  const denominator = (n * sumXX) - (sumX * sumX);
+
+  if (denominator === 0) {
+    return { slope: 0, intercept: sumY / n };
+  }
+
+  const slope = ((n * sumXY) - (sumX * sumY)) / denominator;
+  const intercept = (sumY - (slope * sumX)) / n;
+  return { slope, intercept };
+}
+
+function classifyDirection(slope) {
+  if (slope > RISING_SLOPE_THRESHOLD) return "rising";
+  if (slope < FALLING_SLOPE_THRESHOLD) return "falling";
+  return "stable";
+}
+
+function buildForecastPoints(history, slope, intercept) {
+  const lastPeriodStart = history[history.length - 1].periodStart;
+  const values = history.map((item) => Number(item.relativeFreq) || 0);
+  const residuals = values.map((value, index) => value - ((slope * index) + intercept));
+  const variance = residuals.reduce((acc, value) => acc + (value * value), 0) / Math.max(1, residuals.length);
+  const halfBand = 1.5 * Math.sqrt(variance);
+
+  const points = [];
+  for (let i = 1; i <= FORECAST_WEEKS_AHEAD; i += 1) {
+    const x = (history.length - 1) + i;
+    const predicted = Math.max(intercept + (slope * x), 0);
+    points.push({
+      periodStart: addDaysUTC(lastPeriodStart, 7 * i),
+      predictedFreq: Number(predicted.toFixed(8)),
+      lowerBound: Number(Math.max(predicted - halfBand, 0).toFixed(8)),
+      upperBound: Number((predicted + halfBand).toFixed(8)),
+    });
+  }
+
+  return points;
+}
+
+async function regenerateLocalForecasts(topN = 100) {
+  const topSkills = await SkillSnapshot.aggregate([
+    { $match: { marketScope: "local-lk" } },
+    {
+      $group: {
+        _id: "$skill",
+        avgFreq: { $avg: "$relativeFreq" },
+        weeksCovered: { $sum: 1 },
+      },
+    },
+    { $match: { weeksCovered: { $gte: MIN_FORECAST_POINTS } } },
+    { $sort: { avgFreq: -1 } },
+    { $limit: topN },
+  ]);
+
+  const now = new Date();
+  let refreshed = 0;
+  const directionCounts = { rising: 0, falling: 0, stable: 0 };
+
+  for (const entry of topSkills) {
+    const history = await SkillSnapshot.find({
+      skill: entry._id,
+      marketScope: "local-lk",
+    })
+      .sort({ periodStart: -1 })
+      .limit(16)
+      .lean();
+    history.reverse();
+
+    if (history.length < MIN_FORECAST_POINTS) {
+      continue;
+    }
+
+    const values = history.map((item) => Number(item.relativeFreq) || 0);
+    const { slope, intercept } = linearRegressionFit(values);
+    const trendDirection = classifyDirection(slope);
+    const mean = values.reduce((acc, value) => acc + value, 0) / values.length;
+    const fittedResiduals = values.map((value, index) => value - ((slope * index) + intercept));
+    const ssTotal = values.reduce((acc, value) => acc + ((value - mean) ** 2), 0);
+    const ssResidual = fittedResiduals.reduce((acc, value) => acc + (value ** 2), 0);
+    const confidence = ssTotal === 0 ? 0 : Math.max(0, 1 - (ssResidual / ssTotal));
+
+    await SkillForecast.updateOne(
+      { skill: entry._id, marketScope: "local-lk" },
+      {
+        $set: {
+          skill: entry._id,
+          marketScope: "local-lk",
+          generatedAt: now,
+          trendDirection,
+          trendSlope: Number(slope.toFixed(8)),
+          trendConfidence: Number(confidence.toFixed(6)),
+          forecastPoints: buildForecastPoints(history, slope, intercept),
+          dataPointsUsed: history.length,
+          modelUsed: "linear",
+        },
+      },
+      { upsert: true }
+    );
+
+    directionCounts[trendDirection] += 1;
+    refreshed += 1;
+  }
+
+  return { refreshed, directionCounts };
+}
+
 async function main() {
   const args = parseArgs(process.argv);
 
@@ -227,12 +347,14 @@ async function main() {
       const weekEnd = addDaysUTC(weekStart, 7);
 
       const postings = [];
-      // The dataset has no time dimension. Keep role sampling deterministic
-      // week-to-week to avoid introducing artificial trends.
+      // The dataset has no time dimension, so we use a deterministic rotating
+      // sample. This keeps the import reproducible while giving the UI a real
+      // weekly series to rank and forecast.
       const roleStep = 37; // coprime with 209 (dataset size), ensures broad coverage
+      const weekOffset = (weekIndex * 19) % roles.length;
 
       for (let i = 0; i < args.jobsPerWeek; i += 1) {
-        const { role, skills } = roles[(i * roleStep) % roles.length];
+        const { role, skills } = roles[(weekOffset + (i * roleStep)) % roles.length];
 
         const scrapedAt = addDaysUTC(weekStart, (i % 6) + 1);
         const postedAt = addDaysUTC(scrapedAt, -2);
@@ -311,6 +433,13 @@ async function main() {
     console.log(`   CSV: ${csvPath}`);
     console.log(`   Weeks: ${args.weeks}`);
     console.log(`   Jobs/week: ${args.jobsPerWeek}`);
+
+    const forecastSummary = await regenerateLocalForecasts();
+    console.log("\nForecast refresh complete");
+    console.log(`   Forecasts: ${forecastSummary.refreshed}`);
+    console.log(`   Rising: ${forecastSummary.directionCounts.rising}`);
+    console.log(`   Falling: ${forecastSummary.directionCounts.falling}`);
+    console.log(`   Stable: ${forecastSummary.directionCounts.stable}`);
 
   } finally {
     await mongoose.connection.close();

@@ -391,21 +391,21 @@ export default function TrendsPage() {
       getSnapshotSummary(scope),
       getRisingSkills(8, scope),
       getFallingSkills(8, scope),
+      getSkillsList({ page: 1, limit: 1, marketScope: scope }),
       api.get("/api/analytics/my-resumes"),
     ])
-      .then(([sumRes, rRes, fRes, resumeRes]) => {
+      .then(([sumRes, rRes, fRes, allRes, resumeRes]) => {
         const sum = sumRes.status === "fulfilled" ? sumRes.value.data?.data || {} : {};
         const r   = rRes.status  === "fulfilled" ? rRes.value.data?.data?.skills  || [] : [];
         const f   = fRes.status  === "fulfilled" ? fRes.value.data?.data?.skills  || [] : [];
+        const all = allRes.status === "fulfilled" ? allRes.value.data?.data?.skills || [] : [];
 
         setSummary(sum);
         setRising(r);
         setFalling(f);
 
-        // Set default selected skill to highest-slope rising skill
-        if (r.length > 0 && selectedSkill === null) {
-          setSelectedSkill(r[0].skill);
-        }
+        // Prefer a rising skill, but keep the explorer useful for stable-only markets.
+        setSelectedSkill(r[0]?.skill || all[0]?.skill || f[0]?.skill || null);
 
         // Personal skills cross-reference (best-effort — skip if resumes unavailable)
         if (resumeRes.status === "fulfilled") {

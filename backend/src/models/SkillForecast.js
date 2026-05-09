@@ -29,7 +29,7 @@ const skillForecastSchema = new mongoose.Schema({
   dataPointsUsed:  { type: Number, required: true },
   modelUsed:       {
     type: String,
-    enum: ["linear", "prophet"],
+    enum: ["linear", "prophet", "snapshot-linear-fallback"],
     default: "linear",
   },
 });

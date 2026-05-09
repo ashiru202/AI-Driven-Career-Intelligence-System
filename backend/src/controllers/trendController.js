@@ -10,8 +10,8 @@ const { notifyActiveAdmins } = require("../services/adminRealtimeService");
 
 const NLP_URL = process.env.NLP_SERVICE_URL || "http://localhost:8000";
 const VALID_MARKET_SCOPES = new Set(["combined", "global", "local-lk"]);
-const RISING_SLOPE_THRESHOLD = 0.001;
-const FALLING_SLOPE_THRESHOLD = -0.001;
+const RISING_SLOPE_THRESHOLD = Number(process.env.RISING_SLOPE_THRESHOLD || 0.0001);
+const FALLING_SLOPE_THRESHOLD = Number(process.env.FALLING_SLOPE_THRESHOLD || -0.0001);
 const FALLBACK_POINT_LIMIT = 12;
 const MIN_FORECAST_HISTORY_POINTS = 4;
 
