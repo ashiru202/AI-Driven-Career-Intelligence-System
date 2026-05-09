@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import Layout from "../components/Layout";
@@ -124,6 +124,7 @@ export default function CompareJob() {
           commonSkills: c.commonSkills || [],
           missingSkills: c.missingSkills || [],
           resumeSkills: c.resumeSkills || [],
+          resumeFileName: c.resumeFileName || "",
         });
         setResult(null);
       }
@@ -132,7 +133,32 @@ export default function CompareJob() {
     }
   };
 
-  const activeResult = result || selectedHistory;
+  const activeResult = useMemo(() => {
+    const base = result || selectedHistory;
+    if (!base) return null;
+    const commonSkills = Array.isArray(base.commonSkills) ? base.commonSkills : [];
+    const missingSkills = Array.isArray(base.missingSkills) ? base.missingSkills : [];
+    const resumeSkills = Array.isArray(base.resumeSkills) ? base.resumeSkills : [];
+    const totalJobSkills =
+      typeof base.totalJobSkills === "number"
+        ? base.totalJobSkills
+        : Array.isArray(base.jobSkills)
+          ? base.jobSkills.length
+          : 0;
+    const matchedSkills =
+      typeof base.matchedSkills === "number"
+        ? base.matchedSkills
+        : commonSkills.length;
+
+    return {
+      ...base,
+      commonSkills,
+      missingSkills,
+      resumeSkills,
+      totalJobSkills,
+      matchedSkills,
+    };
+  }, [result, selectedHistory]);
 
   const generateRoadmap = async () => {
     if (activeResult && activeResult.missingSkills.length > 0) {
@@ -162,83 +188,166 @@ export default function CompareJob() {
           <p className="text-slate-400 mt-1 text-sm">Compare your skills with job requirements</p>
         </div>
 
-        {/* Input Form — full width horizontal */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Job Details</CardTitle>
-            <CardDescription>Enter the job title and description</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={submit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="jobTitle">Job Title</Label>
-                <Input
-                  id="jobTitle"
-                  placeholder="e.g., Full Stack Developer"
-                  value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="resume">Resume to Compare</Label>
-                {resumes.length === 0 ? (
-                  <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-md px-3 py-2">
-                    No resumes uploaded yet.{" "}
-                    <a href="/resume" className="underline font-medium">Upload one first.</a>
-                  </p>
-                ) : (
-                  <select
-                    id="resume"
-                    value={selectedResumeId}
-                    onChange={(e) => setSelectedResumeId(e.target.value)}
-                    className="w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.13)', color: '#fff' }}
-                  >
-                    {resumes.map((r) => (
-                      <option key={r._id} value={r._id} style={{ background: '#1e1e2e', color: '#fff' }}>
-                        {r.fileName}{" "}
-                        ({new Date(r.createdAt).toLocaleDateString()})
-                      </option>
-                    ))}
-                  </select>
+        {/* Half/Half layout: left = JD inputs, right = comparison results */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="h-full flex flex-col">
+            <CardHeader>
+              <CardTitle>Job Details</CardTitle>
+              <CardDescription>Input fields before analysis</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1">
+              <form onSubmit={submit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="jobTitle">Job Title</Label>
+                  <Input
+                    id="jobTitle"
+                    placeholder="e.g., Full Stack Developer"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="resume">Resume to Compare</Label>
+                  {resumes.length === 0 ? (
+                    <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-md px-3 py-2">
+                      No resumes uploaded yet.{" "}
+                      <a href="/resume" className="underline font-medium">Upload one first.</a>
+                    </p>
+                  ) : (
+                    <select
+                      id="resume"
+                      value={selectedResumeId}
+                      onChange={(e) => setSelectedResumeId(e.target.value)}
+                      className="w-full rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.13)', color: '#fff' }}
+                    >
+                      {resumes.map((r) => (
+                        <option key={r._id} value={r._id} style={{ background: '#1e1e2e', color: '#fff' }}>
+                          {r.fileName}{" "}
+                          ({new Date(r.createdAt).toLocaleDateString()})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="jobDescription">Job Description</Label>
+                  <Textarea
+                    id="jobDescription"
+                    rows={8}
+                    placeholder="Paste full job description here..."
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
                 )}
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="jobDescription">Job Description</Label>
-                <Textarea
-                  id="jobDescription"
-                  rows={6}
-                  placeholder="Paste the full job description here..."
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                  required
-                />
-              </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Analyzing...' : 'Compare Skills'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
 
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                  <p className="text-sm text-red-800">{error}</p>
+          <Card className="h-full flex flex-col">
+            <CardHeader>
+              <CardTitle>Comparison Results</CardTitle>
+              <CardDescription>
+                {activeResult
+                  ? (selectedHistory ? `Result: ${activeResult.jobTitle}` : "Latest result")
+                  : "Run a comparison to see match score and skills"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col gap-4">
+              {activeResult ? (
+                <div className="space-y-4 flex-1">
+                  <div className="rounded-md border border-white/15 px-4 py-3">
+                    <div className="text-sm text-slate-400">match score</div>
+                    <div className={`text-5xl font-bold ${getMatchColor(activeResult.matchScore)}`}>
+                      {activeResult.matchScore}%
+                    </div>
+                    <div className="text-xs mt-1 text-slate-400">
+                      {activeResult.matchedSkills} of {activeResult.totalJobSkills} required skills
+                    </div>
+                    {activeResult.resumeFileName ? (
+                      <div
+                        className="mt-2 inline-flex items-center gap-1 text-xs rounded px-2 py-1 truncate bg-indigo-500/15 text-indigo-200 border border-indigo-400/30"
+                        title={activeResult.resumeFileName}
+                      >
+                        <FileText size={14} />
+                        <span className="truncate">{activeResult.resumeFileName}</span>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="text-sm font-semibold text-slate-200">common skills</div>
+                    <div className="flex flex-wrap gap-2">
+                      {activeResult.commonSkills.length > 0 ? (
+                        activeResult.commonSkills.map((skill, idx) => (
+                          <Badge key={idx} variant="success">
+                            {skill}
+                          </Badge>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-400">No matching skills found</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="text-sm font-semibold text-slate-200">missing skills</div>
+                    <div className="flex flex-wrap gap-2">
+                      {activeResult.missingSkills.length > 0 ? (
+                        activeResult.missingSkills.map((skill, idx) => (
+                          <Badge key={idx} variant="destructive">
+                            {skill}
+                          </Badge>
+                        ))
+                      ) : (
+                        <p className="text-sm text-green-600">Congratulations! You have all required skills.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 rounded-md border border-white/15 p-6 text-center">
+                  <p className="text-sm font-semibold text-slate-200">No results yet</p>
+                  <p className="text-sm mt-2 text-slate-400">
+                    Run <span className="font-medium text-slate-300">Compare Skills</span> to see your match score and skill gaps here.
+                  </p>
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Analyzing...' : 'Compare Skills'}
+              <Button
+                onClick={generateRoadmap}
+                className="w-full mt-auto"
+                disabled={!activeResult || activeResult.missingSkills.length === 0}
+              >
+                Generate roadmap
               </Button>
-            </form>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Comparison History */}
         <div className="mt-10">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Comparison History</h3>
+          <h3 className="text-xl font-bold text-white mb-4">Comparison History</h3>
           {historyLoading ? (
-            <p className="text-gray-500">Loading history...</p>
+            <p className="text-slate-400">Loading history...</p>
           ) : history.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center">
-                <p className="text-gray-500">No comparisons yet. Run your first comparison above.</p>
+                <p className="text-slate-400">No comparisons yet. Run your first comparison above.</p>
               </CardContent>
             </Card>
           ) : (
@@ -313,99 +422,6 @@ export default function CompareJob() {
           )}
         </div>
 
-        {/* Past Comparison Result — below history */}
-        {activeResult && (
-          <div className="space-y-4 mt-8">
-            <div className="flex items-center gap-3">
-              <h3 className="text-xl font-bold text-gray-900">
-                {selectedHistory ? `Result: ${activeResult.jobTitle}` : 'Latest Comparison Result'}
-              </h3>
-              {activeResult.resumeFileName && (
-                  <span
-                  className="text-xs rounded-full px-3 py-1 font-medium flex items-center gap-1"
-                  style={{background:'rgba(99,102,241,0.15)', color:'#a5b4fc', border:'1px solid rgba(99,102,241,0.3)'}}
-                >
-                  <FileText size={13} /> {activeResult.resumeFileName}
-                </span>
-              )}
-              {selectedHistory && (
-                <span className="text-xs bg-gray-100 text-gray-600 border border-gray-300 rounded-full px-3 py-1 font-medium">
-                  Past comparison
-                </span>
-              )}
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Match Score</CardTitle>
-                  <CardDescription>How well your skills match this job</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center">
-                    <div className={`text-6xl font-bold ${getMatchColor(activeResult.matchScore)}`}>
-                      {activeResult.matchScore}%
-                    </div>
-                    <p className="text-gray-600 mt-2">
-                      {activeResult.matchedSkills} of {activeResult.totalJobSkills} required skills
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Common Skills</CardTitle>
-                  <CardDescription>Skills you already have</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {activeResult.commonSkills.length > 0 ? (
-                      activeResult.commonSkills.map((skill, idx) => (
-                        <Badge key={idx} variant="success">
-                          {skill}
-                        </Badge>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">No matching skills found</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Missing Skills</CardTitle>
-                  <CardDescription>Skills you need to learn</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    {activeResult.missingSkills.length > 0 ? (
-                      activeResult.missingSkills.map((skill, idx) => (
-                        <Badge key={idx} variant="destructive">
-                          {skill}
-                        </Badge>
-                      ))
-                    ) : (
-                      <p className="text-green-600">
-                        Congratulations! You have all required skills.
-                      </p>
-                    )}
-                  </div>
-
-                  {activeResult.missingSkills.length > 0 && (
-                    <Button
-                      onClick={generateRoadmap}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      Generate Learning Roadmap
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
       </div>
     </Layout>
   );
