@@ -105,7 +105,7 @@ function DemandChart({ rows, metricKey, color }) {
 export default function AdminSkillsDemand() {
   const { liveNotifications } = useSSE();
   const [activeTab, setActiveTab] = useState("platform");
-  const [marketScope, setMarketScope] = useState("combined");
+  const [marketScope, setMarketScope] = useState("global");
   const [platformDemand, setPlatformDemand] = useState({ top: [], least: [] });
   const [industryDemand, setIndustryDemand] = useState({ top: [], least: [] });
   const [loading, setLoading] = useState(true);
@@ -187,9 +187,8 @@ export default function AdminSkillsDemand() {
               onChange={(e) => setMarketScope(e.target.value)}
               className="rounded-lg border border-white/10 bg-[#0b1326] px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
             >
-              <option value="combined">Combined</option>
-              <option value="global">Global</option>
-              <option value="local-lk">Local LK</option>
+              <option value="global">Global / Remote</option>
+              <option value="local-lk">Sri Lanka</option>
             </select>
             <Button onClick={fetchDemand} disabled={loading} className="bg-white/10 text-white hover:bg-white/20">
               <RefreshCw size={15} className={`mr-1 ${loading ? "animate-spin" : ""}`} />

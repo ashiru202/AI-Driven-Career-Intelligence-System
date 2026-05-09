@@ -540,8 +540,8 @@ export default function StaffManagement() {
         </div>
 
         <div>
-          <Card className="border-white/10 overflow-hidden" style={{ background: "linear-gradient(145deg, rgba(17,31,48,0.9), rgba(14,22,36,0.95))" }}>
-            <CardHeader className="border-b border-white/10 bg-white/[0.02]">
+          <Card className="border-white/10 overflow-hidden" style={{ background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
+            <CardHeader className="border-b border-white/10">
               <CardTitle className="text-white">Pending Staff Applications</CardTitle>
             </CardHeader>
             <CardContent>
@@ -553,10 +553,10 @@ export default function StaffManagement() {
                   <p className="text-sm mt-1">When candidates apply, they will appear here for admin review.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto table-unified rounded-lg border border-white/10 bg-[#0b1326]/70">
+                <div className="overflow-x-auto table-unified">
                   <table className="w-full min-w-[860px] text-sm">
                     <thead>
-                      <tr className="text-left text-white/50 border-b border-white/10 text-[11px] uppercase tracking-[0.08em]">
+                      <tr className="text-left text-white/40 border-b border-white/10 text-[11px] uppercase tracking-[0.08em]">
                         <th className="px-4 py-3">Applicant</th>
                         <th className="px-4 py-3">Current Role</th>
                         <th className="px-4 py-3">Experience</th>
@@ -571,7 +571,7 @@ export default function StaffManagement() {
                           key={application._id}
                           className={`border-b border-white/5 last:border-0 transition-colors ${
                             index % 2 === 0 ? "bg-white/[0.015]" : "bg-transparent"
-                          } hover:bg-[#1a2440]/70`}
+                          } hover:bg-white/[0.06]`}
                         >
                           <td className="px-4 py-3">
                             <p className="font-medium text-white/90">{application.fullName}</p>

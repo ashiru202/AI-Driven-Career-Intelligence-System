@@ -58,6 +58,13 @@ function classifyCandidateLevel(text, options = {}) {
   const professionalPattern = /\b(senior|lead|manager|principal|architect|consultant)\b/;
   const yearsExperience = parseYearsExperience(lower);
 
+  if (yearsExperience !== null && yearsExperience >= 2) {
+    return {
+      candidateLevel: CANDIDATE_LEVELS.PROFESSIONAL,
+      candidateLevelSource: 'heuristic',
+    };
+  }
+
   if (internPattern.test(lower)) {
     return {
       candidateLevel: CANDIDATE_LEVELS.INTERN,
@@ -65,7 +72,7 @@ function classifyCandidateLevel(text, options = {}) {
     };
   }
 
-  if (professionalPattern.test(lower) || (yearsExperience !== null && yearsExperience >= 2)) {
+  if (professionalPattern.test(lower)) {
     return {
       candidateLevel: CANDIDATE_LEVELS.PROFESSIONAL,
       candidateLevelSource: 'heuristic',

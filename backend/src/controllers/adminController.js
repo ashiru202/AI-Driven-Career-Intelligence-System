@@ -466,11 +466,89 @@ function mapResumeForAdmin(resume) {
   };
 }
 
+function skillOverlapScore(a = [], b = []) {
+  const aSet = new Set(Array.isArray(a) ? a : []);
+  const bSet = new Set(Array.isArray(b) ? b : []);
+  if (aSet.size === 0 || bSet.size === 0) {
+    return { shared: [], score: 0 };
+  }
+
+  const shared = [...aSet].filter((skill) => bSet.has(skill));
+  const unionSize = new Set([...aSet, ...bSet]).size;
+  return {
+    shared,
+    score: unionSize > 0 ? shared.length / unionSize : 0,
+  };
+}
+
+function buildSimilarSkillGroups(resumes, { minGroupSize, minSkills, limit }) {
+  const groups = [];
+  const threshold = 0.75;
+
+  resumes.forEach((resume) => {
+    const normalizedSkills = Array.isArray(resume.normalizedSkills) ? resume.normalizedSkills : [];
+    if (normalizedSkills.length < minSkills) return;
+
+    let bestMatch = null;
+    groups.forEach((group) => {
+      const overlap = skillOverlapScore(normalizedSkills, group.normalizedSkills);
+      if (
+        overlap.shared.length >= minSkills &&
+        overlap.score >= threshold &&
+        (!bestMatch || overlap.score > bestMatch.score)
+      ) {
+        bestMatch = { group, ...overlap };
+      }
+    });
+
+    if (bestMatch) {
+      bestMatch.group.resumes.push(resume);
+      bestMatch.group.normalizedSkills = bestMatch.shared.sort((a, b) => a.localeCompare(b));
+      bestMatch.group.latestCreatedAt = new Date(
+        Math.max(
+          new Date(bestMatch.group.latestCreatedAt || 0).getTime(),
+          new Date(resume.createdAt || 0).getTime()
+        )
+      );
+    } else {
+      groups.push({
+        normalizedSkills: normalizedSkills.slice(),
+        resumes: [resume],
+        latestCreatedAt: resume.createdAt,
+      });
+    }
+  });
+
+  return groups
+    .filter((group) => group.resumes.length >= minGroupSize)
+    .map((group) => ({
+      skillsSignature: `similar:${group.resumes.map((resume) => resume._id).sort().join("|")}`,
+      normalizedSkills: group.normalizedSkills || [],
+      skillCount: (group.normalizedSkills || []).length,
+      resumeCount: group.resumes.length,
+      latestCreatedAt: group.latestCreatedAt,
+      candidateLevels: countCandidateLevels(group.resumes),
+      resumes: group.resumes.map(mapResumeForAdmin),
+      matchType: "similar",
+    }))
+    .sort((a, b) => b.resumeCount - a.resumeCount || new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt))
+    .slice(0, limit);
+}
+
 // Admin: group CVs with the same normalized skill set
 const getResumeSkillGroups = asyncHandler(async (req, res) => {
   const minGroupSize = readPositiveInt(req.query.minGroupSize, 2, 20);
   const minSkills = readPositiveInt(req.query.minSkills, 5, 100);
   const limit = readPositiveInt(req.query.limit, 50, 100);
+
+  const allCandidateResumes = await Resume.find({
+    normalizedSkills: { $exists: true, $ne: [] },
+  })
+    .select("user fileName createdAt normalizedSkills skillsSignature candidateLevel candidateLevelSource")
+    .populate("user", "name email careerLevel yearsExperience")
+    .sort({ createdAt: -1 })
+    .limit(500)
+    .lean();
 
   const groups = await Resume.aggregate([
     {
@@ -521,21 +599,43 @@ const getResumeSkillGroups = asyncHandler(async (req, res) => {
     resumesBySignature.get(resume.skillsSignature).push(resume);
   });
 
+  const exactResponseGroups = groups.map((group) => {
+    const groupResumes = resumesBySignature.get(group._id) || [];
+    return {
+      skillsSignature: group._id,
+      normalizedSkills: group.normalizedSkills || [],
+      skillCount: (group.normalizedSkills || []).length,
+      resumeCount: group.resumeCount,
+      latestCreatedAt: group.latestCreatedAt,
+      candidateLevels: countCandidateLevels(groupResumes),
+      resumes: groupResumes.map(mapResumeForAdmin),
+      matchType: "exact",
+    };
+  });
+  const similarResponseGroups = buildSimilarSkillGroups(allCandidateResumes, { minGroupSize, minSkills, limit });
+  const seenGroupMembers = new Set();
+  const responseGroups = [...exactResponseGroups, ...similarResponseGroups]
+    .filter((group) => {
+      const memberKey = (group.resumes || []).map((resume) => String(resume.id)).sort().join("|");
+      if (!memberKey || seenGroupMembers.has(memberKey)) return false;
+      seenGroupMembers.add(memberKey);
+      return true;
+    })
+    .sort((a, b) => b.resumeCount - a.resumeCount || new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt))
+    .slice(0, limit);
+  const groupedResumeIds = new Set(
+    responseGroups.flatMap((group) => (group.resumes || []).map((resume) => String(resume.id)))
+  );
+  const totalResumes = typeof Resume.countDocuments === "function"
+    ? await Resume.countDocuments({})
+    : allCandidateResumes.length;
+
   res.json(
     successResponse({
       filters: { minGroupSize, minSkills, limit },
-      groups: groups.map((group) => {
-        const groupResumes = resumesBySignature.get(group._id) || [];
-        return {
-          skillsSignature: group._id,
-          normalizedSkills: group.normalizedSkills || [],
-          skillCount: (group.normalizedSkills || []).length,
-          resumeCount: group.resumeCount,
-          latestCreatedAt: group.latestCreatedAt,
-          candidateLevels: countCandidateLevels(groupResumes),
-          resumes: groupResumes.map(mapResumeForAdmin),
-        };
-      }),
+      totalResumes,
+      groupedResumeCount: groupedResumeIds.size,
+      groups: responseGroups,
     })
   );
 });

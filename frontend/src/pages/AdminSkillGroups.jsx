@@ -38,6 +38,7 @@ function formatDate(value) {
 export default function AdminSkillGroups() {
   const { liveNotifications } = useSSE();
   const [groups, setGroups] = useState([]);
+  const [summary, setSummary] = useState({ totalResumes: 0, groupedResumeCount: 0 });
   const [filters, setFilters] = useState({ minGroupSize: 2, minSkills: 1, limit: 50 });
   const [expanded, setExpanded] = useState({});
   const [updatingLevel, setUpdatingLevel] = useState({});
@@ -57,7 +58,12 @@ export default function AdminSkillGroups() {
     setError("");
     try {
       const res = await api.get(`/api/admin/resumes/skill-groups?${queryString}`);
-      setGroups(res.data.data?.groups || []);
+      const data = res.data.data || {};
+      setGroups(data.groups || []);
+      setSummary({
+        totalResumes: data.totalResumes || 0,
+        groupedResumeCount: data.groupedResumeCount || 0,
+      });
     } catch (err) {
       setError(err.response?.data?.error?.message || "Failed to load CV skill groups");
     } finally {
@@ -98,7 +104,7 @@ export default function AdminSkillGroups() {
     }
   };
 
-  const totalResumes = groups.reduce((sum, group) => sum + Number(group.resumeCount || 0), 0);
+  const totalResumes = summary.totalResumes || groups.reduce((sum, group) => sum + Number(group.resumeCount || 0), 0);
 
   return (
     <Layout>
@@ -186,7 +192,11 @@ export default function AdminSkillGroups() {
             ) : groups.length === 0 ? (
               <div className="py-10 text-center text-slate-400">
                 <p>No matching CV skill groups found.</p>
-                <p className="mt-1 text-sm">Lower the minimum skill count or upload more CVs to compare candidates.</p>
+                <p className="mt-1 text-sm">
+                  {totalResumes > 0
+                    ? `${totalResumes} CV upload${totalResumes === 1 ? "" : "s"} found, but none share enough overlapping skills yet.`
+                    : "Upload at least two CVs to compare candidates with similar skills."}
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto rounded-lg border border-white/10">
@@ -220,6 +230,11 @@ export default function AdminSkillGroups() {
                                 {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                 {group.skillCount} shared skills
                               </button>
+                              {group.matchType === "similar" && (
+                                <span className="mb-2 inline-flex rounded-full border border-sky-300/25 bg-sky-400/10 px-2 py-0.5 text-[11px] font-semibold text-sky-100">
+                                  Similar match
+                                </span>
+                              )}
                               <div className="flex max-w-[520px] flex-wrap gap-1.5">
                                 {(group.normalizedSkills || []).map((skill) => (
                                   <span

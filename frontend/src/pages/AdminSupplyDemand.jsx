@@ -54,7 +54,7 @@ function formatDate(value) {
 
 function shortSkill(skill) {
   const label = titleizeSkill(skill);
-  return label.length > 16 ? `${label.slice(0, 14)}...` : label;
+  return label.length > 24 ? `${label.slice(0, 22)}...` : label;
 }
 
 function ChartTooltip({ active, payload, label }) {
@@ -69,6 +69,14 @@ function ChartTooltip({ active, payload, label }) {
       ))}
     </div>
   );
+}
+
+function contextCopy(source, period) {
+  const sourceText = source === "industry"
+    ? "Job market demand"
+    : "Skills requested inside this platform";
+  const periodText = period === "weekly" ? "last 7 days of CV uploads" : "last 30 days of CV uploads";
+  return `${sourceText} compared with ${periodText}.`;
 }
 
 function MetricTile({ label, value, Icon, tone }) {
@@ -149,7 +157,7 @@ export default function AdminSupplyDemand() {
   const { liveNotifications } = useSSE();
   const [source, setSource] = useState("industry");
   const [period, setPeriod] = useState("weekly");
-  const [marketScope, setMarketScope] = useState("combined");
+  const [marketScope, setMarketScope] = useState("global");
   const [insights, setInsights] = useState({ top: [], least: [], rows: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -190,6 +198,10 @@ export default function AdminSupplyDemand() {
       users: Number(row.userCount || 0),
     }));
   }, [insights]);
+  const activeChartRows = useMemo(() => {
+    const matched = chartRows.filter((row) => row.cvUploads > 0 || row.users > 0);
+    return (matched.length > 0 ? matched : chartRows).slice(0, 10);
+  }, [chartRows]);
 
   const totals = useMemo(() => {
     const rows = insights.rows || [];
@@ -221,9 +233,8 @@ export default function AdminSupplyDemand() {
               disabled={source !== "industry"}
               className="rounded-lg border border-white/10 bg-[#0b1326] px-3 py-2 text-sm text-white outline-none focus:border-indigo-400 disabled:opacity-45"
             >
-              <option value="combined">Combined</option>
-              <option value="global">Global</option>
-              <option value="local-lk">Local LK</option>
+              <option value="global">Global / Remote</option>
+              <option value="local-lk">Sri Lanka</option>
             </select>
             <Button onClick={fetchInsights} disabled={loading} className="bg-white/10 text-white hover:bg-white/20">
               <RefreshCw size={15} className={`mr-1 ${loading ? "animate-spin" : ""}`} />
@@ -240,16 +251,16 @@ export default function AdminSupplyDemand() {
 
         <div className="flex flex-wrap gap-2">
           <SegmentButton active={source === "industry"} onClick={() => setSource("industry")}>
-            <Database size={16} /> Industry
+            <Database size={16} /> Job Market
           </SegmentButton>
           <SegmentButton active={source === "platform"} onClick={() => setSource("platform")}>
-            <Briefcase size={16} /> Platform
+            <Briefcase size={16} /> Platform Requests
           </SegmentButton>
           <SegmentButton active={period === "weekly"} onClick={() => setPeriod("weekly")}>
-            <CalendarDays size={16} /> Weekly
+            <CalendarDays size={16} /> Last 7 Days
           </SegmentButton>
           <SegmentButton active={period === "monthly"} onClick={() => setPeriod("monthly")}>
-            <CalendarDays size={16} /> Monthly
+            <CalendarDays size={16} /> Last 30 Days
           </SegmentButton>
         </div>
 
@@ -269,12 +280,10 @@ export default function AdminSupplyDemand() {
           <CardHeader className="border-b border-white/10">
             <CardTitle className="flex flex-col gap-1 text-white">
               <span className="flex items-center gap-2">
-                <BarChart3 size={18} /> CV Uploads by Demanded Skill
+                <BarChart3 size={18} /> Candidate Coverage by Skill
               </span>
               <span className="text-xs font-normal text-white/45">
-                {source === "industry"
-                  ? `Industry snapshot: ${formatDate(insights.demandPeriod?.startDate)} to ${formatDate(insights.demandPeriod?.endDate)}`
-                  : "Platform demand from job comparisons and legacy roadmaps"}
+                {contextCopy(source, period)}
               </span>
             </CardTitle>
           </CardHeader>
@@ -284,27 +293,30 @@ export default function AdminSupplyDemand() {
             ) : chartRows.length === 0 ? (
               <p className="py-10 text-center text-sm text-slate-400">No matching skill analytics available yet.</p>
             ) : (
-              <div className="h-[340px] w-full">
+              <div className="space-y-4">
+              <div className="rounded-lg border border-white/10 bg-white/[0.025] px-4 py-3 text-sm text-slate-300">
+                Green bars count uploaded CVs that contain the skill. Blue bars count unique candidates. Empty demanded skills are kept in the tables below instead of cluttering this chart.
+              </div>
+              <div className="h-[380px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartRows} margin={{ top: 8, right: 10, left: -14, bottom: 42 }}>
+                  <BarChart data={activeChartRows} layout="vertical" margin={{ top: 8, right: 28, left: 96, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                    <XAxis
+                    <XAxis type="number" allowDecimals={false} tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis
+                      type="category"
                       dataKey="skill"
-                      tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 11 }}
+                      width={130}
+                      tick={{ fill: "rgba(255,255,255,0.62)", fontSize: 12 }}
                       axisLine={false}
                       tickLine={false}
-                      interval={0}
-                      angle={-12}
-                      textAnchor="end"
-                      height={62}
                     />
-                    <YAxis tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip content={<ChartTooltip />} />
                     <Legend wrapperStyle={{ color: "#e2e8f0", fontSize: 12 }} />
                     <Bar dataKey="cvUploads" name="CV Uploads" fill="#34d399" radius={[6, 6, 0, 0]} />
                     <Bar dataKey="users" name="Users" fill="#38bdf8" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
               </div>
             )}
           </CardContent>

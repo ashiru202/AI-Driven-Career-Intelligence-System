@@ -71,6 +71,12 @@ function ChartTooltip({ active, payload, label }) {
   );
 }
 
+function contextCopy(source, period) {
+  const sourceText = source === "industry" ? "job-market top skills" : "platform-requested skills";
+  const periodText = period === "weekly" ? "7-day CV upload windows" : "30-day CV upload windows";
+  return `Shows how uploaded CVs matched ${sourceText} across ${periodText}.`;
+}
+
 function SegmentButton({ active, children, onClick }) {
   return (
     <button
@@ -107,7 +113,7 @@ export default function AdminIndustryContribution() {
   const { liveNotifications } = useSSE();
   const [source, setSource] = useState("industry");
   const [period, setPeriod] = useState("weekly");
-  const [marketScope, setMarketScope] = useState("combined");
+  const [marketScope, setMarketScope] = useState("global");
   const [data, setData] = useState({ topSkills: [], dataPoints: [], latest: {} });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -149,6 +155,12 @@ export default function AdminIndustryContribution() {
       avgTopSkillsPerCV: Number(point.avgTopSkillsPerCV || 0),
     }));
   }, [data.dataPoints]);
+  const activeChartRows = useMemo(() => {
+    const activeRows = chartRows.filter(
+      (row) => row.cvUploads > 0 || row.cvWithTopSkills > 0 || row.alignmentRatePct > 0
+    );
+    return (activeRows.length > 0 ? activeRows : chartRows).slice(-8);
+  }, [chartRows]);
 
   const latest = data.latest || {};
   const sourceLabel = source === "industry" ? "Industry" : "Platform";
@@ -170,9 +182,8 @@ export default function AdminIndustryContribution() {
               disabled={source !== "industry"}
               className="rounded-lg border border-white/10 bg-[#0b1326] px-3 py-2 text-sm text-white outline-none focus:border-indigo-400 disabled:opacity-45"
             >
-              <option value="combined">Combined</option>
-              <option value="global">Global</option>
-              <option value="local-lk">Local LK</option>
+              <option value="global">Global / Remote</option>
+              <option value="local-lk">Sri Lanka</option>
             </select>
             <Button onClick={fetchContribution} disabled={loading} className="bg-white/10 text-white hover:bg-white/20">
               <RefreshCw size={15} className={`mr-1 ${loading ? "animate-spin" : ""}`} />
@@ -189,16 +200,16 @@ export default function AdminIndustryContribution() {
 
         <div className="flex flex-wrap gap-2">
           <SegmentButton active={source === "industry"} onClick={() => setSource("industry")}>
-            <Database size={16} /> Industry
+            <Database size={16} /> Job Market
           </SegmentButton>
           <SegmentButton active={source === "platform"} onClick={() => setSource("platform")}>
-            <Briefcase size={16} /> Platform
+            <Briefcase size={16} /> Platform Requests
           </SegmentButton>
           <SegmentButton active={period === "weekly"} onClick={() => setPeriod("weekly")}>
-            <CalendarDays size={16} /> Weekly
+            <CalendarDays size={16} /> Last 7 Days
           </SegmentButton>
           <SegmentButton active={period === "monthly"} onClick={() => setPeriod("monthly")}>
-            <CalendarDays size={16} /> Monthly
+            <CalendarDays size={16} /> Last 30 Days
           </SegmentButton>
         </div>
 
@@ -264,8 +275,9 @@ export default function AdminIndustryContribution() {
         <Card className="border-white/10 bg-[#0f1726]">
           <CardHeader className="border-b border-white/10">
             <CardTitle className="flex items-center gap-2 text-white">
-              <BarChart3 size={18} /> Weekly/Monthly CV Comparison
+              <BarChart3 size={18} /> CV Alignment Over Time
             </CardTitle>
+            <p className="mt-1 text-xs text-white/45">{contextCopy(source, period)}</p>
           </CardHeader>
           <CardContent className="pt-6">
             {loading ? (
@@ -273,9 +285,13 @@ export default function AdminIndustryContribution() {
             ) : chartRows.length === 0 ? (
               <p className="py-10 text-center text-sm text-slate-400">No CV uploads found in this lookback window.</p>
             ) : (
-              <div className="h-[380px] w-full">
+              <div className="space-y-4">
+              <div className="rounded-lg border border-white/10 bg-white/[0.025] px-4 py-3 text-sm text-slate-300">
+                Dark bars are all CV uploads. Green bars are CVs that include at least one current top skill. The purple line is the match rate, so higher is better.
+              </div>
+              <div className="h-[360px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartRows} margin={{ top: 8, right: 10, left: -14, bottom: 44 }}>
+                  <ComposedChart data={activeChartRows} margin={{ top: 8, right: 28, left: -10, bottom: 38 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                     <XAxis
                       dataKey="label"
@@ -316,6 +332,18 @@ export default function AdminIndustryContribution() {
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {activeChartRows.slice(-4).map((row) => (
+                  <div key={row.label} className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3">
+                    <p className="text-xs font-semibold text-white/45">{row.label}</p>
+                    <p className="mt-1 text-sm text-white">
+                      {row.cvWithTopSkills}/{row.cvUploads} CVs matched top skills
+                    </p>
+                    <p className="text-xs text-indigo-200">{row.alignmentRatePct}% alignment</p>
+                  </div>
+                ))}
+              </div>
               </div>
             )}
           </CardContent>
