@@ -37,7 +37,7 @@ async function main() {
     // Step 1: Trigger scraping + processing
     console.log("📥 Step 1/2: Triggering job scraper + processor...");
     console.log("   This will:");
-    console.log("   - Collect job postings from Adzuna, Remotive, TopJobs.lk, XpressJobs.lk");
+    console.log("   - Collect job postings from enabled sources (e.g., Adzuna, Remotive)");
     console.log("   - Extract skills from job descriptions");
     console.log("   - Create weekly skill frequency snapshots\n");
 

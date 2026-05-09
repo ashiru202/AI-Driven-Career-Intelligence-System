@@ -18,7 +18,8 @@
     "cleanup:resumes": "node scripts/cleanupOrphanedResumes.js",
     "cleanup:resumes:dry-run": "node scripts/cleanupOrphanedResumes.js --dry-run",
     "backfill:resume-skills": "node scripts/backfill-resume-skill-signatures.js",
-    "backfill:resume-skills:dry-run": "node scripts/backfill-resume-skill-signatures.js --dry-run"
+    "backfill:resume-skills:dry-run": "node scripts/backfill-resume-skill-signatures.js --dry-run",
+    "import:lk-it-trends": "node scripts/import-sri-lanka-it-trends.js --reset"
   },
   "jest": {
     "testEnvironment": "node",
@@ -54,6 +55,7 @@
     "nodemailer": "^8.0.2",
     "pdf-parse": "^1.1.1",
     "pdfkit": "^0.17.2",
+    "papaparse": "^5.5.3",
     "zod": "^4.3.5"
   },
   "devDependencies": {

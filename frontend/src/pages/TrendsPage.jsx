@@ -15,7 +15,7 @@ import {
 import {
   TrendingUp, TrendingDown, Activity, BarChart2, Briefcase,
   RefreshCw, ChevronLeft, ChevronRight, Search, AlertTriangle,
-  ArrowUpRight, ArrowDownRight, Globe, MapPin, Layers,
+  ArrowUpRight, ArrowDownRight, Globe, MapPin,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -151,7 +151,6 @@ function ChartTooltip({ active, payload, label }) {
 // ─── Scope Toggle ─────────────────────────────────────────────────────────────
 
 const SCOPES = [
-  { key: "combined",  label: "Combined",       Icon: Layers },
   { key: "global",    label: "Global / Remote", Icon: Globe  },
   { key: "local-lk",  label: "Sri Lanka",       Icon: MapPin },
 ];
@@ -371,7 +370,7 @@ const CARD = {
 };
 
 export default function TrendsPage() {
-  const [scope,          setScope]          = useState("combined");
+  const [scope,          setScope]          = useState("global");
   const [summary,        setSummary]        = useState(null);
   const [rising,         setRising]         = useState([]);
   const [falling,        setFalling]        = useState([]);
@@ -522,10 +521,8 @@ export default function TrendsPage() {
           <p style={{ color: "#64748b", margin: "6px 0 0", fontSize: 14 }}>
             Live analysis of skill demand from thousands of job postings  including{" "}
             {scope === "local-lk"
-              ? "Sri Lankan job boards"
-              : scope === "global"
-              ? "global and remote job listings"
-              : "global, remote, and Sri Lankan job boards"}.
+              ? "a Sri Lanka dataset"
+              : "global and remote job listings"}.
           </p>
         </div>
 

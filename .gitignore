@@ -98,3 +98,6 @@ nul
 .nuxt/
 .turbo/
 /docs
+
+# Local datasets (not committed)
+backend/data/**/*.csv
