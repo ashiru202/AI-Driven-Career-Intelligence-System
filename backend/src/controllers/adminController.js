@@ -12,7 +12,7 @@ const adminSkillInsightsService = require("../services/adminSkillInsightsService
 const AuditLog = require("../models/AuditLog");
 const { logActivity } = require("../services/auditLogService");
 const { parsePagination, paginationMeta } = require("../utils/pagination");
-const { sendStaffInviteEmail } = require("../utils/emailService");
+const { sendStaffInviteEmail, sendStaffTemporaryPasswordEmail } = require("../utils/emailService");
 const { normalizeSkill } = require("../utils/skillNormalizer");
 
 function generateRawToken() {
@@ -89,6 +89,14 @@ const createStaff = asyncHandler(async (req, res) => {
     mustChangePassword: true,
     createdByAdmin: true,
   });
+
+  try {
+    await sendStaffTemporaryPasswordEmail(user.email, user.name, nicOrTempPassword);
+  } catch (err) {
+    console.warn(
+      `[EMAIL] Failed to send staff temporary password email to ${user.email}: ${err.message}`
+    );
+  }
 
   logActivity(
     req,

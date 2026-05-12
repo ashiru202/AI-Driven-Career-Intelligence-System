@@ -16,6 +16,7 @@ jest.mock("../src/utils/emailService", () => ({
   sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
   sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
   sendStaffInviteEmail: jest.fn().mockResolvedValue(undefined),
+  sendStaffTemporaryPasswordEmail: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock("../src/services/auditLogService", () => ({
   logActivity: jest.fn(),

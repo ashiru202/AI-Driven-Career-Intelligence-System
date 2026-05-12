@@ -139,4 +139,48 @@ async function sendStaffInviteEmail(to, name, token) {
   }
 }
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendStaffInviteEmail };
+async function sendStaffTemporaryPasswordEmail(to, name, temporaryPassword) {
+  const transport = await getTransporter();
+  const loginLink = `${CLIENT_URL}/login`;
+
+  const info = await transport.sendMail({
+    from: FROM,
+    to,
+    subject: 'Your STAFF account was created – Career Intelligence',
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#0d0d2b;color:#e5e5e5;border-radius:12px">
+        <h2 style="color:#a5b4fc;margin-bottom:8px">Hi ${name},</h2>
+        <p>An administrator created a <strong>STAFF</strong> account for you.</p>
+        <p style="color:#94a3b8;margin-top:14px;margin-bottom:10px">Use the credentials below to sign in, then change your password immediately.</p>
+        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px 16px">
+          <p style="margin:0 0 8px 0"><strong>Email:</strong> ${to}</p>
+          <p style="margin:0"><strong>Temporary password:</strong> ${temporaryPassword}</p>
+        </div>
+        <p style="margin:22px 0">
+          <a href="${loginLink}"
+             style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">
+            Sign In
+          </a>
+        </p>
+        <p style="font-size:13px;color:#64748b">If the button doesn't work, copy this link into your browser:<br>
+          <a href="${loginLink}" style="color:#818cf8;word-break:break-all">${loginLink}</a>
+        </p>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:24px 0">
+        <p style="font-size:12px;color:#475569">If you weren't expecting this account, please contact the administrator.</p>
+      </div>
+    `,
+  });
+
+  if (!process.env.SMTP_HOST) {
+    console.log(`[EMAIL] Staff temporary password email preview: ${nodemailer.getTestMessageUrl(info)}`);
+  } else {
+    console.log(`[EMAIL] Staff temporary password email sent via Gmail to: ${to}`);
+  }
+}
+
+module.exports = {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendStaffInviteEmail,
+  sendStaffTemporaryPasswordEmail,
+};

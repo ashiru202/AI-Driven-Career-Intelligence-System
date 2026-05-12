@@ -11,6 +11,7 @@ jest.mock("../src/utils/emailService", () => ({
   sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
   sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
   sendStaffInviteEmail: jest.fn().mockResolvedValue(undefined),
+  sendStaffTemporaryPasswordEmail: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock("../src/services/auditLogService", () => ({
   logActivity: jest.fn(),
@@ -18,6 +19,7 @@ jest.mock("../src/services/auditLogService", () => ({
 }));
 
 const User = require("../src/models/User");
+const { sendStaffTemporaryPasswordEmail } = require("../src/utils/emailService");
 const app = require("../src/app");
 
 const USER_TOKEN = makeToken({ id: "aaaaaaaaaaaaaaaaaaaaaaaa", role: "USER" });
@@ -75,6 +77,12 @@ describe("POST /api/admin/staff", () => {
     expect(res.body.ok).toBe(true);
     expect(res.body.data.staff.email).toBe("staff@example.com");
     expect(res.body.data.staff.mustChangePassword).toBe(true);
+
+    expect(sendStaffTemporaryPasswordEmail).toHaveBeenCalledWith(
+      "staff@example.com",
+      "Staff Member",
+      "991234567V"
+    );
 
     const createCall = User.create.mock.calls[0][0];
     expect(createCall.role).toBe("STAFF");

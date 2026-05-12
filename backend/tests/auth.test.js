@@ -21,6 +21,7 @@ jest.mock('../src/utils/emailService', () => ({
   sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
   sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
   sendStaffInviteEmail: jest.fn().mockResolvedValue(undefined),
+  sendStaffTemporaryPasswordEmail: jest.fn().mockResolvedValue(undefined),
 }));
 
 const app = require('../src/app');
