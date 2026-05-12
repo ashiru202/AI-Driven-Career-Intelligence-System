@@ -4,6 +4,101 @@ import { detectLinkedInJob } from "./detectors/linkedin.js";
 import { detectIndeedJob } from "./detectors/indeed.js";
 import { detectGenericJob } from "./detectors/generic.js";
 
+function waitForCondition(check, timeoutMs = 2500) {
+  return new Promise((resolve) => {
+    let done = false;
+
+    const finish = (value) => {
+      if (done) return;
+      done = true;
+      try {
+        observer.disconnect();
+      } catch {
+        // ignore
+      }
+      clearTimeout(timer);
+      resolve(value);
+    };
+
+    const safeCheck = () => {
+      try {
+        return !!check();
+      } catch {
+        return false;
+      }
+    };
+
+    if (safeCheck()) {
+      finish(true);
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      if (safeCheck()) {
+        finish(true);
+      }
+    });
+
+    try {
+      observer.observe(document.documentElement, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+      });
+    } catch {
+      // ignore
+    }
+
+    const timer = setTimeout(() => finish(false), Math.max(0, timeoutMs));
+  });
+}
+
+function getTextLength(selector) {
+  const node = document.querySelector(selector);
+  if (!node) return 0;
+  const inner = String(node.innerText || "").replace(/\s+/g, " ").trim();
+  const content = String(node.textContent || "").replace(/\s+/g, " ").trim();
+  const text = inner.length >= content.length ? inner : content;
+  return text.length;
+}
+
+async function waitForLinkedInJobContent(timeoutMs = 2500) {
+  const descriptionSelectors = [
+    ".jobs-description-content__text",
+    ".jobs-box__html-content",
+    ".show-more-less-html__markup",
+    ".jobs-description__content",
+    "[data-job-details-section='description']",
+    "[data-test-job-description]",
+    "#job-details",
+    ".jobs-description__container",
+    ".jobs-description",
+  ];
+
+  const check = () => {
+    for (const sel of descriptionSelectors) {
+      if (getTextLength(sel) >= 120) {
+        return true;
+      }
+    }
+
+    // JSON-LD JobPosting (if present) also unblocks extraction.
+    const ldJson = document.querySelector('script[type="application/ld+json"]');
+    if (ldJson && String(ldJson.textContent || "").length > 50) {
+      return true;
+    }
+
+    // At least wait for a plausible job title heading.
+    if (getTextLength("h1") >= 2) {
+      return true;
+    }
+
+    return false;
+  };
+
+  await waitForCondition(check, timeoutMs);
+}
+
 function detectSourceSite(url) {
   const value = String(url || "").toLowerCase();
 
@@ -115,13 +210,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false;
   }
 
-  try {
-    const payload = sanitizeExtractedJobPayload(extractCurrentJobContext());
-    sendResponse({ ok: true, data: payload });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Failed to extract job content.";
-    sendResponse({ ok: false, error: errorMessage });
-  }
+  (async () => {
+    try {
+      const pageUrl = window.location.href;
+      const site = detectSourceSite(pageUrl);
+
+      if (site === "linkedin") {
+        await waitForLinkedInJobContent(3000);
+      }
+
+      const payload = sanitizeExtractedJobPayload(extractCurrentJobContext());
+      sendResponse({ ok: true, data: payload });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to extract job content.";
+      sendResponse({ ok: false, error: errorMessage });
+    }
+  })();
 
   return true;
 });

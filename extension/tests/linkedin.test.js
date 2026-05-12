@@ -36,6 +36,47 @@ describe("LinkedIn detector", () => {
     expect(result.jobDescription.length).toBeGreaterThan(80);
   });
 
+  it("falls back to JSON-LD JobPosting when DOM description is unavailable", () => {
+    document.head.innerHTML = "";
+    document.body.innerHTML = `
+      <section class="job-details-jobs-unified-top-card__job-title"><h1></h1></section>
+      <script type="application/ld+json">
+        ${JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "JobPosting",
+          title: "Data Engineer",
+          description:
+            "<p>We are looking for a Data Engineer to build ETL pipelines, work with SQL, Python, and cloud services. Experience with orchestration tools and data modeling is required.</p>",
+          hiringOrganization: { "@type": "Organization", name: "Example Corp" },
+          jobLocation: {
+            "@type": "Place",
+            address: {
+              "@type": "PostalAddress",
+              addressLocality: "Colombo",
+              addressCountry: "Sri Lanka"
+            }
+          }
+        })}
+      </script>
+    `;
+
+    const result = detectLinkedInJob({
+      root: document,
+      url: "https://www.linkedin.com/jobs/view/4407672622/",
+      pageTitle: "LinkedIn Job",
+    });
+
+    expect(result).not.toBeNull();
+    expect(result).toMatchObject({
+      jobTitle: "Data Engineer",
+      company: "Example Corp",
+      location: "Colombo, Sri Lanka",
+      site: "linkedin",
+      extractedBy: "linkedin-detector",
+    });
+    expect(result.jobDescription.length).toBeGreaterThan(120);
+  });
+
   it("returns null on non-LinkedIn pages", () => {
     document.head.innerHTML = "";
     document.body.innerHTML = "<h1>Not a LinkedIn page</h1>";
