@@ -20,22 +20,22 @@
   ],
   "action": {
     "default_title": "Career Skill Gap Analyzer",
-    "default_popup": "dist/src/popup/popup.html",
+    "default_popup": "src/popup/popup.html",
     "default_icon": {
-      "16": "dist/src/icons/icon.png",
-      "32": "dist/src/icons/icon.png",
-      "48": "dist/src/icons/icon.png",
-      "128": "dist/src/icons/icon.png"
+      "16": "src/icons/icon.png",
+      "32": "src/icons/icon.png",
+      "48": "src/icons/icon.png",
+      "128": "src/icons/icon.png"
     }
   },
   "icons": {
-    "16": "dist/src/icons/icon.png",
-    "32": "dist/src/icons/icon.png",
-    "48": "dist/src/icons/icon.png",
-    "128": "dist/src/icons/icon.png"
+    "16": "src/icons/icon.png",
+    "32": "src/icons/icon.png",
+    "48": "src/icons/icon.png",
+    "128": "src/icons/icon.png"
   },
   "background": {
-    "service_worker": "dist/src/background/background.js",
+    "service_worker": "src/background/background.js",
     "type": "module"
   },
   "content_scripts": [
@@ -46,7 +46,7 @@
         "https://www.glassdoor.com/Job/*"
       ],
       "js": [
-        "dist/src/content/content.js"
+        "src/content/content.js"
       ],
       "run_at": "document_idle"
     },
@@ -56,7 +56,7 @@
         "http://127.0.0.1:3000/*"
       ],
       "js": [
-        "dist/src/content/authBridge.js"
+        "src/content/authBridge.js"
       ],
       "run_at": "document_idle"
     }
