@@ -668,8 +668,8 @@ export default function StaffManagement() {
                             <Badge
                               className={
                                 s.mustChangePassword
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-slate-100 text-slate-700"
+                                  ? "bg-yellow-50 text-yellow-600"
+                                  : "bg-gray-100 text-gray-600"
                               }
                             >
                               {s.mustChangePassword ? "Password change required" : "Ready"}

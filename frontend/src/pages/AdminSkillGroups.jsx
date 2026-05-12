@@ -16,9 +16,9 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 
 const LEVEL_STYLES = {
-  INTERN: "bg-sky-100 text-sky-700",
-  PROFESSIONAL: "bg-emerald-100 text-emerald-700",
-  UNKNOWN: "bg-slate-100 text-slate-700",
+  INTERN: "bg-blue-100 text-blue-700",
+  PROFESSIONAL: "bg-green-100 text-green-700",
+  UNKNOWN: "bg-gray-100 text-gray-600",
 };
 
 function LevelBadge({ level }) {
