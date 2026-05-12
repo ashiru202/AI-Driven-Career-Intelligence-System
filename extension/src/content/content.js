@@ -88,15 +88,40 @@ async function waitForLinkedInJobContent(timeoutMs = 2500) {
       return true;
     }
 
-    // At least wait for a plausible job title heading.
-    if (getTextLength("h1") >= 2) {
-      return true;
-    }
-
     return false;
   };
 
   await waitForCondition(check, timeoutMs);
+}
+
+function attemptExpandLinkedInDescription() {
+  const candidates = [
+    ".show-more-less-html__button--more",
+    ".show-more-less-html__button",
+    "button[aria-label*='See more']",
+    "button[aria-label*='see more']",
+    "button[aria-label*='Show more']",
+    "button[aria-label*='show more']",
+  ];
+
+  for (const selector of candidates) {
+    const button = document.querySelector(selector);
+    if (!button) continue;
+
+    try {
+      const label = String(button.getAttribute("aria-label") || "");
+      const text = String(button.innerText || button.textContent || "");
+      const combined = `${label} ${text}`.toLowerCase();
+      if (!combined.includes("more")) continue;
+
+      button.click();
+      return true;
+    } catch {
+      // ignore
+    }
+  }
+
+  return false;
 }
 
 function detectSourceSite(url) {
@@ -216,7 +241,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const site = detectSourceSite(pageUrl);
 
       if (site === "linkedin") {
-        await waitForLinkedInJobContent(3000);
+        attemptExpandLinkedInDescription();
+        await waitForLinkedInJobContent(3500);
+        // If LinkedIn expands content after interaction, wait a bit more.
+        if (attemptExpandLinkedInDescription()) {
+          await waitForLinkedInJobContent(2000);
+        }
       }
 
       const payload = sanitizeExtractedJobPayload(extractCurrentJobContext());

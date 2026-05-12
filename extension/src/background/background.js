@@ -123,6 +123,16 @@ function isRestrictedTabUrl(url) {
 }
 
 async function injectExtractionScript(tabId) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ["dist/src/content/content.js"],
+    });
+    return;
+  } catch {
+    // Fallback for when the extension is loaded from the built dist/ folder.
+  }
+
   await chrome.scripting.executeScript({
     target: { tabId },
     files: ["src/content/content.js"],

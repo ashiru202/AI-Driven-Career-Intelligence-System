@@ -46,6 +46,64 @@ function getLongestText(root, selectors, minLength = 1) {
   return best.length >= minLength ? best : "";
 }
 
+function getCombinedText(root, selectors, minLength = 1) {
+  let best = "";
+
+  for (const selector of selectors) {
+    const nodes = Array.from(root.querySelectorAll(selector));
+    if (nodes.length === 0) continue;
+    const combined = normalizeText(
+      nodes
+        .map((node) => getNodeText(node))
+        .filter(Boolean)
+        .join("\n")
+    );
+
+    if (combined.length > best.length) {
+      best = combined;
+    }
+  }
+
+  return best.length >= minLength ? best : "";
+}
+
+function looksLikeJobDescription(text) {
+  const value = normalizeText(text).toLowerCase();
+  if (value.length < 200) return false;
+
+  const hints = [
+    "responsibilities",
+    "requirements",
+    "qualifications",
+    "experience",
+    "skills",
+    "about the job",
+    "what you will",
+    "what you'll",
+    "role",
+  ];
+
+  return hints.some((hint) => value.includes(hint));
+}
+
+function extractLargestMeaningfulBlock(root) {
+  const container = root.querySelector("main") || root.body || root;
+  const candidates = container.querySelectorAll("section, article, div");
+
+  let best = "";
+  for (const node of candidates) {
+    const text = getNodeText(node);
+    if (!text) continue;
+    if (text.length > 10000) continue;
+    if (!looksLikeJobDescription(text)) continue;
+    if (text.length > best.length) {
+      best = text;
+    }
+  }
+
+  return best.slice(0, 10000);
+}
+
 function stripHtmlToText(html) {
   if (!html) return "";
 
@@ -136,7 +194,9 @@ function extractLinkedInDescription(root) {
     ".jobs-description",
   ];
 
-  const fromDom = getLongestText(root, selectors, 80).slice(0, 10000);
+  const combinedDom = getCombinedText(root, selectors, 80).slice(0, 10000);
+  const longestDom = getLongestText(root, selectors, 80).slice(0, 10000);
+  const fromDom = combinedDom.length >= longestDom.length ? combinedDom : longestDom;
   if (fromDom.length >= 120) {
     return fromDom;
   }
@@ -144,6 +204,11 @@ function extractLinkedInDescription(root) {
   const jsonLd = tryExtractJsonLdJobPosting(root);
   if (jsonLd?.description && jsonLd.description.length >= 80) {
     return jsonLd.description;
+  }
+
+  const heuristic = extractLargestMeaningfulBlock(root);
+  if (heuristic.length >= 120) {
+    return heuristic;
   }
 
   return fromDom;

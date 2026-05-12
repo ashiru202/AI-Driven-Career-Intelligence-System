@@ -293,7 +293,12 @@ function normalizeExtractedJob(response) {
   const jobDescription = sanitizePlainText(job.jobDescription, 10000);
 
   if (!jobDescription || jobDescription.length < MIN_JOB_DESCRIPTION_LENGTH) {
-    throw new Error("Job description appears too short. Open a full job post and try again.");
+    const extractedBy = sanitizePlainText(job.extractedBy, 80) || "unknown-detector";
+    const site = sanitizePlainText(job.site, 40) || "unknown-site";
+    const length = jobDescription ? jobDescription.length : 0;
+    throw new Error(
+      `Job description appears too short (${length} chars, ${site}, ${extractedBy}). Open a full job post and try again.`
+    );
   }
 
   return {
