@@ -26,6 +26,9 @@ from fastapi.testclient import TestClient
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+_TEST_TOKEN = "test-internal-token-for-jest-only"
+os.environ.setdefault("INTERNAL_TOKEN", _TEST_TOKEN)
+
 # ── Suppress APScheduler startup so TestClient can import the app ──────────────
 with patch("apscheduler.schedulers.asyncio.AsyncIOScheduler") as _sched_cls:
     _sched_inst = MagicMock()
@@ -33,8 +36,6 @@ with patch("apscheduler.schedulers.asyncio.AsyncIOScheduler") as _sched_cls:
     import main as nlp_main  # noqa: E402
 
 client = TestClient(nlp_main.app)
-
-_TEST_TOKEN = "test-internal-token-for-jest-only"
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────

@@ -1,11 +1,14 @@
 const crypto = require('crypto');
 const User = require("../models/User");
+const StaffApplication = require("../models/StaffApplication");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { successResponse } = require("../utils/responseHelper");
 const AppError = require("../utils/AppError");
 const { asyncHandler } = require("../middleware/errorMiddleware");
 const { sendVerificationEmail, sendPasswordResetEmail } = require("../utils/emailService");
+const { sendToUser } = require("../utils/sseManager");
+const { logActivityWithActor } = require("../services/auditLogService");
 
 // Helpers
 function generateRawToken() {
@@ -58,6 +61,93 @@ exports.register = asyncHandler(async (req, res) => {
   ));
 });
 
+// POST /api/auth/staff-applications
+exports.applyForStaff = asyncHandler(async (req, res) => {
+  const {
+    fullName,
+    email,
+    phone,
+    currentRole,
+    yearsExperience,
+    expertiseAreas,
+    motivation,
+    linkedInUrl,
+    portfolioUrl,
+  } = req.body;
+
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    throw AppError.conflict('An account already exists with this email. Use a different email for staff application.');
+  }
+
+  const existingPending = await StaffApplication.findOne({ email, status: 'PENDING' });
+  if (existingPending) {
+    throw AppError.conflict('A pending staff application already exists for this email.');
+  }
+
+  const application = await StaffApplication.create({
+    fullName,
+    email,
+    phone,
+    currentRole,
+    yearsExperience,
+    expertiseAreas,
+    motivation,
+    linkedInUrl: linkedInUrl || '',
+    portfolioUrl: portfolioUrl || '',
+    status: 'PENDING',
+  });
+
+  logActivityWithActor(
+    req,
+    {
+      email,
+      name: fullName,
+      role: "USER_REQUEST",
+    },
+    "SUBMIT_STAFF_APPLICATION",
+    {
+      type: "StaffApplication",
+      id: application._id,
+      email,
+      name: fullName,
+    },
+    {
+      source: "public_staff_application_form",
+      currentRole: currentRole || "",
+      yearsExperience: Number(yearsExperience || 0),
+      expertiseAreasCount: Array.isArray(expertiseAreas)
+        ? expertiseAreas.length
+        : 0,
+    }
+  );
+
+  const adminUsers = await User.find({ role: 'ADMIN', active: true }, '_id');
+  const notification = {
+    id: `staff_application_${String(application._id)}`,
+    icon: 'ClipboardList',
+    title: 'New staff application received',
+    body: `${application.fullName} applied for staff (${application.currentRole}).`,
+    link: '/staff-management',
+    time: 'Just now',
+    createdAt: application.createdAt,
+  };
+
+  (adminUsers || []).forEach((admin) => {
+    sendToUser(String(admin._id), 'notification', notification);
+  });
+
+  res.status(201).json(
+    successResponse(
+      {
+        applicationId: application._id,
+        status: application.status,
+      },
+      'Staff application submitted successfully. Admin review is pending.'
+    )
+  );
+});
+
 // POST /api/auth/login
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -91,7 +181,13 @@ exports.login = asyncHandler(async (req, res) => {
   });
 
   res.json(successResponse({
-    user: { id: user._id, name: user.name, email: user.email, role: user.role }
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      mustChangePassword: Boolean(user.mustChangePassword),
+    }
   }));
 });
 
@@ -190,6 +286,12 @@ exports.resetPassword = asyncHandler(async (req, res) => {
   }
 
   user.password = await bcrypt.hash(password, 10);
+  // Invite-based onboarding: completing password setup activates email verification.
+  if (!user.emailVerified) {
+    user.emailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+  }
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
   await user.save();

@@ -1,46 +1,253 @@
-const User = require("../models/User");
+const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
-const { successResponse, errorResponse } = require("../utils/responseHelper");
+const User = require("../models/User");
+const StaffApplication = require("../models/StaffApplication");
+const { successResponse } = require("../utils/responseHelper");
 const AppError = require("../utils/AppError");
 const { asyncHandler } = require("../middleware/errorMiddleware");
 const Comparison = require("../models/Comparison");
+const Resume = require("../models/Resume");
 const analyticsService = require("../services/analyticsService");
+const adminSkillInsightsService = require("../services/adminSkillInsightsService");
 const AuditLog = require("../models/AuditLog");
 const { logActivity } = require("../services/auditLogService");
 const { parsePagination, paginationMeta } = require("../utils/pagination");
+const { sendStaffInviteEmail, sendStaffTemporaryPasswordEmail } = require("../utils/emailService");
+const { normalizeSkill } = require("../utils/skillNormalizer");
 
-// Admin can create staff accounts
-const createStaff = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+function generateRawToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
 
-  // Check if user already exists
-  const exists = await User.findOne({ email });
-  if (exists) {
-    throw AppError.conflict('User with this email already exists');
-  }
+function hashToken(raw) {
+  return crypto.createHash("sha256").update(raw).digest("hex");
+}
 
-  // Hash the password
-  const hashedPassword = await bcrypt.hash(password, 10);
+async function createInvitedStaffUser({ name, email, staffProfile = null }) {
+  // Admin should never set or know staff passwords.
+  // We generate a random secret and require the staff member to set their own password via invite link.
+  const generatedPassword = crypto.randomBytes(48).toString("hex");
+  const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+  const rawInviteToken = generateRawToken();
+  const hashedInviteToken = hashToken(rawInviteToken);
+  const inviteExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-  // Create staff user
-  const staff = await User.create({
+  const payload = {
     name,
     email,
     password: hashedPassword,
-    role: "STAFF"
+    role: "STAFF",
+    emailVerified: false,
+    passwordResetToken: hashedInviteToken,
+    passwordResetExpires: inviteExpires,
+  };
+
+  if (staffProfile) {
+    payload.staffProfile = staffProfile;
+  }
+
+  const user = await User.create(payload);
+
+  return {
+    user,
+    rawInviteToken,
+    inviteExpires,
+  };
+}
+
+function mapStaffProfileFromApplication(application) {
+  return {
+    phone: application.phone,
+    currentRole: application.currentRole,
+    yearsExperience: application.yearsExperience,
+    expertiseAreas: Array.isArray(application.expertiseAreas)
+      ? application.expertiseAreas
+      : [],
+    motivation: application.motivation,
+    linkedInUrl: application.linkedInUrl || "",
+    portfolioUrl: application.portfolioUrl || "",
+  };
+}
+
+// Admin can create STAFF accounts only
+const createStaff = asyncHandler(async (req, res) => {
+  const { name, email, nicOrTempPassword } = req.body;
+
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    throw AppError.conflict("A user account already exists with this email");
+  }
+
+  const hashedPassword = await bcrypt.hash(nicOrTempPassword, 10);
+  const user = await User.create({
+    name,
+    email,
+    password: hashedPassword,
+    role: "STAFF",
+    active: true,
+    emailVerified: true,
+    mustChangePassword: true,
+    createdByAdmin: true,
   });
 
-  logActivity(req, "CREATE_STAFF", { type: "User", id: staff._id, email: staff.email, name: staff.name });
+  try {
+    await sendStaffTemporaryPasswordEmail(user.email, user.name, nicOrTempPassword);
+  } catch (err) {
+    console.warn(
+      `[EMAIL] Failed to send staff temporary password email to ${user.email}: ${err.message}`
+    );
+  }
 
-  res.status(201).json(successResponse(
-    {
-      id: staff._id,
-      name: staff.name,
-      email: staff.email,
-      role: staff.role
-    },
-    'Staff account created successfully'
-  ));
+  logActivity(
+    req,
+    "CREATE_STAFF_ACCOUNT",
+    { type: "User", id: user._id, email: user.email, name: user.name },
+    { createdByAdmin: true, mustChangePassword: true }
+  );
+
+  res.status(201).json(
+    successResponse(
+      {
+        staff: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          active: user.active,
+          mustChangePassword: user.mustChangePassword,
+          createdByAdmin: user.createdByAdmin,
+        },
+      },
+      "Staff account created. Staff can log in with email and temporary password, then must change password."
+    )
+  );
+});
+
+// Admin can list staff applications with filters
+const listStaffApplications = asyncHandler(async (req, res) => {
+  const { status, search } = req.query;
+  const { page, limit, skip } = parsePagination(req.query, 20);
+
+  const query = {};
+  if (status && ["PENDING", "APPROVED", "REJECTED"].includes(String(status).toUpperCase())) {
+    query.status = String(status).toUpperCase();
+  }
+
+  if (search) {
+    query.$or = [
+      { fullName: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { currentRole: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  const [applications, total] = await Promise.all([
+    StaffApplication.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("reviewedBy", "name email role")
+      .populate("invitedUser", "name email role")
+      .lean(),
+    StaffApplication.countDocuments(query),
+  ]);
+
+  res.json(
+    successResponse({
+      applications,
+      pagination: paginationMeta(total, page, limit),
+    })
+  );
+});
+
+// Admin can approve or reject staff applications
+const reviewStaffApplication = asyncHandler(async (req, res) => {
+  const { applicationId } = req.params;
+  const { decision, reviewNotes = "" } = req.body;
+
+  const application = await StaffApplication.findById(applicationId);
+  if (!application) {
+    throw AppError.notFound("Staff application not found");
+  }
+
+  if (application.status !== "PENDING") {
+    throw AppError.badRequest("BAD_REQUEST", "Only pending applications can be reviewed");
+  }
+
+  if (decision === "APPROVE") {
+    const existingUser = await User.findOne({ email: application.email });
+    if (existingUser) {
+      throw AppError.conflict("A user account already exists with this applicant email");
+    }
+
+    const { user, rawInviteToken, inviteExpires } = await createInvitedStaffUser({
+      name: application.fullName,
+      email: application.email,
+      staffProfile: mapStaffProfileFromApplication(application),
+    });
+
+    await sendStaffInviteEmail(user.email, user.name, rawInviteToken);
+
+    application.status = "APPROVED";
+    application.reviewNotes = reviewNotes;
+    application.reviewedAt = new Date();
+    application.reviewedBy = req.user.id;
+    application.invitedUser = user._id;
+    await application.save();
+
+    logActivity(
+      req,
+      "APPROVE_STAFF_APPLICATION",
+      { type: "StaffApplication", id: application._id, email: application.email, name: application.fullName },
+      { invitedUserId: user._id, inviteExpiresAt: inviteExpires }
+    );
+
+    return res.json(
+      successResponse(
+        {
+          application: {
+            id: application._id,
+            status: application.status,
+            reviewedAt: application.reviewedAt,
+          },
+          staff: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
+        },
+        "Application approved. Invite email sent to the staff applicant."
+      )
+    );
+  }
+
+  application.status = "REJECTED";
+  application.reviewNotes = reviewNotes;
+  application.reviewedAt = new Date();
+  application.reviewedBy = req.user.id;
+  await application.save();
+
+  logActivity(
+    req,
+    "REJECT_STAFF_APPLICATION",
+    { type: "StaffApplication", id: application._id, email: application.email, name: application.fullName },
+    { reviewNotes }
+  );
+
+  res.json(
+    successResponse(
+      {
+        application: {
+          id: application._id,
+          status: application.status,
+          reviewedAt: application.reviewedAt,
+          reviewNotes: application.reviewNotes,
+        },
+      },
+      "Application rejected successfully"
+    )
+  );
 });
 
 // Admin can list all users with filters
@@ -117,11 +324,13 @@ const toggleUserStatus = asyncHandler(async (req, res) => {
 
 // Get admin dashboard stats (enriched with analytics)
 const getAdminStats = asyncHandler(async (req, res) => {
+  const roleFilter = (role) => ({ role: { $regex: new RegExp(`^${role}$`, 'i') } });
+
   const [totalUsers, totalStaff, totalAdmins, activeUsers] = await Promise.all([
-    User.countDocuments({ role: 'USER' }),
-    User.countDocuments({ role: 'STAFF' }),
-    User.countDocuments({ role: 'ADMIN' }),
-    User.countDocuments({ role: 'USER', active: true }),
+    User.countDocuments(roleFilter('USER')),
+    User.countDocuments(roleFilter('STAFF')),
+    User.countDocuments(roleFilter('ADMIN')),
+    User.countDocuments({ ...roleFilter('USER'), active: true }),
   ]);
 
   // Average match score from all comparisons
@@ -190,8 +399,28 @@ const getAuditLogs = asyncHandler(async (req, res) => {
   const { action, actorEmail, from, to } = req.query;
   const { page, limit, skip } = parsePagination(req.query);
 
+  const normalizeActionKey = (value) => String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+
+  const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const inviteAliases = ["INVITE_STAFF_ACCOUNT", "INVITE_STAFF", "STAFF_INVITE", "CREATE_STAFF_INVITE"];
+
   const filter = {};
-  if (action) filter.action = action.toUpperCase();
+  if (action) {
+    const normalizedAction = normalizeActionKey(action);
+
+    if (normalizedAction === "INVITE_STAFF_ACCOUNT") {
+      filter.action = {
+        $regex: new RegExp(`^(${inviteAliases.join("|")})\\s*$`, "i"),
+      };
+    } else {
+      const flexiblePattern = escapeRegex(normalizedAction).replace(/_/g, "[\\s_-]+");
+      filter.action = { $regex: new RegExp(`^${flexiblePattern}\\s*$`, "i") };
+    }
+  }
   if (actorEmail) filter.actorEmail = { $regex: actorEmail, $options: "i" };
   if (from || to) {
     filter.createdAt = {};
@@ -207,11 +436,302 @@ const getAuditLogs = asyncHandler(async (req, res) => {
   res.json(successResponse({ logs, pagination: paginationMeta(total, page, limit) }));
 });
 
+function readPositiveInt(value, fallback, max) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(parsed, max);
+}
+
+function countCandidateLevels(resumes) {
+  return resumes.reduce(
+    (acc, resume) => {
+      const level = resume.candidateLevel || "UNKNOWN";
+      acc[level] = (acc[level] || 0) + 1;
+      return acc;
+    },
+    { INTERN: 0, PROFESSIONAL: 0, UNKNOWN: 0 }
+  );
+}
+
+function mapResumeForAdmin(resume) {
+  const user = resume.user || {};
+  return {
+    id: resume._id,
+    fileName: resume.fileName,
+    createdAt: resume.createdAt,
+    candidateLevel: resume.candidateLevel || "UNKNOWN",
+    candidateLevelSource: resume.candidateLevelSource || "heuristic",
+    normalizedSkills: resume.normalizedSkills || [],
+    user: user?._id
+      ? {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          careerLevel: user.careerLevel || "UNKNOWN",
+          yearsExperience: user.yearsExperience ?? null,
+        }
+      : null,
+  };
+}
+
+function skillOverlapScore(a = [], b = []) {
+  const aSet = new Set(Array.isArray(a) ? a : []);
+  const bSet = new Set(Array.isArray(b) ? b : []);
+  if (aSet.size === 0 || bSet.size === 0) {
+    return { shared: [], score: 0 };
+  }
+
+  const shared = [...aSet].filter((skill) => bSet.has(skill));
+  const unionSize = new Set([...aSet, ...bSet]).size;
+  return {
+    shared,
+    score: unionSize > 0 ? shared.length / unionSize : 0,
+  };
+}
+
+function buildSimilarSkillGroups(resumes, { minGroupSize, minSkills, limit }) {
+  const groups = [];
+  const threshold = 0.75;
+
+  resumes.forEach((resume) => {
+    const normalizedSkills = Array.isArray(resume.normalizedSkills) ? resume.normalizedSkills : [];
+    if (normalizedSkills.length < minSkills) return;
+
+    let bestMatch = null;
+    groups.forEach((group) => {
+      const overlap = skillOverlapScore(normalizedSkills, group.normalizedSkills);
+      if (
+        overlap.shared.length >= minSkills &&
+        overlap.score >= threshold &&
+        (!bestMatch || overlap.score > bestMatch.score)
+      ) {
+        bestMatch = { group, ...overlap };
+      }
+    });
+
+    if (bestMatch) {
+      bestMatch.group.resumes.push(resume);
+      bestMatch.group.normalizedSkills = bestMatch.shared.sort((a, b) => a.localeCompare(b));
+      bestMatch.group.latestCreatedAt = new Date(
+        Math.max(
+          new Date(bestMatch.group.latestCreatedAt || 0).getTime(),
+          new Date(resume.createdAt || 0).getTime()
+        )
+      );
+    } else {
+      groups.push({
+        normalizedSkills: normalizedSkills.slice(),
+        resumes: [resume],
+        latestCreatedAt: resume.createdAt,
+      });
+    }
+  });
+
+  return groups
+    .filter((group) => group.resumes.length >= minGroupSize)
+    .map((group) => ({
+      skillsSignature: `similar:${group.resumes.map((resume) => resume._id).sort().join("|")}`,
+      normalizedSkills: group.normalizedSkills || [],
+      skillCount: (group.normalizedSkills || []).length,
+      resumeCount: group.resumes.length,
+      latestCreatedAt: group.latestCreatedAt,
+      candidateLevels: countCandidateLevels(group.resumes),
+      resumes: group.resumes.map(mapResumeForAdmin),
+      matchType: "similar",
+    }))
+    .sort((a, b) => b.resumeCount - a.resumeCount || new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt))
+    .slice(0, limit);
+}
+
+// Admin: group CVs with the same normalized skill set
+const getResumeSkillGroups = asyncHandler(async (req, res) => {
+  const minGroupSize = readPositiveInt(req.query.minGroupSize, 2, 20);
+  const minSkills = readPositiveInt(req.query.minSkills, 5, 100);
+  const limit = readPositiveInt(req.query.limit, 50, 100);
+
+  const allCandidateResumes = await Resume.find({
+    normalizedSkills: { $exists: true, $ne: [] },
+  })
+    .select("user fileName createdAt normalizedSkills skillsSignature candidateLevel candidateLevelSource")
+    .populate("user", "name email careerLevel yearsExperience")
+    .sort({ createdAt: -1 })
+    .limit(500)
+    .lean();
+
+  const groups = await Resume.aggregate([
+    {
+      $match: {
+        skillsSignature: { $type: "string", $ne: "" },
+      },
+    },
+    {
+      $addFields: {
+        normalizedSkillCount: { $size: { $ifNull: ["$normalizedSkills", []] } },
+      },
+    },
+    {
+      $match: {
+        normalizedSkillCount: { $gte: minSkills },
+      },
+    },
+    {
+      $group: {
+        _id: "$skillsSignature",
+        resumeIds: { $push: "$_id" },
+        resumeCount: { $sum: 1 },
+        normalizedSkills: { $first: "$normalizedSkills" },
+        latestCreatedAt: { $max: "$createdAt" },
+      },
+    },
+    {
+      $match: {
+        resumeCount: { $gte: minGroupSize },
+      },
+    },
+    { $sort: { resumeCount: -1, latestCreatedAt: -1 } },
+    { $limit: limit },
+  ]);
+
+  const allResumeIds = groups.flatMap((group) => group.resumeIds);
+  const resumes = await Resume.find({ _id: { $in: allResumeIds } })
+    .select("user fileName createdAt normalizedSkills skillsSignature candidateLevel candidateLevelSource")
+    .populate("user", "name email careerLevel yearsExperience")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const resumesBySignature = new Map();
+  resumes.forEach((resume) => {
+    if (!resumesBySignature.has(resume.skillsSignature)) {
+      resumesBySignature.set(resume.skillsSignature, []);
+    }
+    resumesBySignature.get(resume.skillsSignature).push(resume);
+  });
+
+  const exactResponseGroups = groups.map((group) => {
+    const groupResumes = resumesBySignature.get(group._id) || [];
+    return {
+      skillsSignature: group._id,
+      normalizedSkills: group.normalizedSkills || [],
+      skillCount: (group.normalizedSkills || []).length,
+      resumeCount: group.resumeCount,
+      latestCreatedAt: group.latestCreatedAt,
+      candidateLevels: countCandidateLevels(groupResumes),
+      resumes: groupResumes.map(mapResumeForAdmin),
+      matchType: "exact",
+    };
+  });
+  const similarResponseGroups = buildSimilarSkillGroups(allCandidateResumes, { minGroupSize, minSkills, limit });
+  const seenGroupMembers = new Set();
+  const responseGroups = [...exactResponseGroups, ...similarResponseGroups]
+    .filter((group) => {
+      const memberKey = (group.resumes || []).map((resume) => String(resume.id)).sort().join("|");
+      if (!memberKey || seenGroupMembers.has(memberKey)) return false;
+      seenGroupMembers.add(memberKey);
+      return true;
+    })
+    .sort((a, b) => b.resumeCount - a.resumeCount || new Date(b.latestCreatedAt) - new Date(a.latestCreatedAt))
+    .slice(0, limit);
+  const groupedResumeIds = new Set(
+    responseGroups.flatMap((group) => (group.resumes || []).map((resume) => String(resume.id)))
+  );
+  const totalResumes = typeof Resume.countDocuments === "function"
+    ? await Resume.countDocuments({})
+    : allCandidateResumes.length;
+
+  res.json(
+    successResponse({
+      filters: { minGroupSize, minSkills, limit },
+      totalResumes,
+      groupedResumeCount: groupedResumeIds.size,
+      groups: responseGroups,
+    })
+  );
+});
+
+// Admin: drill into resumes containing one normalized skill
+const getResumesBySkill = asyncHandler(async (req, res) => {
+  const skill = normalizeSkill(String(req.query.skill || ""));
+  const limit = readPositiveInt(req.query.limit, 50, 100);
+
+  if (!skill) {
+    throw AppError.badRequest("MISSING_SKILL", "Skill query parameter is required");
+  }
+
+  const resumes = await Resume.find({ normalizedSkills: skill })
+    .select("user fileName createdAt normalizedSkills skillsSignature candidateLevel candidateLevelSource")
+    .populate("user", "name email careerLevel yearsExperience")
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+
+  res.json(
+    successResponse({
+      skill,
+      resumes: resumes.map(mapResumeForAdmin),
+    })
+  );
+});
+
+// Admin: compare CV uploads against top/least demanded skills
+const getSupplyVsDemand = asyncHandler(async (req, res) => {
+  const insights = await adminSkillInsightsService.getSupplyVsDemand(req.query);
+  res.json(successResponse(insights));
+});
+
+// Admin: weekly/monthly CV alignment with current top demanded skills
+const getSkillAlignmentTimeseries = asyncHandler(async (req, res) => {
+  const insights = await adminSkillInsightsService.getAlignmentTimeseries(req.query);
+  res.json(successResponse(insights));
+});
+
+// Admin: manually override resume candidate level
+const updateResumeCandidateLevel = asyncHandler(async (req, res) => {
+  const { resumeId } = req.params;
+  const { candidateLevel } = req.body;
+
+  if (!["INTERN", "PROFESSIONAL", "UNKNOWN"].includes(candidateLevel)) {
+    throw AppError.badRequest(
+      "INVALID_CANDIDATE_LEVEL",
+      "candidateLevel must be INTERN, PROFESSIONAL, or UNKNOWN"
+    );
+  }
+
+  const resume = await Resume.findById(resumeId).populate("user", "name email careerLevel yearsExperience");
+  if (!resume) {
+    throw AppError.notFound("Resume not found");
+  }
+
+  resume.candidateLevel = candidateLevel;
+  resume.candidateLevelSource = "manual";
+  await resume.save();
+
+  logActivity(
+    req,
+    "UPDATE_RESUME_CANDIDATE_LEVEL",
+    { type: "Resume", id: resume._id, email: resume.user?.email, name: resume.user?.name },
+    { candidateLevel }
+  );
+
+  res.json(
+    successResponse(
+      { resume: mapResumeForAdmin(resume.toObject ? resume.toObject() : resume) },
+      "Candidate level updated"
+    )
+  );
+});
+
 module.exports = {
   createStaff,
+  listStaffApplications,
+  reviewStaffApplication,
   listUsers,
   toggleUserStatus,
   getAdminStats,
   deleteUser,
   getAuditLogs,
+  getResumeSkillGroups,
+  getResumesBySkill,
+  getSkillAlignmentTimeseries,
+  getSupplyVsDemand,
+  updateResumeCandidateLevel,
 };

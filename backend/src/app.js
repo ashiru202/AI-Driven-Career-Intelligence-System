@@ -21,6 +21,11 @@ const allowedOrigins = [
   process.env.CORS_ORIGIN, // Frontend prod (from env)
 ];
 
+const isLocalDevOrigin = (origin) => /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+const allowLocalhostAnyPort =
+  process.env.ALLOW_LOCALHOST_ANY_PORT === 'true' ||
+  process.env.NODE_ENV !== 'production';
+
 const corsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, Postman, curl)
@@ -30,6 +35,12 @@ const corsOptions = {
 
     // Check if origin is in allowlist
     if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // In local runs, optionally allow localhost on any port.
+    // This helps when Windows reserves common ports like 3000.
+    if (allowLocalhostAnyPort && isLocalDevOrigin(origin)) {
       return callback(null, true);
     }
 
@@ -99,6 +110,7 @@ const reportRoutes          = require("./routes/reportRoutes");
 const notificationsRoutes   = require("./routes/notificationsRoutes");
 const trendRoutes           = require("./routes/trendRoutes");
 const extensionRoutes       = require("./routes/extensionRoutes");
+const staffRoutes           = require("./routes/staffRoutes");
 
 app.use("/api",            healthRoutes);
 
@@ -124,6 +136,7 @@ app.use("/api/analytics",  analyticsRoutes);
 app.use("/api/reports",        reportRoutes);
 app.use("/api/notifications",  notificationsRoutes);
 app.use("/api/trends",           trendRoutes);
+app.use("/api/staff",         staffRoutes);
 app.use("/api/roadmap",        roadmapRoutes);
 app.use("/api/roadmaps",   roadmapRoutes);
 app.use("/api/admin",      adminRoutes);

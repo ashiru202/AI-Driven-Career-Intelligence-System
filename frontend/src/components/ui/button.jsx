@@ -1,12 +1,14 @@
 import * as React from "react"
 
 const Button = React.forwardRef(({ className = "", variant = "default", size = "default", ...props }, ref) => {
+  const sharedGradient = "border border-[#9a90ff]/45 bg-gradient-to-r from-[#7a6cff] to-[#5f54f7] text-white shadow-[0_10px_24px_rgba(95,84,247,0.35)] hover:from-[#8678ff] hover:to-[#6a5fff] hover:shadow-[0_14px_28px_rgba(95,84,247,0.45)]"
+
   const variants = {
-    default: "bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 shadow-sm",
-    destructive: "bg-red-600 text-white hover:bg-red-700",
-    outline: "border border-white/20 bg-transparent hover:bg-white/10 text-gray-100",
-    secondary: "border border-white/15 bg-white/8 text-gray-100 hover:bg-white/12",
-    ghost: "hover:bg-white/10 text-gray-100",
+    default: sharedGradient,
+    destructive: sharedGradient,
+    outline: sharedGradient,
+    secondary: sharedGradient,
+    ghost: sharedGradient,
     link: "text-indigo-400 underline-offset-4 hover:underline",
   }
 
@@ -19,7 +21,7 @@ const Button = React.forwardRef(({ className = "", variant = "default", size = "
 
   return (
     <button
-      className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center justify-center rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9f96ff] focus-visible:ring-offset-2 focus-visible:ring-offset-[#07071a] disabled:opacity-55 disabled:pointer-events-none disabled:shadow-none ${variants[variant]} ${sizes[size]} ${className}`}
       ref={ref}
       {...props}
     />

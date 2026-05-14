@@ -1,10 +1,12 @@
 const Resume = require('../models/Resume');
+const User = require('../models/User');
 const { successResponse, errorResponse } = require('../utils/responseHelper');
 const AppError = require('../utils/AppError');
 const { asyncHandler } = require('../middleware/errorMiddleware');
 const { parsePagination, paginationMeta } = require('../utils/pagination');
 const { extractTextFromFile } = require('../services/resumeTextExtractor');
 const { extractSkillsWithAI } = require('../services/aiSkillExtractorService');
+const { buildResumeDerivedFields } = require('../utils/resumeDerivedFields');
 const { sendToUser } = require('../utils/sseManager');
 const axios = require('axios');
 const fs = require('fs').promises;
@@ -59,6 +61,9 @@ const uploadResume = asyncHandler(async (req, res) => {
     });
     const { skills: extractedSkills, source: extractionSource } = await extractSkillsWithAI(extractedText);
     console.log(`[Resume] Skill extraction source: ${extractionSource}, count: ${extractedSkills.length}`);
+    const derivedFields = buildResumeDerivedFields(extractedSkills, extractedText, {
+      careerLevel: req.user.careerLevel,
+    });
 
     // Step 3: Persist to DB
     sendToUser(userId, 'progress', {
@@ -75,7 +80,8 @@ const uploadResume = asyncHandler(async (req, res) => {
       fileSize: file.size,
       fileType: file.mimetype,
       extractedText: extractedText.substring(0, 10000),
-      extractedSkills
+      extractedSkills,
+      ...derivedFields
     });
 
     // Step 4: Done — notify via SSE
@@ -101,10 +107,32 @@ const uploadResume = asyncHandler(async (req, res) => {
       createdAt: new Date(),
     });
 
+    try {
+      const adminUsers = await User.find({ role: 'ADMIN', active: true }, '_id');
+      const adminNotification = {
+        id: `admin_resume_uploaded_${resume._id}`,
+        icon: 'FileText',
+        title: 'New resume uploaded',
+        body: `${resume.fileName} was classified as ${resume.candidateLevel}.`,
+        link: '/admin/skill-groups',
+        time: 'Just now',
+        createdAt: new Date(),
+        resumeId: resume._id,
+      };
+
+      (adminUsers || []).forEach((admin) => {
+        sendToUser(String(admin._id), 'notification', adminNotification);
+      });
+    } catch (notifyError) {
+      console.warn('[Resume] Failed to notify admins about resume upload:', notifyError.message);
+    }
+
     res.status(201).json(successResponse({
       resumeId: resume._id,
       fileName: resume.fileName,
       skills: resume.extractedSkills,
+      normalizedSkills: resume.normalizedSkills,
+      candidateLevel: resume.candidateLevel,
       skillCount: resume.extractedSkills.length,
       extractionSource
     }, 'Resume analyzed successfully'));
@@ -154,6 +182,9 @@ const getResumeDetails = asyncHandler(async (req, res) => {
     fileName: resume.fileName,
     fileSize: resume.fileSize,
     skills: resume.extractedSkills,
+    normalizedSkills: resume.normalizedSkills,
+    candidateLevel: resume.candidateLevel,
+    candidateLevelSource: resume.candidateLevelSource,
     createdAt: resume.createdAt
   }));
 });

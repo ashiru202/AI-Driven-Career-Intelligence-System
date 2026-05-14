@@ -22,6 +22,10 @@ import os
 # Make sure `main.py` can be imported when running from project root
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+# The service requires INTERNAL_TOKEN at import time (config.py). Tests should
+# not depend on CI secrets.
+os.environ.setdefault("INTERNAL_TOKEN", "pytest-internal-token")
+
 from main import app  # noqa: E402
 
 client = TestClient(app)

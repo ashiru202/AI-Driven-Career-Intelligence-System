@@ -14,11 +14,12 @@ const skillAliases = {
   'aws': ['aws', 'amazon web services'],
   'machine learning': ['ml', 'machine learning'],
   'artificial intelligence': ['ai', 'artificial intelligence'],
+  'nlp': ['nlp', 'natural language processing', 'nlp preprocessing'],
   'sql': ['sql', 'structured query language'],
   'html': ['html', 'html5'],
   'css': ['css', 'css3'],
   'git': ['git', 'version control'],
-  'rest api': ['rest', 'restful', 'rest api'],
+  'rest api': ['rest', 'restful', 'rest api', 'rest apis', 'restful api', 'restful apis'],
   'graphql': ['graphql', 'gql'],
 };
 

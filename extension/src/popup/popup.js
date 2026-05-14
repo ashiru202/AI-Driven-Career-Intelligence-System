@@ -7,6 +7,7 @@ import { sanitizePlainText } from "../shared/validators.js";
 const app = document.getElementById("app");
 const RESUME_CACHE_TTL_MS = 5 * 60 * 1000;
 const MIN_JOB_DESCRIPTION_LENGTH = 120;
+const ANALYSIS_STORAGE_AREA = STORAGE_AREAS.LOCAL;
 const popupRuntime = {
   resumeData: null,
   lastExtraction: null,
@@ -292,7 +293,12 @@ function normalizeExtractedJob(response) {
   const jobDescription = sanitizePlainText(job.jobDescription, 10000);
 
   if (!jobDescription || jobDescription.length < MIN_JOB_DESCRIPTION_LENGTH) {
-    throw new Error("Job description appears too short. Open a full job post and try again.");
+    const extractedBy = sanitizePlainText(job.extractedBy, 80) || "unknown-detector";
+    const site = sanitizePlainText(job.site, 40) || "unknown-site";
+    const length = jobDescription ? jobDescription.length : 0;
+    throw new Error(
+      `Job description appears too short (${length} chars, ${site}, ${extractedBy}). Open a full job post and try again.`
+    );
   }
 
   return {
@@ -495,7 +501,7 @@ async function runQuickComparison({ resumeId, jobContext }) {
     {
       [STORAGE_KEYS.LAST_COMPARISON]: comparison,
     },
-    { area: STORAGE_AREAS.SYNC }
+    { area: ANALYSIS_STORAGE_AREA }
   );
 
   popupRuntime.lastComparison = comparison;
@@ -1203,8 +1209,14 @@ async function handleManualInputSubmit({ resumeId, jobTitle, jobDescription }) {
 
   await setToStorage(
     {
-      [STORAGE_KEYS.SELECTED_RESUME_ID]: activeResumeId,
       [STORAGE_KEYS.LAST_ANALYSIS]: manualExtraction,
+    },
+    { area: ANALYSIS_STORAGE_AREA }
+  );
+
+  await setToStorage(
+    {
+      [STORAGE_KEYS.SELECTED_RESUME_ID]: activeResumeId,
     },
     { area: STORAGE_AREAS.SYNC }
   );
@@ -1267,7 +1279,7 @@ async function handleAnalyzeCurrentTab({ resumeId }) {
       {
         [STORAGE_KEYS.LAST_ANALYSIS]: lastExtraction,
       },
-      { area: STORAGE_AREAS.SYNC }
+      { area: ANALYSIS_STORAGE_AREA }
     );
 
     popupRuntime.lastExtraction = lastExtraction;
@@ -1279,7 +1291,7 @@ async function handleAnalyzeCurrentTab({ resumeId }) {
         [STORAGE_KEYS.LAST_ANALYSIS]: null,
         [STORAGE_KEYS.LAST_COMPARISON]: null,
       },
-      { area: STORAGE_AREAS.SYNC }
+      { area: ANALYSIS_STORAGE_AREA }
     );
 
     popupRuntime.lastExtraction = null;
@@ -1314,7 +1326,7 @@ async function loadLastExtraction() {
     {
       [STORAGE_KEYS.LAST_ANALYSIS]: null,
     },
-    { area: STORAGE_AREAS.SYNC }
+    { area: ANALYSIS_STORAGE_AREA }
   );
 
   const extraction = stored[STORAGE_KEYS.LAST_ANALYSIS];
@@ -1336,7 +1348,7 @@ async function loadLastComparison() {
     {
       [STORAGE_KEYS.LAST_COMPARISON]: null,
     },
-    { area: STORAGE_AREAS.SYNC }
+    { area: ANALYSIS_STORAGE_AREA }
   );
 
   const comparison = stored[STORAGE_KEYS.LAST_COMPARISON];

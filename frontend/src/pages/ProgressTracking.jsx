@@ -14,7 +14,6 @@ import {
   TrendingUp,
   Zap,
   Target,
-  RefreshCw,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
@@ -218,13 +217,11 @@ const MILESTONES = [
 export default function ProgressTracking() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchSummary = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-    else setRefreshing(true);
 
     try {
       const res = await api.get("/api/roadmaps-new/summary");
@@ -235,7 +232,6 @@ export default function ProgressTracking() {
       setError(err.response?.data?.error?.message || "Failed to load progress");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
@@ -299,26 +295,12 @@ export default function ProgressTracking() {
               Monitor your learning journey and celebrate milestones.
             </p>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
             {lastUpdated && (
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
                 Updated {lastUpdated.toLocaleTimeString()}
               </span>
             )}
-            <button
-              onClick={() => fetchSummary(true)}
-              disabled={refreshing}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                fontSize: 12, fontWeight: 600, color: "#a5b4fc",
-                background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)",
-                borderRadius: 8, padding: "6px 14px", cursor: "pointer",
-                opacity: refreshing ? 0.6 : 1,
-              }}
-            >
-              <RefreshCw size={12} style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
-              {refreshing ? "Refreshing…" : "Refresh"}
-            </button>
           </div>
         </div>
 

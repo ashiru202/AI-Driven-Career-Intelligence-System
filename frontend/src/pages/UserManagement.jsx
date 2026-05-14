@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { X, AlertTriangle, Trash2, ArrowLeft, ArrowRight } from "lucide-react";
+import { X, AlertTriangle, Trash2, ArrowLeft, ArrowRight, Users, Activity } from "lucide-react";
 
 function Toast({ message, type, onClose }) {
   useEffect(() => {
@@ -102,6 +102,7 @@ export default function UserManagement() {
   };
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const activeUsers = users.filter((u) => u.active).length;
 
   return (
     <Layout>
@@ -122,7 +123,7 @@ export default function UserManagement() {
             </p>
             <div className="flex gap-3">
               <Button
-                className="flex-1 bg-red-600 text-white hover:bg-red-700"
+                className="flex-1 btn-danger"
                 disabled={deleting[confirmDelete._id]}
                 onClick={() => deleteUser(confirmDelete)}
               >
@@ -141,52 +142,72 @@ export default function UserManagement() {
 
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h2 className="text-3xl font-bold text-white">Registered Job Seekers</h2>
-          <p className="text-slate-400 mt-1 text-sm">
-            {total} user{total !== 1 ? "s" : ""} registered
-          </p>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-white">Registered Job Seekers</h2>
+            <p className="text-slate-400 mt-1 text-sm">
+              {total} user{total !== 1 ? "s" : ""} registered
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <span
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "rgba(14,165,233,0.18)", color: "#bae6fd", border: "1px solid rgba(14,165,233,0.35)" }}
+            >
+              <Users size={13} /> {users.length} listed
+            </span>
+            <span
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "rgba(34,197,94,0.16)", color: "#bbf7d0", border: "1px solid rgba(34,197,94,0.35)" }}
+            >
+              <Activity size={13} /> {activeUsers} active
+            </span>
+          </div>
         </div>
 
         {/* Search */}
-        <form onSubmit={handleSearch} className="flex gap-3 max-w-md">
-          <Input
-            placeholder="Search by name or email..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-          />
-          <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700">
-            Search
-          </Button>
-          {search && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setSearchInput("");
-                setSearch("");
-                setPage(1);
-              }}
-            >
-              Clear
+        <div className="rounded-xl border border-white/10 p-3" style={{ background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <Input
+              placeholder="Search by name or email..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="sm:max-w-md"
+            />
+            <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700">
+              Search
             </Button>
-          )}
-        </form>
+            {search && (
+              <Button
+                type="button"
+                className="bg-slate-700 text-white hover:bg-slate-600 border border-white/10"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearch("");
+                  setPage(1);
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </form>
+        </div>
 
         {/* Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Job Seekers (Page {page}/{totalPages || 1})</CardTitle>
+        <Card className="border-white/10" style={{ background: "linear-gradient(145deg, rgba(16,20,34,0.9), rgba(12,15,28,0.95))" }}>
+          <CardHeader className="border-b border-white/10">
+            <CardTitle className="text-white">Job Seekers (Page {page}/{totalPages || 1})</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-gray-400">Loading...</div>
+              <div className="text-center py-8 text-slate-400">Loading...</div>
             ) : users.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8 text-slate-400">
                 No users found{search ? ` matching "${search}"` : ""}.
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto table-unified">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-white/40 border-b border-white/10">
@@ -223,7 +244,7 @@ export default function UserManagement() {
                             onClick={() => toggleStatus(u)}
                             className={
                               u.active
-                                ? "bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
+                                ? "bg-red-100 text-red-700 hover:bg-red-200 border border-red-300 !shadow-none hover:!shadow-none"
                                 : "bg-green-100 text-green-700 hover:bg-green-200 border border-green-300"
                             }
                           >
@@ -239,7 +260,7 @@ export default function UserManagement() {
                             size="sm"
                             disabled={deleting[u._id]}
                             onClick={() => setConfirmDelete(u)}
-                            className="bg-transparent text-red-400 hover:bg-red-500/10 border border-red-500/30 hover:border-red-500/60"
+                            className="btn-danger"
                           >
                             <Trash2 size={14} className="inline mr-1" /> Delete
                           </Button>

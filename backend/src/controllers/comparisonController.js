@@ -6,6 +6,7 @@ const { asyncHandler } = require('../middleware/errorMiddleware');
 const { parsePagination, paginationMeta } = require('../utils/pagination');
 const { normalizeSkillList, compareSkills } = require('../utils/skillNormalizer');
 const { extractSkillsWithAI } = require('../services/aiSkillExtractorService');
+const { notifyActiveAdmins } = require('../services/adminRealtimeService');
 const axios = require('axios');
 
 // Compare user's resume with a job description
@@ -84,6 +85,15 @@ const compareJob = asyncHandler(async (req, res) => {
     matchScore,
     matchingMethod,
     semanticMatches
+  });
+
+  await notifyActiveAdmins({
+    id: `admin_analytics_comparison_${comparison._id}`,
+    icon: 'BarChart2',
+    title: 'Skill demand updated',
+    body: `${jobTitle || 'A job comparison'} added ${normalizedJobSkills.length} demanded skill${normalizedJobSkills.length === 1 ? '' : 's'} to platform analytics.`,
+    link: '/admin/supply-demand',
+    comparisonId: comparison._id,
   });
 
   res.json(successResponse({

@@ -15,7 +15,8 @@
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-for-jest-only';
 process.env.NLP_SERVICE_URL = 'http://localhost:8000';
-process.env.INTERNAL_TOKEN = 'test-internal-token';
+process.env.NLP_INTERNAL_TOKEN = 'test-internal-token';
+process.env.INTERNAL_TOKEN = process.env.NLP_INTERNAL_TOKEN;
 
 const request = require('supertest');
 const { makeToken, mockUser, mockAdminUser } = require('./helpers');
@@ -50,6 +51,7 @@ function setupAuth(userObj) {
 function makeForecast(overrides = {}) {
   return {
     skill: 'python',
+    marketScope: 'combined',
     trendDirection: 'rising',
     trendSlope: 0.002,
     trendConfidence: 0.85,
@@ -105,30 +107,136 @@ describe('GET /api/trends/snapshot-summary', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns summary with correct shape for any authenticated user', async () => {
+  it('returns a scope-aware summary for any authenticated user', async () => {
     setupAuth(mockUser());
+    const lkFilter = { marketScope: 'local-lk' };
 
     // Cover all the chain variants the controller might use
     JobPosting.findOne   = jest.fn().mockReturnValue(chainResolving({ scrapedAt: new Date('2026-03-15') }));
-    JobPosting.countDocuments    = jest.fn().mockResolvedValue(1500);
+    JobPosting.countDocuments    = jest.fn().mockResolvedValue(420);
     SkillForecast.countDocuments = jest.fn().mockResolvedValue(80);
     SkillForecast.findOne = jest.fn().mockReturnValue(chainResolving({ generatedAt: new Date('2026-03-15') }));
-    SkillSnapshot.aggregate = jest.fn().mockResolvedValue([{ count: 6 }]);
-    SkillSnapshot.distinct  = jest.fn().mockResolvedValue(['python', 'react', 'docker']);
+    SkillSnapshot.distinct = jest.fn((field) => {
+      if (field === 'skill') {
+        return Promise.resolve(['python', 'react']);
+      }
+      if (field === 'periodStart') {
+        return Promise.resolve([new Date('2026-03-03'), new Date('2026-03-10')]);
+      }
+      return Promise.resolve([]);
+    });
 
     const res = await request(app)
-      .get('/api/trends/snapshot-summary')
+      .get('/api/trends/snapshot-summary?marketScope=local-lk')
       .set('Authorization', `Bearer ${USER_TOKEN}`);
 
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
-    expect(res.body.data).toHaveProperty('totalJobsIndexed');
-    expect(res.body.data).toHaveProperty('skillsTracked');
+    expect(res.body.data).toHaveProperty('marketScope', 'local-lk');
+    expect(res.body.data).toHaveProperty('totalJobsIndexed', 420);
+    expect(res.body.data).toHaveProperty('skillsTracked', 2);
+    expect(res.body.data).toHaveProperty('weeksCovered', 2);
     expect(res.body.data).toHaveProperty('forecastsGenerated');
+
+    expect(JobPosting.countDocuments).toHaveBeenCalledWith(lkFilter);
+    expect(JobPosting.findOne).toHaveBeenCalledWith(lkFilter);
+    expect(SkillSnapshot.distinct).toHaveBeenNthCalledWith(1, 'skill', lkFilter);
+    expect(SkillSnapshot.distinct).toHaveBeenNthCalledWith(2, 'periodStart', lkFilter);
+  });
+
+  it('falls back to combined scope when query marketScope is invalid', async () => {
+    setupAuth(mockUser());
+
+    JobPosting.findOne = jest.fn().mockReturnValue(chainResolving({ scrapedAt: new Date('2026-03-15') }));
+    JobPosting.countDocuments = jest.fn().mockResolvedValue(1500);
+    SkillForecast.countDocuments = jest.fn().mockResolvedValue(80);
+    SkillForecast.findOne = jest.fn().mockReturnValue(chainResolving({ generatedAt: new Date('2026-03-15') }));
+    SkillSnapshot.distinct = jest.fn((field) => {
+      if (field === 'skill') return Promise.resolve(['python']);
+      if (field === 'periodStart') return Promise.resolve([new Date('2026-03-03')]);
+      return Promise.resolve([]);
+    });
+
+    const res = await request(app)
+      .get('/api/trends/snapshot-summary?marketScope=not-a-valid-scope')
+      .set('Authorization', `Bearer ${USER_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveProperty('marketScope', 'combined');
+    expect(JobPosting.countDocuments).toHaveBeenCalledWith({});
+    expect(JobPosting.findOne).toHaveBeenCalledWith({});
+    expect(SkillSnapshot.distinct).toHaveBeenNthCalledWith(1, 'skill', { marketScope: 'combined' });
+    expect(SkillSnapshot.distinct).toHaveBeenNthCalledWith(2, 'periodStart', { marketScope: 'combined' });
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+describe('GET /api/trends/top-least', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns 401 without a token', async () => {
+    const res = await request(app).get('/api/trends/top-least');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns top and least skills from the latest snapshot period', async () => {
+    setupAuth(mockUser());
+
+    const latest = makeSnapshot({
+      skill: 'python',
+      periodStart: new Date('2026-04-20'),
+      periodEnd: new Date('2026-04-26'),
+      relativeFreq: 0.3,
+    });
+    const topRows = [
+      makeSnapshot({ skill: 'python', periodStart: latest.periodStart, relativeFreq: 0.3, count: 30 }),
+      makeSnapshot({ skill: 'react', periodStart: latest.periodStart, relativeFreq: 0.2, count: 20 }),
+    ];
+    const leastRows = [
+      makeSnapshot({ skill: 'perl', periodStart: latest.periodStart, relativeFreq: 0.01, count: 1 }),
+      makeSnapshot({ skill: 'cobol', periodStart: latest.periodStart, relativeFreq: 0.02, count: 2 }),
+    ];
+
+    SkillSnapshot.findOne = jest.fn().mockReturnValue(chainResolving(latest));
+    SkillSnapshot.find = jest
+      .fn()
+      .mockReturnValueOnce(chainResolving(topRows))
+      .mockReturnValueOnce(chainResolving(leastRows));
+
+    const res = await request(app)
+      .get('/api/trends/top-least?marketScope=combined&limit=2')
+      .set('Authorization', `Bearer ${USER_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.data.marketScope).toBe('combined');
+    expect(res.body.data.top.map((row) => row.skill)).toEqual(['python', 'react']);
+    expect(res.body.data.least.map((row) => row.skill)).toEqual(['perl', 'cobol']);
+    expect(SkillSnapshot.findOne).toHaveBeenCalledWith({ marketScope: 'combined' });
+    expect(SkillSnapshot.find).toHaveBeenCalledWith({
+      marketScope: 'combined',
+      periodStart: latest.periodStart,
+    });
+  });
+
+  it('returns empty arrays when no snapshots exist for scope', async () => {
+    setupAuth(mockUser());
+
+    SkillSnapshot.findOne = jest.fn().mockReturnValue(chainResolving(null));
+
+    const res = await request(app)
+      .get('/api/trends/top-least?marketScope=local-lk')
+      .set('Authorization', `Bearer ${USER_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.marketScope).toBe('local-lk');
+    expect(res.body.data.top).toEqual([]);
+    expect(res.body.data.least).toEqual([]);
+  });
+});
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe('GET /api/trends/rising', () => {
   beforeEach(() => jest.clearAllMocks());
@@ -162,6 +270,26 @@ describe('GET /api/trends/rising', () => {
     res.body.data.skills.forEach((s) => {
       expect(s.trendSlope).toBeGreaterThan(0);
     });
+
+    expect(SkillForecast.find).toHaveBeenCalledWith(
+      expect.objectContaining({ marketScope: 'combined', trendDirection: 'rising' })
+    );
+  });
+
+  it('applies marketScope to rising forecast query', async () => {
+    setupAuth(mockUser());
+
+    SkillForecast.find = jest.fn().mockReturnValue(chainResolving([]));
+    SkillSnapshot.aggregate = jest.fn().mockResolvedValue([]);
+
+    const res = await request(app)
+      .get('/api/trends/rising?limit=5&marketScope=local-lk')
+      .set('Authorization', `Bearer ${USER_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(SkillForecast.find).toHaveBeenCalledWith(
+      expect.objectContaining({ marketScope: 'local-lk', trendDirection: 'rising' })
+    );
   });
 
   it('clamps limit to a maximum of 50', async () => {
@@ -215,6 +343,26 @@ describe('GET /api/trends/falling', () => {
     res.body.data.skills.forEach((s) => {
       expect(s.trendSlope).toBeLessThan(0);
     });
+
+    expect(SkillForecast.find).toHaveBeenCalledWith(
+      expect.objectContaining({ marketScope: 'combined', trendDirection: 'falling' })
+    );
+  });
+
+  it('applies marketScope to falling forecast query', async () => {
+    setupAuth(mockUser());
+
+    SkillForecast.find = jest.fn().mockReturnValue(chainResolving([]));
+    SkillSnapshot.aggregate = jest.fn().mockResolvedValue([]);
+
+    const res = await request(app)
+      .get('/api/trends/falling?limit=5&marketScope=global')
+      .set('Authorization', `Bearer ${USER_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(SkillForecast.find).toHaveBeenCalledWith(
+      expect.objectContaining({ marketScope: 'global', trendDirection: 'falling' })
+    );
   });
 });
 
@@ -352,6 +500,30 @@ describe('GET /api/trends/skills/:skill', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveProperty('forecastPending', true);
+  });
+
+  it('builds a fallback forecast from history when scoped forecast is missing but enough points exist', async () => {
+    setupAuth(mockUser());
+
+    const history = [
+      makeSnapshot({ skill: 'python', periodStart: new Date('2026-01-05'), relativeFreq: 0.05 }),
+      makeSnapshot({ skill: 'python', periodStart: new Date('2026-01-12'), relativeFreq: 0.06 }),
+      makeSnapshot({ skill: 'python', periodStart: new Date('2026-01-19'), relativeFreq: 0.07 }),
+      makeSnapshot({ skill: 'python', periodStart: new Date('2026-01-26'), relativeFreq: 0.09 }),
+    ];
+
+    SkillForecast.findOne = jest.fn().mockReturnValue(chainResolving(null));
+    SkillSnapshot.find = jest.fn().mockReturnValue(chainResolving(history));
+
+    const res = await request(app)
+      .get('/api/trends/skills/python?marketScope=local-lk')
+      .set('Authorization', `Bearer ${USER_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveProperty('forecastPending', false);
+    expect(res.body.data.forecast).toBeTruthy();
+    expect(res.body.data.forecast).toHaveProperty('modelUsed', 'snapshot-linear-fallback');
+    expect(res.body.data.forecast.forecastPoints.length).toBeGreaterThan(0);
   });
 });
 

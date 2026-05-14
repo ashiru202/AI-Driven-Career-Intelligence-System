@@ -30,10 +30,32 @@ const resumeSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  normalizedSkills: {
+    type: [String],
+    default: []
+  },
+  skillsSignature: {
+    type: String,
+    default: ''
+  },
+  candidateLevel: {
+    type: String,
+    enum: ['INTERN', 'PROFESSIONAL', 'UNKNOWN'],
+    default: 'UNKNOWN'
+  },
+  candidateLevelSource: {
+    type: String,
+    enum: ['heuristic', 'manual', 'user_profile'],
+    default: 'heuristic'
+  },
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
+
+resumeSchema.index({ createdAt: -1 });
+resumeSchema.index({ skillsSignature: 1, createdAt: -1 });
+resumeSchema.index({ normalizedSkills: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Resume', resumeSchema);

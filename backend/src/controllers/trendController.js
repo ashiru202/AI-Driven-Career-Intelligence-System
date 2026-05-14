@@ -6,9 +6,38 @@ const { successResponse } = require("../utils/responseHelper");
 const AppError             = require("../utils/AppError");
 const { asyncHandler }     = require("../middleware/errorMiddleware");
 const { parsePagination, paginationMeta } = require("../utils/pagination");
+const { notifyActiveAdmins } = require("../services/adminRealtimeService");
 
-const NLP_URL        = process.env.NLP_SERVICE_URL      || "http://localhost:8000";
-const INTERNAL_TOKEN = process.env.NLP_INTERNAL_TOKEN   || "changeme";
+const NLP_URL = process.env.NLP_SERVICE_URL || "http://localhost:8000";
+const VALID_MARKET_SCOPES = new Set(["combined", "global", "local-lk"]);
+const RISING_SLOPE_THRESHOLD = Number(process.env.RISING_SLOPE_THRESHOLD || 0.0001);
+const FALLING_SLOPE_THRESHOLD = Number(process.env.FALLING_SLOPE_THRESHOLD || -0.0001);
+const FALLBACK_POINT_LIMIT = 12;
+const MIN_FORECAST_HISTORY_POINTS = 4;
+
+function normalizeMarketScope(scope) {
+  if (!scope) return "combined";
+  const value = String(scope).trim();
+  return VALID_MARKET_SCOPES.has(value) ? value : "combined";
+}
+
+function parseLimit(value, fallback = 10, max = 50) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(parsed, max);
+}
+
+function getInternalToken() {
+  const token = (process.env.NLP_INTERNAL_TOKEN || process.env.INTERNAL_TOKEN || "").trim();
+  if (!token || token.toLowerCase() === "changeme") {
+    throw new Error(
+      "NLP_INTERNAL_TOKEN (or INTERNAL_TOKEN) must be set to a non-default shared secret"
+    );
+  }
+  return token;
+}
+
+const INTERNAL_TOKEN = getInternalToken();
 
 // ── Shared helper: latest snapshot per skill ──────────────────────────────────
 
@@ -23,6 +52,173 @@ async function latestSnapshotMap(skills, marketScope) {
   return map;
 }
 
+function linearRegressionSlope(values) {
+  const n = values.length;
+  if (n < 2) return 0;
+
+  const sumX = (n * (n - 1)) / 2;
+  const sumXX = ((n - 1) * n * ((2 * n) - 1)) / 6;
+  const sumY = values.reduce((acc, y) => acc + y, 0);
+  const sumXY = values.reduce((acc, y, x) => acc + (x * y), 0);
+  const denominator = (n * sumXX) - (sumX * sumX);
+
+  if (denominator === 0) return 0;
+  return ((n * sumXY) - (sumX * sumY)) / denominator;
+}
+
+function linearRegressionFit(values) {
+  const n = values.length;
+  if (n < 2) {
+    return { slope: 0, intercept: values[0] || 0 };
+  }
+
+  const sumX = (n * (n - 1)) / 2;
+  const sumXX = ((n - 1) * n * ((2 * n) - 1)) / 6;
+  const sumY = values.reduce((acc, y) => acc + y, 0);
+  const sumXY = values.reduce((acc, y, x) => acc + (x * y), 0);
+  const denominator = (n * sumXX) - (sumX * sumX);
+
+  if (denominator === 0) {
+    return { slope: 0, intercept: sumY / n };
+  }
+
+  const slope = ((n * sumXY) - (sumX * sumY)) / denominator;
+  const intercept = (sumY - (slope * sumX)) / n;
+  return { slope, intercept };
+}
+
+function classifyDirectionBySlope(slope) {
+  if (slope > RISING_SLOPE_THRESHOLD) return "rising";
+  if (slope < FALLING_SLOPE_THRESHOLD) return "falling";
+  return "stable";
+}
+
+async function buildSnapshotTrendFallback({ marketScope, direction, limit, skip = 0, search = "" }) {
+  const grouped = await SkillSnapshot.aggregate([
+    { $match: { marketScope } },
+    { $sort: { skill: 1, periodStart: -1 } },
+    {
+      $group: {
+        _id: "$skill",
+        latestSnapshot: { $first: "$$ROOT" },
+        points: {
+          $push: {
+            periodStart: "$periodStart",
+            relativeFreq: "$relativeFreq",
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        skill: "$_id",
+        latestSnapshot: 1,
+        points: { $slice: ["$points", FALLBACK_POINT_LIMIT] },
+      },
+    },
+  ]);
+
+  const normalizedSearch = String(search || "").toLowerCase().trim();
+
+  let skills = grouped
+    .map((row) => {
+      const points = (row.points || []).slice().reverse();
+      const frequencies = points.map((pt) => Number(pt.relativeFreq) || 0);
+      const trendSlope = linearRegressionSlope(frequencies);
+      const trendDirection = classifyDirectionBySlope(trendSlope);
+
+      const sparklinePoints = points.slice(-6).map((pt) => ({
+        periodStart: pt.periodStart,
+        predictedFreq: Number(pt.relativeFreq) || 0,
+        lowerBound: Number(pt.relativeFreq) || 0,
+        upperBound: Number(pt.relativeFreq) || 0,
+      }));
+
+      return {
+        skill: row.skill,
+        marketScope,
+        trendDirection,
+        trendSlope,
+        trendConfidence: 0,
+        dataPointsUsed: points.length,
+        modelUsed: "snapshot-linear-fallback",
+        generatedAt: null,
+        forecastPoints: sparklinePoints,
+        latestSnapshot: row.latestSnapshot || null,
+      };
+    })
+    .filter((item) => item.dataPointsUsed >= 2);
+
+  if (normalizedSearch) {
+    skills = skills.filter((item) => item.skill.includes(normalizedSearch));
+  }
+
+  if (direction && ["rising", "falling", "stable"].includes(direction)) {
+    skills = skills.filter((item) => item.trendDirection === direction);
+  }
+
+  skills.sort((a, b) => {
+    if ((direction || "") === "falling") {
+      return a.trendSlope - b.trendSlope;
+    }
+    return b.trendSlope - a.trendSlope;
+  });
+
+  return {
+    total: skills.length,
+    skills: skills.slice(skip, skip + limit),
+  };
+}
+
+function buildForecastFromHistory(skill, marketScope, history, weeksAhead = 8) {
+  if (!Array.isArray(history) || history.length < MIN_FORECAST_HISTORY_POINTS) {
+    return null;
+  }
+
+  const frequencies = history.map((item) => Number(item.relativeFreq) || 0);
+  const { slope, intercept } = linearRegressionFit(frequencies);
+  const trendDirection = classifyDirectionBySlope(slope);
+
+  const residuals = frequencies.map((y, x) => y - ((slope * x) + intercept));
+  const variance = residuals.reduce((acc, r) => acc + (r * r), 0) / Math.max(1, residuals.length);
+  const std = Math.sqrt(variance);
+  const halfBand = 1.5 * std;
+
+  const forecastPoints = [];
+  const lastPeriod = new Date(history[history.length - 1].periodStart);
+  for (let i = 1; i <= weeksAhead; i += 1) {
+    const x = (history.length - 1) + i;
+    const predicted = Math.max((intercept + (slope * x)), 0);
+    const periodStart = new Date(lastPeriod);
+    periodStart.setUTCDate(periodStart.getUTCDate() + (7 * i));
+
+    forecastPoints.push({
+      periodStart,
+      predictedFreq: Number(predicted.toFixed(8)),
+      lowerBound: Number(Math.max(predicted - halfBand, 0).toFixed(8)),
+      upperBound: Number((predicted + halfBand).toFixed(8)),
+    });
+  }
+
+  const mean = frequencies.reduce((acc, y) => acc + y, 0) / frequencies.length;
+  const ssTotal = frequencies.reduce((acc, y) => acc + ((y - mean) ** 2), 0);
+  const ssResidual = residuals.reduce((acc, r) => acc + (r ** 2), 0);
+  const trendConfidence = ssTotal === 0 ? 0 : Math.max(0, 1 - (ssResidual / ssTotal));
+
+  return {
+    skill,
+    marketScope,
+    generatedAt: null,
+    trendDirection,
+    trendSlope: Number(slope.toFixed(8)),
+    trendConfidence: Number(trendConfidence.toFixed(6)),
+    forecastPoints,
+    dataPointsUsed: history.length,
+    modelUsed: "snapshot-linear-fallback",
+  };
+}
+
 // ── User-facing handlers ──────────────────────────────────────────────────────
 
 /**
@@ -30,10 +226,11 @@ async function latestSnapshotMap(skills, marketScope) {
  * Query: ?direction=rising|falling|stable&search=&marketScope=combined|global|local-lk&page=1&limit=20
  */
 const getSkillsList = asyncHandler(async (req, res) => {
-  const { direction, search, marketScope = "combined" } = req.query;
+  const { direction, search } = req.query;
+  const marketScope = normalizeMarketScope(req.query.marketScope);
   const { page, limit, skip } = parsePagination(req.query, 20);
 
-  const filter = {};
+  const filter = { marketScope };
   if (direction && ["rising", "falling", "stable"].includes(direction)) {
     filter.trendDirection = direction;
   }
@@ -47,6 +244,21 @@ const getSkillsList = asyncHandler(async (req, res) => {
     SkillForecast.find(filter).sort(sort).skip(skip).limit(limit).lean(),
     SkillForecast.countDocuments(filter),
   ]);
+
+  if (total === 0) {
+    const fallback = await buildSnapshotTrendFallback({
+      marketScope,
+      direction,
+      limit,
+      skip,
+      search,
+    });
+
+    return res.json(successResponse({
+      skills: fallback.skills,
+      pagination: paginationMeta(fallback.total, page, limit),
+    }));
+  }
 
   const snapshotMap = await latestSnapshotMap(
     forecasts.map(f => f.skill),
@@ -74,22 +286,25 @@ const getSkillsList = asyncHandler(async (req, res) => {
  */
 const getSkillDetail = asyncHandler(async (req, res) => {
   const skill       = decodeURIComponent(req.params.skill).toLowerCase().trim();
-  const marketScope = req.query.marketScope || "combined";
+  const marketScope = normalizeMarketScope(req.query.marketScope);
 
   const [forecast, history] = await Promise.all([
-    SkillForecast.findOne({ skill }).lean(),
+    SkillForecast.findOne({ skill, marketScope }).lean(),
     SkillSnapshot.find({ skill, marketScope }).sort({ periodStart: 1 }).lean(),
   ]);
 
-  if (!forecast && history.length === 0) {
+  if (history.length === 0 && !forecast) {
     throw AppError.notFound(`No trend data found for skill: ${skill}`);
   }
+
+  const fallbackForecast = forecast || buildForecastFromHistory(skill, marketScope, history);
+  const forecastPending = !forecast && !fallbackForecast;
 
   res.json(successResponse({
     skill,
     marketScope,
-    forecast:        forecast || null,
-    forecastPending: !forecast,
+    forecast:        fallbackForecast || null,
+    forecastPending,
     history,
   }));
 });
@@ -100,12 +315,21 @@ const getSkillDetail = asyncHandler(async (req, res) => {
  */
 const getRisingSkills = asyncHandler(async (req, res) => {
   const limit       = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
-  const marketScope = req.query.marketScope || "combined";
+  const marketScope = normalizeMarketScope(req.query.marketScope);
 
-  const forecasts = await SkillForecast.find({ trendDirection: "rising" })
+  const forecasts = await SkillForecast.find({ marketScope, trendDirection: "rising" })
     .sort({ trendSlope: -1 })
     .limit(limit)
     .lean();
+
+  if (forecasts.length === 0) {
+    const fallback = await buildSnapshotTrendFallback({
+      marketScope,
+      direction: "rising",
+      limit,
+    });
+    return res.json(successResponse({ skills: fallback.skills }));
+  }
 
   const snapshotMap = await latestSnapshotMap(
     forecasts.map(f => f.skill),
@@ -122,12 +346,21 @@ const getRisingSkills = asyncHandler(async (req, res) => {
  */
 const getFallingSkills = asyncHandler(async (req, res) => {
   const limit       = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
-  const marketScope = req.query.marketScope || "combined";
+  const marketScope = normalizeMarketScope(req.query.marketScope);
 
-  const forecasts = await SkillForecast.find({ trendDirection: "falling" })
+  const forecasts = await SkillForecast.find({ marketScope, trendDirection: "falling" })
     .sort({ trendSlope: 1 })
     .limit(limit)
     .lean();
+
+  if (forecasts.length === 0) {
+    const fallback = await buildSnapshotTrendFallback({
+      marketScope,
+      direction: "falling",
+      limit,
+    });
+    return res.json(successResponse({ skills: fallback.skills }));
+  }
 
   const snapshotMap = await latestSnapshotMap(
     forecasts.map(f => f.skill),
@@ -142,6 +375,11 @@ const getFallingSkills = asyncHandler(async (req, res) => {
  * GET /api/trends/snapshot-summary
  */
 const getSnapshotSummary = asyncHandler(async (req, res) => {
+  const marketScope = normalizeMarketScope(req.query.marketScope);
+  const jobFilter = marketScope === "combined" ? {} : { marketScope };
+  const snapshotFilter = { marketScope };
+  const forecastFilter = { marketScope };
+
   const [
     totalJobsIndexed,
     skillsTracked,
@@ -150,21 +388,79 @@ const getSnapshotSummary = asyncHandler(async (req, res) => {
     lastForecast,
     allPeriodStarts,
   ] = await Promise.all([
-    JobPosting.countDocuments(),
-    SkillSnapshot.distinct("skill").then(a => a.length),
-    SkillForecast.countDocuments(),
-    JobPosting.findOne().sort({ scrapedAt: -1 }).select("scrapedAt").lean(),
-    SkillForecast.findOne().sort({ generatedAt: -1 }).select("generatedAt").lean(),
-    SkillSnapshot.distinct("periodStart"),
+    JobPosting.countDocuments(jobFilter),
+    SkillSnapshot.distinct("skill", snapshotFilter).then(a => a.length),
+    SkillForecast.countDocuments(forecastFilter),
+    JobPosting.findOne(jobFilter).sort({ scrapedAt: -1 }).select("scrapedAt").lean(),
+    SkillForecast.findOne(forecastFilter).sort({ generatedAt: -1 }).select("generatedAt").lean(),
+    SkillSnapshot.distinct("periodStart", snapshotFilter),
   ]);
 
   res.json(successResponse({
+    marketScope,
     lastScrapedAt:     lastJob?.scrapedAt      || null,
     totalJobsIndexed,
     skillsTracked,
     weeksCovered:      allPeriodStarts.length,
     forecastsGenerated,
     lastForecastAt:    lastForecast?.generatedAt || null,
+  }));
+});
+
+/**
+ * GET /api/trends/top-least
+ * Query: ?marketScope=combined&limit=10
+ * Latest industry snapshot demand sorted by relative frequency.
+ */
+const getTopLeastSkills = asyncHandler(async (req, res) => {
+  const marketScope = normalizeMarketScope(req.query.marketScope);
+  const limit = parseLimit(req.query.limit, 10, 50);
+
+  const latestSnapshot = await SkillSnapshot.findOne({ marketScope })
+    .sort({ periodStart: -1 })
+    .lean();
+
+  if (!latestSnapshot) {
+    return res.json(successResponse({
+      marketScope,
+      periodStart: null,
+      periodEnd: null,
+      top: [],
+      least: [],
+    }));
+  }
+
+  const snapshotFilter = {
+    marketScope,
+    periodStart: latestSnapshot.periodStart,
+  };
+
+  const [top, least] = await Promise.all([
+    SkillSnapshot.find(snapshotFilter)
+      .sort({ relativeFreq: -1, count: -1, skill: 1 })
+      .limit(limit)
+      .lean(),
+    SkillSnapshot.find(snapshotFilter)
+      .sort({ relativeFreq: 1, count: 1, skill: 1 })
+      .limit(limit)
+      .lean(),
+  ]);
+
+  const mapSnapshot = (snapshot) => ({
+    skill: snapshot.skill,
+    count: snapshot.count,
+    totalJobs: snapshot.totalJobs,
+    relativeFreq: snapshot.relativeFreq,
+    marketScope: snapshot.marketScope,
+    sources: snapshot.sources || [],
+  });
+
+  res.json(successResponse({
+    marketScope,
+    periodStart: latestSnapshot.periodStart,
+    periodEnd: latestSnapshot.periodEnd,
+    top: top.map(mapSnapshot),
+    least: least.map(mapSnapshot),
   }));
 });
 
@@ -180,6 +476,13 @@ const triggerScrape = asyncHandler(async (req, res) => {
     {},
     { headers: { "X-Internal-Token": INTERNAL_TOKEN }, timeout: 120_000 }
   );
+  await notifyActiveAdmins({
+    id: `admin_analytics_trends_scrape_${Date.now()}`,
+    icon: "TrendingUp",
+    title: "Industry trends refreshed",
+    body: "Scrape and processing completed. Demand dashboards are ready to refresh.",
+    link: "/admin/industry-contribution",
+  });
   res.json(successResponse(response.data, "Scrape job triggered"));
 });
 
@@ -193,6 +496,13 @@ const triggerForecast = asyncHandler(async (req, res) => {
     {},
     { headers: { "X-Internal-Token": INTERNAL_TOKEN }, timeout: 120_000 }
   );
+  await notifyActiveAdmins({
+    id: `admin_analytics_trends_forecast_${Date.now()}`,
+    icon: "TrendingUp",
+    title: "Skill forecast refreshed",
+    body: "Forecast refresh completed. Industry demand pages are ready to update.",
+    link: "/admin/skills-demand",
+  });
   res.json(successResponse(response.data, "Forecast refresh triggered"));
 });
 
@@ -214,6 +524,7 @@ module.exports = {
   getRisingSkills,
   getFallingSkills,
   getSnapshotSummary,
+  getTopLeastSkills,
   triggerScrape,
   triggerForecast,
   getScrapeStatus,

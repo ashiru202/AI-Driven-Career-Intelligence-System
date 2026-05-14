@@ -8,7 +8,7 @@ const rootDir = path.resolve(scriptDir, "..");
 const distDir = path.join(rootDir, "dist");
 const watchMode = process.argv.includes("--watch");
 
-const staticFiles = ["manifest.json", "src/popup/popup.html", "src/popup/popup.css"];
+const staticFiles = ["manifest.dist.json", "src/popup/popup.html", "src/popup/popup.css"];
 const staticDirs = ["src/content/styles", "src/icons"];
 
 async function pathExists(relativePath) {
@@ -22,7 +22,8 @@ async function pathExists(relativePath) {
 
 async function copyRelativePath(relativePath) {
   const source = path.join(rootDir, relativePath);
-  const target = path.join(distDir, relativePath);
+  const targetName = relativePath === "manifest.dist.json" ? "manifest.json" : relativePath;
+  const target = path.join(distDir, targetName);
   await mkdir(path.dirname(target), { recursive: true });
   await cp(source, target, { recursive: true });
 }
@@ -47,34 +48,43 @@ async function prepareDist() {
   await copyStaticAssets();
 }
 
-const buildOptions = {
+const baseBuildOptions = {
   absWorkingDir: rootDir,
-  entryPoints: [
-    "src/background/background.js",
-    "src/content/content.js",
-    "src/content/authBridge.js",
-    "src/popup/popup.js",
-  ],
   outbase: ".",
   outdir: "dist",
   bundle: true,
-  format: "esm",
   target: ["chrome114"],
   sourcemap: true,
   logLevel: "info",
+};
+
+const moduleBuildOptions = {
+  ...baseBuildOptions,
+  entryPoints: ["src/background/background.js", "src/popup/popup.js"],
+  format: "esm",
+};
+
+const contentScriptBuildOptions = {
+  ...baseBuildOptions,
+  entryPoints: ["src/content/content.js", "src/content/authBridge.js"],
+  // Content scripts do not support native ESM in the manifest.
+  // Bundle to a classic script format so we never ship `import` statements.
+  format: "iife",
 };
 
 async function run() {
   await prepareDist();
 
   if (watchMode) {
-    const ctx = await context(buildOptions);
-    await ctx.watch();
+    const ctxModule = await context(moduleBuildOptions);
+    const ctxContent = await context(contentScriptBuildOptions);
+    await Promise.all([ctxModule.watch(), ctxContent.watch()]);
     console.log("Watching extension sources. Press Ctrl+C to stop.");
     return;
   }
 
-  await build(buildOptions);
+  await build(moduleBuildOptions);
+  await build(contentScriptBuildOptions);
   console.log("Extension build complete.");
 }
 

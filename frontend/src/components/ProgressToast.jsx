@@ -55,7 +55,7 @@ function ToastItem({ item }) {
   return (
     <div style={{
       padding: '12px 14px',
-      background: 'rgba(10,10,28,0.92)',
+      backgroundColor: 'rgba(10,10,28,0.92)',
       border: `1px solid ${borderColor}`,
       borderRadius: 12,
       backdropFilter: 'blur(18px)',

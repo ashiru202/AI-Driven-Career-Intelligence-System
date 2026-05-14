@@ -63,7 +63,7 @@ function ResumeCard({ resume, onDelete, onView, onCompare }) {
             onClick={handleDelete}
             disabled={deleting}
             title="Delete resume"
-            className="flex-shrink-0 p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
+            className="flex-shrink-0 p-1.5 rounded-lg text-red-300 bg-red-500/10 border border-red-500/30 hover:text-red-200 hover:bg-red-500/20 transition-colors disabled:opacity-50"
           >
             {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
           </button>

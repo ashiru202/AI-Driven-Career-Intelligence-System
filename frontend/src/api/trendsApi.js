@@ -1,7 +1,7 @@
 import api from './api';
 
-export const getSnapshotSummary = () =>
-  api.get('/api/trends/snapshot-summary');
+export const getSnapshotSummary = (scope = 'combined') =>
+  api.get('/api/trends/snapshot-summary', { params: { marketScope: scope } });
 
 export const getRisingSkills = (limit = 8, scope = 'combined') =>
   api.get('/api/trends/rising', { params: { limit, marketScope: scope } });

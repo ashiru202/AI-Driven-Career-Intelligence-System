@@ -4,6 +4,7 @@ import WelcomePage from "./pages/WelcomePage";
 import Ping from "./pages/Ping";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import StaffApply from "./pages/StaffApply";
 import Dashboard from "./pages/Dashboard";
 import MyRoadmap from "./pages/MyRoadmap";
 import AllRoadmaps from "./pages/AllRoadmaps";
@@ -11,6 +12,10 @@ import Logout from "./pages/Logout";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffHome from "./pages/StaffHome";
+import StaffPriorityQueue from "./pages/StaffPriorityQueue";
+import StaffCaseNotes from "./pages/StaffCaseNotes";
+import StaffFollowUpTasks from "./pages/StaffFollowUpTasks";
+import StaffReportWorkflows from "./pages/StaffReportWorkflows";
 import RoleRoute from "./auth/RoleRoute";
 import Health from "./pages/Health";
 
@@ -30,6 +35,11 @@ import TrendsPage from "./pages/TrendsPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
+import ForceChangePassword from "./pages/ForceChangePassword";
+import AdminSkillGroups from "./pages/AdminSkillGroups";
+import AdminSkillsDemand from "./pages/AdminSkillsDemand";
+import AdminSupplyDemand from "./pages/AdminSupplyDemand";
+import AdminIndustryContribution from "./pages/AdminIndustryContribution";
 
 export default function App() {
   return (
@@ -40,10 +50,19 @@ export default function App() {
         <Route path="/ping" element={<Ping />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/staff-apply" element={<StaffApply />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/health" element={<Health />} />
+        <Route
+          path="/force-change-password"
+          element={
+            <ProtectedRoute>
+              <ForceChangePassword />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/dashboard"
@@ -188,6 +207,50 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/staff/priority-queue"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["STAFF", "ADMIN"]}>
+                <StaffPriorityQueue />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/staff/case-notes"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["STAFF", "ADMIN"]}>
+                <StaffCaseNotes />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/staff/follow-ups"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["STAFF", "ADMIN"]}>
+                <StaffFollowUpTasks />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/staff/report-workflows"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["STAFF", "ADMIN"]}>
+                <StaffReportWorkflows />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
         {/* ADMIN ONLY */}
         <Route
           path="/admin"
@@ -218,6 +281,50 @@ export default function App() {
             <ProtectedRoute>
               <RoleRoute roles={["ADMIN"]}>
                 <StaffManagement />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/skill-groups"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["ADMIN"]}>
+                <AdminSkillGroups />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/skills-demand"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["ADMIN"]}>
+                <AdminSkillsDemand />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/supply-demand"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["ADMIN"]}>
+                <AdminSupplyDemand />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/industry-contribution"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={["ADMIN"]}>
+                <AdminIndustryContribution />
               </RoleRoute>
             </ProtectedRoute>
           }

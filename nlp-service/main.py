@@ -124,6 +124,13 @@ SKILL_PATTERNS = {
     # Cloud & DevOps
     'aws', 'azure', 'gcp', 'google cloud', 'docker', 'kubernetes', 'k8s', 'jenkins',
     'gitlab', 'github', 'circleci', 'terraform', 'ansible', 'puppet', 'chef',
+
+    # IT Ops / Networking
+    'active directory', 'cisco', 'firewall', 'networking', 'network', 'tcp/ip', 'vmware',
+    'windows server', 'dhcp', 'dns', 'technical support', 'helpdesk', 'help desk', 'troubleshooting',
+    'virtualization', 'backup', 'disaster recovery', 'automation', 'capacity planning',
+    'storage planning', 'data protection', 'failover',
+    'project management', 'qa testing',
     
     # Mobile
     'android', 'ios', 'react native', 'flutter', 'xamarin', 'ionic',
@@ -180,6 +187,11 @@ def extract_skills_from_text(text: str) -> List[str]:
         if ' ' in pattern and pattern in text_lower:
             found_skills.add(pattern)
     
+    # Check for patterns with special characters (C++, C#, CI/CD, TCP/IP, etc.)
+    for pattern in SKILL_PATTERNS:
+        if re.search(r'[^a-z0-9\s]', pattern) and pattern in text_lower:
+            found_skills.add(pattern)
+
     # Check for common patterns like "React.js" or "Node.js"
     for pattern in SKILL_PATTERNS:
         if '.' in pattern:
@@ -221,6 +233,31 @@ def extract_skills_from_text(text: str) -> List[str]:
         'c++': 'C++',
         'csharp': 'C#',
         'c#': 'C#',
+        'ci/cd': 'CI/CD',
+        'tcp/ip': 'TCP/IP',
+        'active directory': 'Active Directory',
+        'firewall': 'Firewall',
+        'network': 'Networking',
+        'networking': 'Networking',
+        'vmware': 'VMware',
+        'windows server': 'Windows Server',
+        'dhcp': 'DHCP',
+        'dns': 'DNS',
+        'qa testing': 'QA Testing',
+        'technical support': 'Technical Support',
+        'helpdesk': 'Technical Support',
+        'help desk': 'Technical Support',
+        'troubleshooting': 'Troubleshooting',
+        'virtualization': 'Virtualization',
+        'backup': 'Backup and Recovery',
+        'disaster recovery': 'Disaster Recovery',
+        'automation': 'Automation',
+        'capacity planning': 'Capacity Planning',
+        'storage planning': 'Storage Planning',
+        'data protection': 'Data Protection',
+        'failover': 'Failover',
+        'project management': 'Project Management',
+        'cisco': 'Cisco',
         'html': 'HTML',
         'html5': 'HTML5',
         'css': 'CSS',
@@ -475,7 +512,18 @@ async def trigger_forecast(token: None = Depends(verify_internal_token)):
     """
     def _run():
         from forecaster import refresh_all_forecasts
-        return refresh_all_forecasts()
+
+        scopes = ["combined", "global", "local-lk"]
+        by_scope = {}
+        for scope in scopes:
+            by_scope[scope] = refresh_all_forecasts(market_scope=scope)
+
+        return {
+            "by_scope": by_scope,
+            "refreshed": sum(item.get("refreshed", 0) for item in by_scope.values()),
+            "skipped": sum(item.get("skipped", 0) for item in by_scope.values()),
+            "errors": sum(item.get("errors", 0) for item in by_scope.values()),
+        }
 
     result = await asyncio.to_thread(_run)
     return {"ok": True, "forecast": result}
@@ -520,7 +568,7 @@ async def get_rising_skills(limit: int = 10, market_scope: str = "combined"):
         db = get_db()
         return list(
             db["skill_forecasts"]
-            .find({"trendDirection": "rising"}, {"_id": 0})
+            .find({"marketScope": market_scope, "trendDirection": "rising"}, {"_id": 0})
             .sort("trendSlope", -1)
             .limit(min(limit, 50))
         )
@@ -538,7 +586,10 @@ async def get_skill_forecast(skill: str, market_scope: str = "combined"):
         db = get_db()
 
         skill_lower = skill.lower().strip()
-        forecast = db["skill_forecasts"].find_one({"skill": skill_lower}, {"_id": 0})
+        forecast = db["skill_forecasts"].find_one(
+            {"skill": skill_lower, "marketScope": market_scope},
+            {"_id": 0},
+        )
         if forecast is None:
             forecast = generate_forecast(skill_lower, market_scope=market_scope)
 

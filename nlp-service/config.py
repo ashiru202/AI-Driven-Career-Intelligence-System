@@ -12,7 +12,12 @@ XPRESSJOBS_ENABLED    = os.getenv("XPRESSJOBS_ENABLED", "true").lower() == "true
 ITPRO_ENABLED         = os.getenv("ITPRO_ENABLED", "true").lower() == "true"
 SCRAPE_INTERVAL_HOURS = int(os.getenv("SCRAPE_INTERVAL_HOURS", "24"))
 MAX_JOBS_PER_RUN      = int(os.getenv("MAX_JOBS_PER_RUN", "200"))
-INTERNAL_TOKEN        = os.getenv("INTERNAL_TOKEN", "changeme")
+INTERNAL_TOKEN        = (os.getenv("INTERNAL_TOKEN") or os.getenv("NLP_INTERNAL_TOKEN") or "").strip()
+
+if not INTERNAL_TOKEN or INTERNAL_TOKEN.lower() == "changeme":
+    raise RuntimeError(
+        "INTERNAL_TOKEN (or NLP_INTERNAL_TOKEN) must be set to a non-default shared secret"
+    )
 
 # ML thresholds
 RISING_SLOPE_THRESHOLD  = float(os.getenv("RISING_SLOPE_THRESHOLD", "0.001"))

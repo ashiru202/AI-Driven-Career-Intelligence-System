@@ -12,6 +12,11 @@ const forecastPointSchema = new mongoose.Schema(
 
 const skillForecastSchema = new mongoose.Schema({
   skill:           { type: String, required: true },
+  marketScope:     {
+    type: String,
+    enum: ["combined", "global", "local-lk"],
+    default: "combined",
+  },
   generatedAt:     { type: Date, default: Date.now },
   trendDirection:  {
     type: String,
@@ -24,13 +29,13 @@ const skillForecastSchema = new mongoose.Schema({
   dataPointsUsed:  { type: Number, required: true },
   modelUsed:       {
     type: String,
-    enum: ["linear", "prophet"],
+    enum: ["linear", "prophet", "snapshot-linear-fallback"],
     default: "linear",
   },
 });
 
-skillForecastSchema.index({ skill: 1 }, { unique: true });
-skillForecastSchema.index({ trendDirection: 1, trendSlope: -1 });
+skillForecastSchema.index({ skill: 1, marketScope: 1 }, { unique: true });
+skillForecastSchema.index({ marketScope: 1, trendDirection: 1, trendSlope: -1 });
 skillForecastSchema.index({ generatedAt: -1 });
 
 module.exports = mongoose.model("SkillForecast", skillForecastSchema, "skill_forecasts");

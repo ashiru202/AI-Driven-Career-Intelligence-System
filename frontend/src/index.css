@@ -60,20 +60,22 @@ select option {
 /* Buttons (shadcn default variant) */
 button[class*="bg-blue"], a[class*="bg-blue"],
 button[class*="bg-indigo"], a[class*="bg-indigo"] {
-  background: linear-gradient(135deg,#6366f1,#8b5cf6) !important;
-  border: none !important;
+  background: linear-gradient(90deg,#7a6cff,#5f54f7) !important;
+  border: 1px solid rgba(154,144,255,0.45) !important;
   color: #fff !important;
+  box-shadow: 0 10px 24px rgba(95,84,247,0.35) !important;
 }
 button[class*="bg-gray-8"], button[class*="bg-gray-9"],
 a[class*="bg-gray-8"], a[class*="bg-gray-9"] {
-  background: rgba(255,255,255,0.08) !important;
-  border: 1px solid rgba(255,255,255,0.15) !important;
+  background: linear-gradient(90deg,#7a6cff,#5f54f7) !important;
+  border: 1px solid rgba(154,144,255,0.45) !important;
   color: #fff !important;
+  box-shadow: 0 10px 24px rgba(95,84,247,0.35) !important;
 }
 /* Ensure hover states work on gradient buttons */
 button[class*="hover:bg-blue"]:hover,
 button[class*="hover:bg-indigo"]:hover {
-  background: linear-gradient(135deg,#4f46e5,#7c3aed) !important;
+  background: linear-gradient(90deg,#8678ff,#6a5fff) !important;
 }
 
 /* Tables */
@@ -81,6 +83,92 @@ table thead tr { border-color: rgba(255,255,255,0.08) !important; }
 table thead th { color: rgba(255,255,255,0.45) !important; }
 table tbody tr { border-color: rgba(255,255,255,0.06) !important; }
 table tbody td { color: rgba(255,255,255,0.72) !important; }
+
+/* Unified table shell used across dashboard/list pages */
+.table-unified {
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(11,19,38,0.7);
+}
+
+.table-unified table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-unified thead tr {
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+.table-unified thead th {
+  padding: 12px 16px !important;
+  color: rgba(255,255,255,0.5) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table-unified tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  transition: background-color 160ms ease;
+}
+
+.table-unified tbody tr:nth-child(even) {
+  background: rgba(255,255,255,0.012);
+}
+
+.table-unified tbody tr:last-child {
+  border-bottom: none !important;
+}
+
+.table-unified tbody tr:hover {
+  background: rgba(26,36,64,0.62) !important;
+}
+
+.table-unified tbody td {
+  padding: 12px 16px !important;
+  color: rgba(255,255,255,0.82) !important;
+  vertical-align: middle;
+}
+
+.table-unified tr:hover td {
+  background: transparent !important;
+}
+
+.table-unified .text-center,
+.table-unified th.text-center,
+.table-unified td.text-center {
+  text-align: center !important;
+}
+
+.table-unified .text-right,
+.table-unified th.text-right,
+.table-unified td.text-right {
+  text-align: right !important;
+}
+
+/* Consistent destructive button style for Delete/Remove/Reject actions */
+.btn-danger {
+  background: #dc2626 !important;
+  border: 1px solid rgba(248,113,113,0.45) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.btn-danger:hover {
+  background: #b91c1c !important;
+  border-color: rgba(248,113,113,0.65) !important;
+  box-shadow: none !important;
+}
+
+.btn-danger:disabled {
+  opacity: 0.55;
+}
 
 /* Borders */
 .border, .border-b, .border-t {

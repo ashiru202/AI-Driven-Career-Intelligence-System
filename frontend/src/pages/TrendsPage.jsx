@@ -1,7 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import Layout from "../components/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
 import api from "../api/api";
 import {
   getSnapshotSummary,
@@ -17,7 +15,7 @@ import {
 import {
   TrendingUp, TrendingDown, Activity, BarChart2, Briefcase,
   RefreshCw, ChevronLeft, ChevronRight, Search, AlertTriangle,
-  ArrowUpRight, ArrowDownRight, Minus, Globe, MapPin, Layers,
+  ArrowUpRight, ArrowDownRight, Globe, MapPin,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -97,7 +95,7 @@ function SkillRow({ item, direction, onSelect, selected }) {
     <button
       onClick={() => onSelect(item.skill)}
       style={{
-        width: "100%", textAlign: "left", background: "none", border: "none",
+        width: "100%", textAlign: "left", border: "none",
         padding: "10px 12px", borderRadius: 10, cursor: "pointer",
         background: selected ? "rgba(99,102,241,0.12)" : "transparent",
         transition: "background 0.15s",
@@ -153,7 +151,6 @@ function ChartTooltip({ active, payload, label }) {
 // ─── Scope Toggle ─────────────────────────────────────────────────────────────
 
 const SCOPES = [
-  { key: "combined",  label: "Combined",       Icon: Layers },
   { key: "global",    label: "Global / Remote", Icon: Globe  },
   { key: "local-lk",  label: "Sri Lanka",       Icon: MapPin },
 ];
@@ -267,7 +264,7 @@ function SkillsTable({ scope, onSelectSkill, selectedSkill }) {
       </div>
 
       {/* Table */}
-      <div style={{ overflowX: "auto" }}>
+      <div className="table-unified" style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
@@ -373,7 +370,7 @@ const CARD = {
 };
 
 export default function TrendsPage() {
-  const [scope,          setScope]          = useState("combined");
+  const [scope,          setScope]          = useState("global");
   const [summary,        setSummary]        = useState(null);
   const [rising,         setRising]         = useState([]);
   const [falling,        setFalling]        = useState([]);
@@ -391,24 +388,24 @@ export default function TrendsPage() {
   const loadMeta = useCallback(() => {
     setLoadingMeta(true);
     Promise.allSettled([
-      getSnapshotSummary(),
+      getSnapshotSummary(scope),
       getRisingSkills(8, scope),
       getFallingSkills(8, scope),
+      getSkillsList({ page: 1, limit: 1, marketScope: scope }),
       api.get("/api/analytics/my-resumes"),
     ])
-      .then(([sumRes, rRes, fRes, resumeRes]) => {
+      .then(([sumRes, rRes, fRes, allRes, resumeRes]) => {
         const sum = sumRes.status === "fulfilled" ? sumRes.value.data?.data || {} : {};
         const r   = rRes.status  === "fulfilled" ? rRes.value.data?.data?.skills  || [] : [];
         const f   = fRes.status  === "fulfilled" ? fRes.value.data?.data?.skills  || [] : [];
+        const all = allRes.status === "fulfilled" ? allRes.value.data?.data?.skills || [] : [];
 
         setSummary(sum);
         setRising(r);
         setFalling(f);
 
-        // Set default selected skill to highest-slope rising skill
-        if (r.length > 0 && selectedSkill === null) {
-          setSelectedSkill(r[0].skill);
-        }
+        // Prefer a rising skill, but keep the explorer useful for stable-only markets.
+        setSelectedSkill(r[0]?.skill || all[0]?.skill || f[0]?.skill || null);
 
         // Personal skills cross-reference (best-effort — skip if resumes unavailable)
         if (resumeRes.status === "fulfilled") {
@@ -489,7 +486,6 @@ export default function TrendsPage() {
 
   // ── No-data notice ─────────────────────────────────────────────────────────
 
-  const noData = !loadingMeta && rising.length === 0 && falling.length === 0;
   const insufficient = summary?.weeksCovered != null && summary.weeksCovered < 4;
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -525,10 +521,8 @@ export default function TrendsPage() {
           <p style={{ color: "#64748b", margin: "6px 0 0", fontSize: 14 }}>
             Live analysis of skill demand from thousands of job postings  including{" "}
             {scope === "local-lk"
-              ? "Sri Lankan job boards"
-              : scope === "global"
-              ? "global and remote job listings"
-              : "global, remote, and Sri Lankan job boards"}.
+              ? "a Sri Lanka dataset"
+              : "global and remote job listings"}.
           </p>
         </div>
 
@@ -568,7 +562,9 @@ export default function TrendsPage() {
               <h2 style={{ color: "#e2e8f0", fontSize: 16, fontWeight: 600, margin: 0 }}>Rising Skills</h2>
             </div>
             {rising.length === 0 && !loadingMeta && (
-              <p style={{ color: "#64748b", fontSize: 13 }}>No rising skill data yet.</p>
+              <p style={{ color: "#64748b", fontSize: 13 }}>
+                No skills are currently crossing the rising threshold in this market.
+              </p>
             )}
             {rising.map(item => (
               <SkillRow key={item.skill} item={item} direction="rising"
@@ -583,7 +579,9 @@ export default function TrendsPage() {
               <h2 style={{ color: "#e2e8f0", fontSize: 16, fontWeight: 600, margin: 0 }}>Falling Skills</h2>
             </div>
             {falling.length === 0 && !loadingMeta && (
-              <p style={{ color: "#64748b", fontSize: 13 }}>No falling skill data yet.</p>
+              <p style={{ color: "#64748b", fontSize: 13 }}>
+                No skills are currently crossing the falling threshold in this market.
+              </p>
             )}
             {falling.map(item => (
               <SkillRow key={item.skill} item={item} direction="falling"

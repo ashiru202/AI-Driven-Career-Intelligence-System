@@ -152,7 +152,7 @@ export default function ResumeAnalyze() {
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); removeFile(); }}
-                  style={{ marginTop: 4, padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.08)", color: "#f87171", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}
+                  style={{ marginTop: 4, padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(248,113,113,0.55)", background: "rgba(220,38,38,0.28)", color: "#fecaca", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}
                 >
                   <X size={12} /> Remove
                 </button>

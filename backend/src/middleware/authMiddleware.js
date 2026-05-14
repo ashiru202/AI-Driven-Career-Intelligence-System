@@ -3,6 +3,14 @@ const User = require("../models/User");
 const AppError = require("../utils/AppError");
 const { errorResponse } = require("../utils/responseHelper");
 
+function canAccessWhilePasswordChangeRequired(req) {
+  if (req.originalUrl === "/api/users/me" && ["GET", "PUT"].includes(req.method)) {
+    return true;
+  }
+
+  return req.originalUrl === "/api/auth/logout";
+}
+
 // Verify JWT and attach user to req
 const requireAuth = async (req, res, next) => {
   try {
@@ -54,8 +62,19 @@ const requireAuth = async (req, res, next) => {
       id: user._id.toString(),
       email: user.email,
       role: user.role,
-      name: user.name
+      name: user.name,
+      careerLevel: user.careerLevel || 'UNKNOWN',
+      mustChangePassword: Boolean(user.mustChangePassword)
     };
+
+    if (req.user.mustChangePassword && !canAccessWhilePasswordChangeRequired(req)) {
+      return res.status(403).json(
+        errorResponse(
+          'PASSWORD_CHANGE_REQUIRED',
+          'You must change your temporary password before continuing.'
+        )
+      );
+    }
 
     next();
   } catch (error) {

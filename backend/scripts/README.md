@@ -69,3 +69,29 @@ MongoDB connection closed
 - As part of regular maintenance (e.g., weekly/monthly)
 - After mass testing/development work
 - Before backing up to save space
+
+## Resume Skill Signature Backfill
+
+This script fills the new analytics fields on existing resume records:
+
+- `normalizedSkills`
+- `skillsSignature`
+- `candidateLevel`
+- `candidateLevelSource`
+
+### Usage
+
+**Dry run:**
+```bash
+cd backend
+npm run backfill:resume-skills:dry-run
+```
+
+**Write changes:**
+```bash
+cd backend
+npm run backfill:resume-skills
+```
+
+By default, the script only updates resumes missing one or more derived fields.
+Use `node scripts/backfill-resume-skill-signatures.js --force` if you need to recompute every resume.

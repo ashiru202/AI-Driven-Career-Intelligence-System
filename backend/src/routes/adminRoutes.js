@@ -4,11 +4,18 @@ const { requireAuth, requireRole } = require("../middleware/authMiddleware");
 const { validate, schemas } = require("../middleware/validationMiddleware");
 const {
   createStaff,
+  listStaffApplications,
+  reviewStaffApplication,
   listUsers,
   toggleUserStatus,
   getAdminStats,
   deleteUser,
   getAuditLogs,
+  getResumeSkillGroups,
+  getResumesBySkill,
+  getSkillAlignmentTimeseries,
+  getSupplyVsDemand,
+  updateResumeCandidateLevel,
 } = require("../controllers/adminController");
 const {
   triggerScrape,
@@ -22,8 +29,29 @@ router.use(requireAuth, requireRole('ADMIN'));
 // Admin dashboard stats
 router.get("/stats", getAdminStats);
 
-// Create staff account
-router.post("/staff", validate(schemas.createStaff), createStaff);
+// CV skill groups: same normalized skill set across candidates
+router.get("/resumes/skill-groups", getResumeSkillGroups);
+router.get("/resumes/by-skill", getResumesBySkill);
+router.patch("/resumes/:resumeId/candidate-level", updateResumeCandidateLevel);
+
+// CV uploads matched against highest/least demanded skills
+router.get("/skills/supply-vs-demand", getSupplyVsDemand);
+router.get("/skills/alignment-timeseries", getSkillAlignmentTimeseries);
+
+// Create staff account (admin only)
+router.post("/staff", validate(schemas.adminCreateStaff), createStaff);
+
+// Staff application review flow (admin only)
+router.get(
+  "/staff-applications",
+  validate(schemas.adminListStaffApplications),
+  listStaffApplications
+);
+router.patch(
+  "/staff-applications/:applicationId/review",
+  validate(schemas.adminReviewStaffApplication),
+  reviewStaffApplication
+);
 
 // List users (with filters)
 router.get("/users", listUsers);

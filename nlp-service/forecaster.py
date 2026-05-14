@@ -122,6 +122,7 @@ def generate_forecast(
     if n < MIN_DATA_POINTS:
         return {
             "skill":            skill,
+            "market_scope":     market_scope,
             "model_used":       "linear",
             "trend_direction":  "stable",
             "trend_slope":      0.0,
@@ -169,6 +170,7 @@ def generate_forecast(
 
     return {
         "skill":            skill,
+        "market_scope":     market_scope,
         "model_used":       "linear",
         "trend_direction":  direction,
         "trend_slope":      round(slope, 8),
@@ -237,7 +239,7 @@ def refresh_all_forecasts(top_n: int = 100, market_scope: str = "combined") -> d
         skill = entry["_id"]
         try:
             result = generate_forecast(skill, market_scope=market_scope)
-            _upsert_forecast(forecasts_col, result)
+            _upsert_forecast(forecasts_col, result, market_scope)
             refreshed += 1
             skill_names.append(skill)
         except Exception as exc:                       # noqa: BLE001
@@ -311,7 +313,7 @@ def _weeks_ago(n: int) -> datetime:
     return datetime.now(tz=timezone.utc) - timedelta(weeks=n)
 
 
-def _upsert_forecast(forecasts_col, result: dict) -> None:
+def _upsert_forecast(forecasts_col, result: dict, market_scope: str) -> None:
     """Upsert a SkillForecast document from a generate_forecast() result."""
     now = datetime.now(tz=timezone.utc)
 
@@ -326,10 +328,11 @@ def _upsert_forecast(forecasts_col, result: dict) -> None:
     ]
 
     forecasts_col.update_one(
-        {"skill": result["skill"]},
+        {"skill": result["skill"], "marketScope": market_scope},
         {
             "$set": {
                 "skill":           result["skill"],
+                "marketScope":     market_scope,
                 "generatedAt":     now,
                 "trendDirection":  result["trend_direction"],
                 "trendSlope":      result["trend_slope"],

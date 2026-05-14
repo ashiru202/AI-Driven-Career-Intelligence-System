@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import api from '../api/api';
 
-const SSE_URL = 'http://localhost:5000/api/sse/events';
+const API_BASE_URL = String(api.defaults.baseURL || window.location.origin).replace(/\/$/, '');
+const SSE_URL = `${API_BASE_URL}/api/sse/events`;
 const RECONNECT_DELAY_MS = 5_000; // wait 5 s before reconnecting after error
 
 /**

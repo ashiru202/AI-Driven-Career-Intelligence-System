@@ -2,9 +2,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Zap, Users, UserCheck, BarChart2, ClipboardList, Map, Home, FileText,
-  Folder, Target, TrendingUp, Briefcase, Flame, LogOut, HeartPulse,
+  Folder, Target, TrendingUp, Briefcase, Flame, LogOut, HeartPulse, BellRing,
   ArrowLeft, RefreshCw, Check, X, ChevronDown, ChevronRight,
-  ShieldCheck, ListChecks, Activity,
+  ShieldCheck, ListChecks, Activity, Layers3,
 } from 'lucide-react';
 import api from '../api/api';
 import { useSSE } from '../context/SSEContext';
@@ -134,6 +134,7 @@ function ProfileModal({ onClose, onSave }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '16px',
         animation: 'pmFadeIn 0.2s ease',
+        overscrollBehavior: 'contain',
       }}
     >
       <style>{`@keyframes pmFadeIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}`}</style>
@@ -184,7 +185,7 @@ function ProfileModal({ onClose, onSave }) {
         </div>
 
         {/* Body */}
-        <div style={{ overflowY: 'auto', flex: 1 }}>
+        <div style={{ overflowY: 'auto', flex: 1, overscrollBehavior: 'contain' }}>
           {loading ? (
             <div style={{ padding: 32, textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>Loading profile…</div>
           ) : (
@@ -399,6 +400,10 @@ const ROLE_NAV = {
     { path: '/admin',               label: 'Admin Dashboard', Icon: Zap },
     { path: '/staff-management',    label: 'Staff Management', Icon: Users },
     { path: '/users',               label: 'Job Seekers',      Icon: UserCheck },
+    { path: '/admin/skill-groups',  label: 'CV Skill Groups',  Icon: Layers3 },
+    { path: '/admin/skills-demand', label: 'Skills Demand',    Icon: Flame },
+    { path: '/admin/supply-demand', label: 'Supply vs Demand', Icon: Activity },
+    { path: '/admin/industry-contribution', label: 'Industry Contribution', Icon: TrendingUp },
     { path: '/admin-report',        label: 'Platform Report',  Icon: BarChart2 },
     { path: '/admin/user-reports',  label: 'User Reports',     Icon: ClipboardList },
     { path: '/all-roadmaps',        label: 'All Roadmaps',     Icon: Map },
@@ -406,6 +411,10 @@ const ROLE_NAV = {
   ],
   STAFF: [
     { path: '/staff-home',       label: 'Dashboard',        Icon: Zap },
+    { path: '/staff/priority-queue', label: 'Priority Queue', Icon: Target },
+    { path: '/staff/case-notes', label: 'Case Notes',      Icon: FileText },
+    { path: '/staff/follow-ups', label: 'Follow-up Tasks', Icon: BellRing },
+    { path: '/staff/report-workflows', label: 'Report Workflow', Icon: Activity },
     { path: '/staff',            label: 'User Reports',     Icon: ClipboardList },
     { path: '/all-roadmaps',     label: 'All Roadmaps',     Icon: Map },
   ],
@@ -804,6 +813,23 @@ export default function Layout({ children }) {
   const [profileOpen,    setProfileOpen]    = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
+  // Lock page scrolling while full-screen overlays are visible.
+  useEffect(() => {
+    const shouldLockScroll = profileOpen || logoutModalOpen;
+    if (!shouldLockScroll) return;
+
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, [profileOpen, logoutModalOpen]);
+
   useEffect(() => {
     try {
       const u = JSON.parse(localStorage.getItem('user') || '{}');
@@ -964,7 +990,7 @@ export default function Layout({ children }) {
         )}
 
         {/* Main content area */}
-        <main style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
+        <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', minWidth: 0 }}>
           <div style={{ padding: '32px' }}>
             {children}
           </div>

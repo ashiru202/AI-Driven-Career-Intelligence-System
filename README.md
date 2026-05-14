@@ -115,79 +115,53 @@ A full-stack MERN application with AI-powered career guidance, resume analysis, 
 
 ```
 AI-Driven-Career-Intelligence-System/
-├── backend/
-│   ├── src/
-│   │   ├── config/
-│   │   │   └── db.js
-│   │   ├── controllers/
-│   │   │   ├── adminController.js
-│   │   │   ├── authController.js
-│   │   │   ├── comparisonController.js
-│   │   │   ├── healthController.js
-│   │   │   ├── newRoadmapController.js
-│   │   │   └── resumeController.js
-│   │   ├── middleware/
-│   │   │   ├── authMiddleware.js
-│   │   │   ├── errorMiddleware.js
-│   │   │   ├── upload.js
-│   │   │   └── validationMiddleware.js
-│   │   ├── models/
-│   │   │   ├── Comparison.js
-│   │   │   ├── Resume.js
-│   │   │   ├── Roadmap.js
-│   │   │   └── User.js
-│   │   ├── routes/
-│   │   │   ├── adminRoutes.js
-│   │   │   ├── authRoutes.js
-│   │   │   ├── comparisonRoutes.js
-│   │   │   ├── healthRoutes.js
-│   │   │   ├── newRoadmapRoutes.js
-│   │   │   └── resumeRoutes.js
-│   │   ├── services/
-│   │   │   ├── roadmapGenerator.js
-│   │   │   └── resumeTextExtractor.js
-│   │   ├── utils/
-│   │   │   ├── AppError.js
-│   │   │   ├── responseHelper.js
-│   │   │   └── skillNormalizer.js
-│   │   └── server.js
-│   ├── uploads/
-│   │   └── resumes/
-│   ├── .env
-│   └── package.json
-│
-├── frontend/
-│   ├── src/
-│   │   ├── api/
-│   │   │   └── api.js
-│   │   ├── auth/
-│   │   │   ├── ProtectedRoute.jsx
-│   │   │   └── RoleRoute.jsx
-│   │   ├── components/
-│   │   │   ├── ui/
-│   │   │   │   ├── badge.jsx
-│   │   │   │   ├── button.jsx
-│   │   │   │   ├── card.jsx
-│   │   │   │   ├── input.jsx
-│   │   │   │   └── textarea.jsx
-│   │   │   └── Layout.jsx
-│   │   ├── pages/
-│   │   │   ├── AdminDashboard.jsx
-│   │   │   ├── CompareJob.jsx
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── Health.jsx
-│   │   │   ├── Login.jsx
-│   │   │   ├── MyRoadmap.jsx
-│   │   │   ├── ResumeAnalyze.jsx
-│   │   │   ├── StaffDashboard.jsx
-│   │   │   └── UserManagement.jsx
-│   │   ├── App.js
-│   │   ├── index.css
-│   │   └── index.js
-│   ├── tailwind.config.js
-│   └── package.json
-│
+├── backend/                  # Node/Express API + tests
+├── frontend/                 # React app
+├── extension/                # Browser extension
+├── nlp-service/              # FastAPI NLP microservice
+├── docs/                     # Project docs/plans
+├── tools/                    # Root-level maintenance utilities
+│   ├── check_emojis.py
+│   └── fix-paths.js
+├── logs/                     # Local runtime/debug logs
+├── docker-compose.yml
+├── docker-compose.dev.yml
 └── README.md
+
+backend/
+├── src/
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── services/
+│   └── utils/
+├── scripts/
+├── tests/
+└── uploads/
+
+frontend/
+├── src/
+│   ├── api/
+│   ├── auth/
+│   ├── components/
+│   ├── context/
+│   └── pages/
+└── public/
+
+extension/
+├── src/
+│   ├── background/
+│   ├── content/
+│   ├── popup/
+│   └── shared/
+└── tests/
+
+nlp-service/
+├── scrapers/
+├── evaluation/
+└── tests/
 ```
 
 ## 🔐 User Roles

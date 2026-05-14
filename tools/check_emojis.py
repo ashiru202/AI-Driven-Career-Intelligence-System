@@ -1,11 +1,12 @@
-import os
+from pathlib import Path
 
-pages_dir = r'c:\Users\USER\AI-Driven-Career-Intelligence-System\frontend\src\pages'
+repo_root = Path(__file__).resolve().parents[1]
+pages_dir = repo_root / 'frontend' / 'src' / 'pages'
 found = []
-for fname in sorted(os.listdir(pages_dir)):
+for fname in sorted(p.name for p in pages_dir.iterdir()):
     if not fname.endswith('.jsx'):
         continue
-    path = os.path.join(pages_dir, fname)
+    path = pages_dir / fname
     with open(path, encoding='utf-8') as f:
         for i, line in enumerate(f.readlines()):
             if any(ord(c) > 0x2600 for c in line):

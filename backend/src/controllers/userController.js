@@ -65,6 +65,7 @@ const updateMyProfile = async (req, res) => {
         return res.status(400).json({ message: "New password must be at least 6 characters" });
       }
       user.password = await bcrypt.hash(newPassword, 10);
+      user.mustChangePassword = false;
     }
 
     await user.save();
@@ -77,6 +78,7 @@ const updateMyProfile = async (req, res) => {
         name:     user.name,
         email:    user.email,
         role:     user.role,
+        mustChangePassword: Boolean(user.mustChangePassword),
         phone:    user.phone,
         bio:      user.bio,
         location: user.location,

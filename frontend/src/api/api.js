@@ -12,6 +12,7 @@ api.interceptors.response.use(
     const isAuthEndpoint =
       error.config?.url?.includes("/auth/login") ||
       error.config?.url?.includes("/auth/register") ||
+      error.config?.url?.includes("/auth/staff-applications") ||
       error.config?.url?.includes("/auth/forgot-password") ||
       error.config?.url?.includes("/auth/reset-password") ||
       error.config?.url?.includes("/auth/verify-email") ||
@@ -22,6 +23,13 @@ api.interceptors.response.use(
       localStorage.removeItem("user");
       localStorage.removeItem("role");
       window.location.href = "/login";
+    }
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.error?.code === "PASSWORD_CHANGE_REQUIRED" &&
+      window.location.pathname !== "/force-change-password"
+    ) {
+      window.location.href = "/force-change-password";
     }
     return Promise.reject(error);
   }

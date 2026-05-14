@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import api from "../api/api";
 import Layout from "../components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
@@ -204,27 +204,28 @@ export default function MyRoadmap() {
   const [previewResource, setPreviewResource] = useState(null);
 
   useEffect(() => {
+    const loadRoadmaps = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await api.get("/api/roadmaps-new");
+        if (res.data.ok && res.data.data) {
+          const nextRoadmaps = res.data.data.roadmaps || [];
+          setRoadmaps(nextRoadmaps);
+          if (nextRoadmaps.length > 0) {
+            loadRoadmapDetails(nextRoadmaps[0].id);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load roadmaps:", e);
+        setError(e.response?.data?.error?.message || "Failed to load roadmaps");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadRoadmaps();
   }, []);
-
-  const loadRoadmaps = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await api.get("/api/roadmaps-new");
-      if (res.data.ok && res.data.data) {
-        setRoadmaps(res.data.data.roadmaps || []);
-        if (res.data.data.roadmaps.length > 0 && !selectedRoadmap) {
-          loadRoadmapDetails(res.data.data.roadmaps[0].id);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load roadmaps:", e);
-      setError(e.response?.data?.error?.message || "Failed to load roadmaps");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadRoadmapDetails = async (id) => {
     try {
@@ -345,9 +346,6 @@ export default function MyRoadmap() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-3xl font-bold text-white">My Learning Roadmaps</h2>
-          <Button onClick={loadRoadmaps} disabled={loading}>
-            {loading ? "Refreshing..." : "Refresh"}
-          </Button>
         </div>
 
         {error && (

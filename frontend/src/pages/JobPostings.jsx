@@ -10,7 +10,7 @@ import {
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import api from "../api/api";
-import { FileText, FileEdit, Check, MapPin, DollarSign, Briefcase, FolderOpen, Search, ArrowRight, ExternalLink } from "lucide-react";
+import { FileText, FileEdit, Check, MapPin, DollarSign, FolderOpen, Search, ArrowRight, ExternalLink } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

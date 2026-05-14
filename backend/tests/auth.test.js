@@ -17,6 +17,13 @@ jest.mock('../src/config/db', () => jest.fn());
 jest.mock('../src/models/User');
 const User = require('../src/models/User');
 
+jest.mock('../src/utils/emailService', () => ({
+  sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+  sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
+  sendStaffInviteEmail: jest.fn().mockResolvedValue(undefined),
+  sendStaffTemporaryPasswordEmail: jest.fn().mockResolvedValue(undefined),
+}));
+
 const app = require('../src/app');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -44,6 +51,9 @@ describe('POST /api/auth/register', () => {
     expect(res.body.data).toHaveProperty('email');
     expect(res.body.data.email).toBe('alice@example.com');
     expect(res.body.message).toContain('verify your account');
+
+    const createCall = User.create.mock.calls[0][0];
+    expect(createCall.role).toBe('USER');
   });
 
   it('returns 409 if the email is already registered', async () => {
@@ -55,6 +65,26 @@ describe('POST /api/auth/register', () => {
 
     expect(res.status).toBe(409);
     expect(res.body.ok).toBe(false);
+  });
+
+  it('returns 400 when role is STAFF at registration', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Staff Member', email: 'staff@example.com', password: 'password123', role: 'STAFF' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+    expect(User.create).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when role is ADMIN at registration', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Alice', email: 'alice@example.com', password: 'password123', role: 'ADMIN' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.ok).toBe(false);
+    expect(User.create).not.toHaveBeenCalled();
   });
 
   it('returns 400 for missing required fields', async () => {
@@ -120,7 +150,8 @@ describe('POST /api/auth/login', () => {
       role: 'USER',
       password: hash,
       active: true,
-      emailVerified: true
+      emailVerified: true,
+      mustChangePassword: false
     });
 
     const res = await request(app)
@@ -131,8 +162,34 @@ describe('POST /api/auth/login', () => {
     expect(res.body.ok).toBe(true);
     expect(res.body.data).toHaveProperty('user');
     expect(res.body.data.user.email).toBe('alice@example.com');
+    expect(res.body.data.user.mustChangePassword).toBe(false);
     // JWT is now set as httpOnly cookie, not in response body
     expect(res.headers['set-cookie']).toBeDefined();
+  });
+
+  it('returns mustChangePassword for admin-created staff accounts', async () => {
+    const bcrypt = require('bcryptjs');
+    const hash = await bcrypt.hash('991234567V', 10);
+
+    User.findOne.mockResolvedValue({
+      _id: 'bbbbbbbbbbbbbbbbbbbbbbbb',
+      name: 'Staff Member',
+      email: 'staff@example.com',
+      role: 'STAFF',
+      password: hash,
+      active: true,
+      emailVerified: true,
+      mustChangePassword: true
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'staff@example.com', password: '991234567V' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.data.user.role).toBe('STAFF');
+    expect(res.body.data.user.mustChangePassword).toBe(true);
   });
 
   it('returns 401 for a wrong password', async () => {

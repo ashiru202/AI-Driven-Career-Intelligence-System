@@ -13,7 +13,16 @@ const axios = require("axios");
 
 const NLP_URL = process.env.NLP_SERVICE_URL || "http://localhost:8000";
 const BACKEND_URL = "http://localhost:5001";
-const INTERNAL_TOKEN = process.env.NLP_INTERNAL_TOKEN || "changeme";
+
+function getInternalToken() {
+  const token = (process.env.NLP_INTERNAL_TOKEN || process.env.INTERNAL_TOKEN || "").trim();
+  if (!token || token.toLowerCase() === "changeme") {
+    throw new Error(
+      "NLP_INTERNAL_TOKEN (or INTERNAL_TOKEN) must be set to a non-default shared secret"
+    );
+  }
+  return token;
+}
 
 async function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -21,12 +30,14 @@ async function sleep(ms) {
 
 async function main() {
   try {
+    const internalToken = getInternalToken();
+
     console.log("🚀 Starting Industry Trends Data Population Pipeline\n");
 
     // Step 1: Trigger scraping + processing
     console.log("📥 Step 1/2: Triggering job scraper + processor...");
     console.log("   This will:");
-    console.log("   - Collect job postings from Adzuna, Remotive, TopJobs.lk, XpressJobs.lk");
+    console.log("   - Collect job postings from enabled sources (e.g., Adzuna, Remotive)");
     console.log("   - Extract skills from job descriptions");
     console.log("   - Create weekly skill frequency snapshots\n");
 
@@ -35,7 +46,7 @@ async function main() {
       `${NLP_URL}/internal/trigger-scrape`,
       {},
       {
-        headers: { "X-Internal-Token": INTERNAL_TOKEN },
+        headers: { "X-Internal-Token": internalToken },
         timeout: 240_000 // 4 minutes
       }
     );
@@ -55,7 +66,7 @@ async function main() {
       `${NLP_URL}/internal/trigger-forecast`,
       {},
       {
-        headers: { "X-Internal-Token": INTERNAL_TOKEN },
+        headers: { "X-Internal-Token": internalToken },
         timeout: 120_000 // 2 minutes
       }
     );
